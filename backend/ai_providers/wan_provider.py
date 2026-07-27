@@ -26,6 +26,14 @@ class WanProvider(BaseAIProvider):
         if not self.health_check():
             raise RuntimeError("Modello Wan 2.2 non installato.")
 
+        # Log PyTorch's view of the GPUs
+        if torch.cuda.is_available():
+            logger.info(f"PyTorch vede {torch.cuda.device_count()} dispositivi CUDA:")
+            for i in range(torch.cuda.device_count()):
+                logger.info(f"  cuda:{i} -> {torch.cuda.get_device_name(i)}")
+        else:
+            logger.warning("PyTorch non rileva dispositivi CUDA. Verifica l'installazione di PyTorch con supporto ROCm.")
+
         preferred_backend = self.model_info.get("backend", "rocm")
         gpu = self.gm.get_gpu_for_task("video_generation", self.get_gpu_requirements().get("vram_required_gb", 0), preferred_backend=preferred_backend)
         if not gpu:

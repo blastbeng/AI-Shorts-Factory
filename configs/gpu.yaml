@@ -2,7 +2,7 @@ gpus:
   - id: 0
     name: "AMD Radeon RX 7800 XT"
     vram_gb: 16
-    device_index: 0
+    device_index: 1
     backends:
       - "vulkan"
       - "rocm"
@@ -15,7 +15,7 @@ gpus:
   - id: 1
     name: "NVIDIA RTX 3060"
     vram_gb: 12
-    device_index: 1
+    device_index: 0
     backends:
       - "vulkan"
       - "cuda"
