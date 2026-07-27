@@ -26,3 +26,5 @@ basicsr
 facexlib
 gfpgan
 opencv-python
+flash-attn
+sageattention
