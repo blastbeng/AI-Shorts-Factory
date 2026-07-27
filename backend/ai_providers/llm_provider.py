@@ -149,11 +149,13 @@ class LLMProvider(BaseAIProvider):
                     generated_text = match.group(1).strip()
                 else:
                     # Fallback: rimozione di eventuali tag di pensiero e meta-testo
-                generated_text = re.sub(r'<think>.*?</think>', '', generated_text, flags=re.DOTALL).strip()
-                generated_text = re.sub(r'^.*?(Here\'s a thinking process:|Thinking Process:).*?\n', '', generated_text, flags=re.IGNORECASE).strip()
-                generated_text = re.sub(r'^(Sure, here is|Here is|Here\'s|This is|Il seguente è|Ecco).*?:\s*', '', generated_text, flags=re.IGNORECASE).strip()
-                generated_text = re.sub(r'\*+', '', generated_text).strip()
-                generated_text = re.sub(r'#+', '', generated_text).strip()
+                    generated_text = re.sub(r'.*?```', '', generated_text, flags=re.DOTALL).strip()
+                    generated_text = re.sub(r'<thought>.*?</thought>', '', generated_text, flags=re.DOTALL).strip()
+                    generated_text = re.sub(r'<reasoning>.*?</reasoning>', '', generated_text, flags=re.DOTALL).strip()
+                    generated_text = re.sub(r'^.*?(Here\'s a thinking process:|Thinking Process:).*?\n', '', generated_text, flags=re.IGNORECASE).strip()
+                    generated_text = re.sub(r'^(Sure, here is|Here is|Here\'s|This is|Il seguente è|Ecco).*?:\s*', '', generated_text, flags=re.IGNORECASE).strip()
+                    generated_text = re.sub(r'\*+', '', generated_text).strip()
+                    generated_text = re.sub(r'#+', '', generated_text).strip()
                 
                 if is_interrupted and is_interrupted():
                     return ""
