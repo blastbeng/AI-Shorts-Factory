@@ -64,7 +64,10 @@ class MMAudioProvider(BaseAIProvider):
                 self.model = AutoModel.from_pretrained(model_path, torch_dtype=torch.bfloat16, device_map="auto")
             
         logger.info(f"Generazione audio per prompt: {prompt}")
-        inputs = self.processor(text=prompt, return_tensors="pt").to(device)
+        inputs = self.processor(text=prompt, return_tensors="pt")
+        # Move inputs to the model's actual device (handles device_map="auto")
+        model_device = next(self.model.parameters()).device
+        inputs = {k: v.to(model_device) for k, v in inputs.items()}
         
         with torch.no_grad():
             audio_values = self.model.generate(**inputs)
