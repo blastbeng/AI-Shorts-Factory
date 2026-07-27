@@ -67,7 +67,7 @@ class KokoroProvider(BaseAIProvider):
             try:
                 logger.info("Kokoro: costruzione modello CPU")
                 logger.info("PRIMA KModel")
-                self.model = KModel(disable_complex=True)
+                self.model = KModel()
                 logger.info("DOPO KModel")
                 logger.info("Kokoro: modello CPU pronto")
                 self.model.eval()
