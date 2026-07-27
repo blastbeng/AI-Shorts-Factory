@@ -66,6 +66,10 @@ class KokoroProvider(BaseAIProvider):
             logger.info("Caricamento modello Kokoro TTS...")
             try:
                 logger.info("Kokoro: costruzione modello CPU")
+                logger.info("CUDA initialized: %s", torch.cuda.is_initialized())
+                logger.info("CUDA devices: %s", torch.cuda.device_count())
+                import threading
+                logger.info(f"Thread corrente: {threading.current_thread().name}")
                 logger.info("PRIMA KModel")
                 self.model = KModel()
                 logger.info("DOPO KModel")
