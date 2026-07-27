@@ -66,10 +66,25 @@ class LLMProvider(BaseAIProvider):
                 ] + self.params.split()
                 
                 try:
-                    # Esegue llama-cli come subprocess bloccante. 
-                    # Questo assicura che la VRAM venga liberata al termine.
-                    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-                    generated_text = result.stdout.strip()
+                    # Usa Popen per streamare i log di llama.cpp (stderr) in tempo reale
+                    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                    
+                    # Leggi e logga stderr in tempo reale (log di llama.cpp)
+                    while True:
+                        output = process.stderr.readline()
+                        if output == '' and process.poll() is not None:
+                            break
+                        if output:
+                            logger.info(f"[llama.cpp] {output.strip()}")
+                    
+                    # Leggi l'output generato (stdout)
+                    stdout = process.stdout.read()
+                    process.wait()
+                    
+                    if process.returncode != 0:
+                        raise RuntimeError("llama.cpp exited with non-zero status")
+                    
+                    generated_text = stdout.strip()
                     return generated_text
                 finally:
                     os.remove(temp_file_path)
