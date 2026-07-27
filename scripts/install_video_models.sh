@@ -9,11 +9,11 @@ if [ ! -f "$PYTHON_BIN" ]; then
 fi
 
 # Verifica Wan 2.1 1.3B
-WAN_STATUS=$("$PYTHON_BIN" -c "import yaml; print(yaml.safe_load(open('configs/models.yaml')).get('video', {}).get('wan_2_2_5b', {}).get('status', 'not_installed'))")
+WAN_STATUS=$("$PYTHON_BIN" -c "import yaml; print(yaml.safe_load(open('configs/models.yaml')).get('video', {}).get('wan_2_1_1_3b', {}).get('status', 'not_installed'))")
 if [ "$WAN_STATUS" != "installed" ]; then
-    ./scripts/download_models.sh "wan_2_2_5b" "Wan-AI/Wan2.1-T2V-1.3B-Diffusers" "./models/video/wan_2_2_5b" "video" "wan_2_2_5b"
+    ./scripts/download_models.sh "wan_2_1_1_3b" "Wan-AI/Wan2.1-T2V-1.3B-Diffusers" "./models/video/wan_2_1_1_3b" "video" "wan_2_1_1_3b"
 else
-    echo "[OK] Modello wan_2_2_5b già installato."
+    echo "[OK] Modello wan_2_1_1_3b già installato."
 fi
 
 # Verifica LTX Video

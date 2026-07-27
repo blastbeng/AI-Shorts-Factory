@@ -40,7 +40,7 @@ class LtxProvider(BaseAIProvider):
         
         if self.pipeline is None:
             logger.info("Caricamento pipeline LTX Video...")
-            model_path = os.path.join(self.model_info.get("path"), "ltx-video-2b-v0.9.5")
+            model_path = self.model_info.get("path")
             try:
                 self.pipeline = LTXVideoPipeline.from_pretrained(model_path, torch_dtype=torch.float16)
                 if use_cpu_offload:

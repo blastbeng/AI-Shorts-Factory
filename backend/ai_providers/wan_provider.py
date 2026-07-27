@@ -11,7 +11,7 @@ class WanProvider(BaseAIProvider):
     def __init__(self):
         with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
             self.models_config = yaml.safe_load(f)
-        self.model_info = self.models_config.get("video", {}).get("wan_2_2_5b", {})
+        self.model_info = self.models_config.get("video", {}).get("wan_2_1_1_3b", {})
         self.gm = GPUManager()
         self.pipeline = None
 
@@ -84,7 +84,7 @@ class WanProvider(BaseAIProvider):
         return output_path
 
     def get_capabilities(self):
-        return {"type": "video", "model": "wan_2_2_5b"}
+        return {"type": "video", "model": "wan_2_1_1_3b"}
 
     def get_gpu_requirements(self):
         return {"vram_required_gb": self.model_info.get("vram_required_gb"), "backend": self.model_info.get("backend")}

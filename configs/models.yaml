@@ -33,7 +33,7 @@ video:
     path: Lightricks/LTX-Video
     status: installed
     vram_required_gb: 10
-  wan_2_2_5b:
+  wan_2_1_1_3b:
     backend: rocm
     path: Wan-AI/Wan2.1-T2V-1.3B-Diffusers
     status: installed
