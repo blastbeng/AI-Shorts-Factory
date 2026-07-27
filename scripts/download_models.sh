@@ -1,6 +1,11 @@
 #!/bin/bash
 set -e
 
+# Carica le variabili d'ambiente dal file .env se esiste
+if [ -f ".env" ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+
 # Uso: ./download_models.sh <nome_modello> <repo_id_huggingface> <directory_destinazione> <sezione_yaml> <chiave_yaml>
 MODEL_NAME=$1
 REPO_ID=$2
@@ -35,9 +40,11 @@ else
     if [ -f "$PYTHON_BIN" ]; then
         echo "Utilizzo di Python dall'ambiente virtuale per il download..."
         "$PYTHON_BIN" -c "
+import os
 from huggingface_hub import snapshot_download
 allow_patterns = '$ALLOW_PATTERNS'.split() if '$ALLOW_PATTERNS' else None
-snapshot_download(repo_id='$REPO_ID', local_dir='$DEST_DIR', local_dir_use_symlinks=False, allow_patterns=allow_patterns)
+token = os.getenv('HF_TOKEN')
+snapshot_download(repo_id='$REPO_ID', local_dir='$DEST_DIR', local_dir_use_symlinks=False, allow_patterns=allow_patterns, token=token)
 "
         
         # Crea il marker di completamento
