@@ -70,11 +70,17 @@ sudo mkdir -p /opt/models
 MODEL_URL="https://huggingface.co/HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive/resolve/main/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q6_K_P.gguf"
 MODEL_PATH="/opt/models/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q6_K_P.gguf"
 
-if [ ! -f "$MODEL_PATH" ]; then
+# Verifica se il file esiste e ha una dimensione maggiore di 0
+if [ -f "$MODEL_PATH" ] && [ -s "$MODEL_PATH" ]; then
+    echo "[OK] Modello Qwen già presente. Salto il download."
+else
+    echo "Modello Qwen non trovato, vuoto o corrotto."
+    if [ -f "$MODEL_PATH" ]; then
+        echo "Cancellazione del file corrotto..."
+        sudo rm -f "$MODEL_PATH"
+    fi
     echo "Download del modello Qwen in $MODEL_PATH..."
     sudo wget -O "$MODEL_PATH" "$MODEL_URL"
-else
-    echo "Modello Qwen già presente."
 fi
 
 echo "=== Installazione llama.cpp completata ==="

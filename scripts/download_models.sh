@@ -13,15 +13,33 @@ if [ -z "$MODEL_NAME" ] || [ -z "$REPO_ID" ] || [ -z "$DEST_DIR" ] || [ -z "$YAM
     exit 1
 fi
 
-echo "Download del modello: $MODEL_NAME da $REPO_ID"
-mkdir -p "$DEST_DIR"
+echo "Verifica del modello: $MODEL_NAME..."
 
-if command -v huggingface-cli &> /dev/null; then
-    echo "Utilizzo di huggingface-cli per il download..."
-    huggingface-cli download "$REPO_ID" --local-dir "$DEST_DIR" --local-dir-use-symlinks False
+# Verifica se il modello è già stato scaricato completamente
+if [ -f "$DEST_DIR/.download_complete" ]; then
+    echo "[OK] Modello $MODEL_NAME già presente e completo. Salto il download."
 else
-    echo "huggingface-cli non trovato. Installa 'huggingface_hub'."
-    exit 1
+    echo "Modello $MODEL_NAME non trovato, incompleto o corrotto."
+    
+    # Se la directory esiste ma non ha il marker, cancella e ricrea per evitare conflitti
+    if [ -d "$DEST_DIR" ]; then
+        echo "Pulizia della directory incompleta/corrotta: $DEST_DIR"
+        rm -rf "$DEST_DIR"
+    fi
+    
+    mkdir -p "$DEST_DIR"
+
+    if command -v huggingface-cli &> /dev/null; then
+        echo "Utilizzo di huggingface-cli per il download..."
+        huggingface-cli download "$REPO_ID" --local-dir "$DEST_DIR" --local-dir-use-symlinks False
+        
+        # Crea il marker di completamento
+        touch "$DEST_DIR/.download_complete"
+        echo "[OK] Download completato e verificato."
+    else
+        echo "[ERRORE] huggingface-cli non trovato. Installa 'huggingface_hub'."
+        exit 1
+    fi
 fi
 
 echo "Aggiornamento di configs/models.yaml per $MODEL_NAME..."
@@ -35,4 +53,4 @@ if '$YAML_SECTION' in config and '$YAML_KEY' in config['$YAML_SECTION']:
 with open('configs/models.yaml', 'w') as f:
     yaml.dump(config, f, default_flow_style=False)
 "
-echo "Download e configurazione completati per $MODEL_NAME."
+echo "Configurazione completata per $MODEL_NAME."
