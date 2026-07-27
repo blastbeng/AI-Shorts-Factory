@@ -138,7 +138,8 @@ class LLMProvider(BaseAIProvider):
                     top_p=self.top_p,
                     top_k=self.top_k,
                     repeat_penalty=self.repeat_penalty,
-                    stream=False
+                    stream=False,
+                    stop=["</final_output>"]
                 )
                 generated_text = response["choices"][0]["message"]["content"].strip()
                 
