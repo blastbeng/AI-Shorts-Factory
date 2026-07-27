@@ -131,18 +131,25 @@ class WhisperProvider(BaseAIProvider):
         matches = re.findall(pattern, transcription)
         
         with open(output_srt_path, 'w') as f:
-            for i, (start, text) in enumerate(matches):
-                end = matches[i+1][0] if i+1 < len(matches) else float(start) + 2.0
-                start_time = float(start)
-                end_time = float(end)
-                
-                def format_time(t):
-                    td = datetime.timedelta(seconds=t)
-                    return f"{td.seconds//3600:02d}:{(td.seconds%3600)//60:02d}:{td.seconds%60:02d},{td.microseconds//1000:03d}"
-                
-                f.write(f"{i+1}\n")
-                f.write(f"{format_time(start_time)} --> {format_time(end_time)}\n")
-                f.write(f"{text.strip()}\n\n")
+            if not matches:
+                # Fallback se i timestamp non vengono rilevati
+                logger.warning("Nessun timestamp rilevato nella trascrizione. Creazione SRT con testo unico.")
+                f.write("1\n")
+                f.write("00:00:00,000 --> 00:00:10,000\n")
+                f.write(f"{transcription.strip()}\n\n")
+            else:
+                for i, (start, text) in enumerate(matches):
+                    end = matches[i+1][0] if i+1 < len(matches) else float(start) + 2.0
+                    start_time = float(start)
+                    end_time = float(end)
+                    
+                    def format_time(t):
+                        td = datetime.timedelta(seconds=t)
+                        return f"{td.seconds//3600:02d}:{(td.seconds%3600)//60:02d}:{td.seconds%60:02d},{td.microseconds//1000:03d}"
+                    
+                    f.write(f"{i+1}\n")
+                    f.write(f"{format_time(start_time)} --> {format_time(end_time)}\n")
+                    f.write(f"{text.strip()}\n\n")
         
         logger.info(f"Sottotitoli salvati in {output_srt_path}")
         return output_srt_path

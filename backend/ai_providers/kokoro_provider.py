@@ -44,11 +44,10 @@ class KokoroProvider(BaseAIProvider):
         
         # Mappa la lingua dell'app al codice lingua di Kokoro
         lang_map = {
-            "english": "a",
-            "italian": "i",
-            "spanish": "e",
-            "french": "f",
-            # "german": "d", # Kokoro non supporta il tedesco nativamente
+            "english": "a", "en": "a",
+            "italian": "i", "it": "i",
+            "spanish": "e", "es": "e",
+            "french": "f", "fr": "f",
         }
         app_language = kwargs.get("language", "english").lower()
         kokoro_lang = lang_map.get(app_language, "a") # Fallback a inglese
@@ -71,6 +70,9 @@ class KokoroProvider(BaseAIProvider):
         text = re.sub(r'^.*?(Here\'s a thinking process:|Thinking Process:).*?\n', '', text, flags=re.IGNORECASE).strip()
         text = re.sub(r'\*+', '', text).strip()
         text = re.sub(r'#+', '', text).strip()
+        # Rimozione di altri caratteri speciali che il TTS potrebbe leggere
+        text = re.sub(r'[\[\]\(\)\{\}<>\\|~`^]', '', text).strip()
+        text = re.sub(r'\s+', ' ', text).strip()
         
         logger.info(f"Generazione voce per testo: {text}")
         
