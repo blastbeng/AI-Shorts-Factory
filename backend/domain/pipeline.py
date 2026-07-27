@@ -5,6 +5,7 @@ from backend.ai_providers.wan_provider import WanProvider
 from backend.ai_providers.kokoro_provider import KokoroProvider
 from backend.ai_providers.mmaudio_provider import MMAudioProvider
 from backend.ai_providers.flux_provider import FluxProvider
+from backend.ai_providers.llm_provider import LLMProvider
 import os
 import subprocess
 
@@ -18,6 +19,7 @@ class PipelineOrchestrator:
         self.kokoro = KokoroProvider()
         self.mmaudio = MMAudioProvider()
         self.flux = FluxProvider()
+        self.llm = LLMProvider()
         self.stages = [
             "topic_generation",
             "script_generation",
@@ -56,10 +58,14 @@ class PipelineOrchestrator:
             self._update_stage(stage, "running")
             try:
                 if stage == "topic_generation":
-                    self._update_stage(stage, "completed", self.profile.topic)
+                    # Usa l'LLM per espandere il topic
+                    expanded_topic = self.llm.generate(f"Espandi questo topic per un video short: {self.profile.topic}", max_length=100)
+                    self._update_stage(stage, "completed", expanded_topic)
 
                 elif stage == "script_generation":
-                    script = f"Script generato per il topic: {self.profile.topic}. Durata target: {self.profile.duration_seconds} secondi."
+                    # Usa l'LLM per generare lo script
+                    script_prompt = f"Scrivi uno script di {self.profile.duration_seconds} secondi per un video su: {self.profile.topic}"
+                    script = self.llm.generate(script_prompt, max_length=300)
                     self._update_stage(stage, "completed", script)
 
                 elif stage == "voice_generation":
@@ -68,7 +74,9 @@ class PipelineOrchestrator:
                     self._update_stage(stage, "completed", voice_path)
 
                 elif stage == "storyboard_creation":
-                    storyboard = f"Storyboard per: {self.profile.topic}"
+                    # Usa l'LLM per generare lo storyboard
+                    storyboard_prompt = f"Crea uno storyboard di 3 scene per questo script: {script}"
+                    storyboard = self.llm.generate(storyboard_prompt, max_length=200)
                     self._update_stage(stage, "completed", storyboard)
 
                 elif stage == "image_generation":

@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv() # Carica le variabili d'ambiente dal file .env
+
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from pydantic import BaseModel

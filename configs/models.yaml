@@ -38,3 +38,9 @@ speech:
     vram_required_gb: 4
     backend: "cuda"
     status: "not_installed"
+text:
+  llm_base:
+    path: "./models/text/llm_base"
+    vram_required_gb: 4
+    backend: "cuda"
+    status: "not_installed"
