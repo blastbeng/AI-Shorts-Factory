@@ -2,7 +2,7 @@ import os
 import yaml
 import torch
 import scipy.io.wavfile as wavfile
-from transformers import AutoTokenizer, AutoModel
+from kokoro import KModel, KPipeline
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger
@@ -14,7 +14,7 @@ class KokoroProvider(BaseAIProvider):
         self.model_info = self.models_config.get("voice", {}).get("kokoro_tts", {})
         self.gm = GPUManager()
         self.model = None
-        self.tokenizer = None
+        self.pipeline = None
 
     def install_status(self):
         return self.model_info.get("status", "not_installed")
@@ -46,35 +46,22 @@ class KokoroProvider(BaseAIProvider):
             logger.info("Caricamento modello Kokoro TTS...")
             model_path = self.model_info.get("path")
             try:
-                self.tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
+                self.model = KModel.from_pretrained(model_path).to(device)
+                # Default to American English ('a')
+                self.pipeline = KPipeline(model=self.model, language_code='a')
             except Exception as e:
-                logger.exception(f"Errore nel caricamento del tokenizer lento. Tentativo con tokenizer veloce.")
-                self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-            try:
-                if use_cpu_offload:
-                    self.model = AutoModel.from_pretrained(model_path, trust_remote_code=True, torch_dtype=torch.float16, device_map="auto")
-                else:
-                    self.model = AutoModel.from_pretrained(model_path, trust_remote_code=True, torch_dtype=torch.float16).to(device)
-            except Exception as e:
-                logger.exception(f"Errore nel caricamento del modello su GPU. Fallback con offload su RAM.")
-                if self.model is not None:
-                    del self.model
-                    self.model = None
-                    import gc
-                    import torch
-                    gc.collect()
-                    torch.cuda.empty_cache()
-                self.model = AutoModel.from_pretrained(model_path, trust_remote_code=True, torch_dtype=torch.float16, device_map="auto")
-            
+                logger.exception(f"Errore nel caricamento del modello Kokoro.")
+                raise
+                
         logger.info(f"Generazione voce per testo: {text}")
-        inputs = self.tokenizer(text, return_tensors="pt").to(device)
+        
+        # Kokoro requires a voice name, defaulting to 'af_heart'
+        voice_name = kwargs.get("voice_name", "af_heart")
         
         with torch.no_grad():
-            audio_output = self.model.generate(**inputs, max_new_tokens=1000)
+            audio, out_ps = self.pipeline(text, voice=voice_name, speed=1.0)
             
-        # Assumendo che il modello restituisca un tensore audio
-        # La logica di salvataggio dipende dall'output specifico del modello Kokoro
-        audio_data = audio_output.cpu().numpy().squeeze()
+        audio_data = audio.cpu().numpy().squeeze()
         # Converti da float32 [-1, 1] a int16
         audio_data = (audio_data * 32767).astype("int16")
         wavfile.write(output_path, 24000, audio_data)
@@ -91,9 +78,9 @@ class KokoroProvider(BaseAIProvider):
         if self.model is not None:
             del self.model
             self.model = None
-        if self.tokenizer is not None:
-            del self.tokenizer
-            self.tokenizer = None
+        if self.pipeline is not None:
+            del self.pipeline
+            self.pipeline = None
             import gc
             import torch
             gc.collect()

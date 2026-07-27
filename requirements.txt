@@ -12,6 +12,7 @@ librosa
 scipy
 transformers
 diffusers
+kokoro
 huggingface_hub
 numpy<2.5
 sentencepiece
