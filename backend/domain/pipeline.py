@@ -1,14 +1,8 @@
 from backend.database.models import PipelineStage, Video
 from backend.services.logger import logger
 from backend.services.quality_scorer import QualityScorer
-from backend.ai_providers.wan_provider import WanProvider
-from backend.ai_providers.kokoro_provider import KokoroProvider
-from backend.ai_providers.mmaudio_provider import MMAudioProvider
-from backend.ai_providers.flux_provider import FluxProvider
-from backend.ai_providers.llm_provider import LLMProvider
 from backend.media.ffmpeg_utils import FFmpegUtils
 import os
-import subprocess
 
 class PipelineOrchestrator:
     def __init__(self, job_id, profile, db):
@@ -16,11 +10,6 @@ class PipelineOrchestrator:
         self.profile = profile
         self.db = db
         self.scorer = QualityScorer()
-        self.wan = WanProvider()
-        self.kokoro = KokoroProvider()
-        self.mmaudio = MMAudioProvider()
-        self.flux = FluxProvider()
-        self.llm = LLMProvider()
         self.stages = [
             "topic_generation",
             "script_generation",
@@ -53,6 +42,8 @@ class PipelineOrchestrator:
         image_path = ""
         video_path = ""
         audio_path = ""
+        storyboard = ""
+        expanded_topic = ""
         final_video_path = f"output/final_video_{self.job_id}.mp4"
 
         # Recupera gli stage già completati per supportare il resume
@@ -64,10 +55,14 @@ class PipelineOrchestrator:
 
         # Recupera i risultati degli stage completati
         for s in completed_stages:
-            if s.stage_name == "script_generation":
+            if s.stage_name == "topic_generation":
+                expanded_topic = s.result or ""
+            elif s.stage_name == "script_generation":
                 script = s.result or ""
             elif s.stage_name == "voice_generation":
                 voice_path = s.result or ""
+            elif s.stage_name == "storyboard_creation":
+                storyboard = s.result or ""
             elif s.stage_name == "image_generation":
                 image_path = s.result or ""
             elif s.stage_name == "video_generation":
@@ -82,46 +77,54 @@ class PipelineOrchestrator:
             self._update_stage(stage, "running")
             try:
                 if stage == "topic_generation":
-                    # Usa l'LLM per espandere il topic
-                    expanded_topic = self.llm.generate(f"Espandi questo topic per un video short: {self.profile.topic}", max_length=100)
+                    from backend.ai_providers.llm_provider import LLMProvider
+                    llm = LLMProvider()
+                    expanded_topic = llm.generate(f"Espandi questo topic per un video short: {self.profile.topic}", max_length=100)
                     self._update_stage(stage, "completed", expanded_topic)
 
                 elif stage == "script_generation":
-                    # Usa l'LLM per generare lo script
-                    script_prompt = f"Scrivi uno script di {self.profile.duration_seconds} secondi per un video su: {self.profile.topic}"
-                    script = self.llm.generate(script_prompt, max_length=300)
+                    from backend.ai_providers.llm_provider import LLMProvider
+                    llm = LLMProvider()
+                    script_prompt = f"Scrivi uno script di {self.profile.duration_seconds} secondi per un video su: {expanded_topic or self.profile.topic}"
+                    script = llm.generate(script_prompt, max_length=300)
                     self._update_stage(stage, "completed", script)
 
                 elif stage == "voice_generation":
+                    from backend.ai_providers.kokoro_provider import KokoroProvider
+                    kokoro = KokoroProvider()
                     voice_path = f"output/voice_{self.job_id}.wav"
-                    self.kokoro.generate(script, voice_path)
+                    kokoro.generate(script, voice_path)
                     self._update_stage(stage, "completed", voice_path)
 
                 elif stage == "storyboard_creation":
-                    # Usa l'LLM per generare lo storyboard
+                    from backend.ai_providers.llm_provider import LLMProvider
+                    llm = LLMProvider()
                     storyboard_prompt = f"Crea uno storyboard di 3 scene per questo script: {script}"
-                    storyboard = self.llm.generate(storyboard_prompt, max_length=200)
+                    storyboard = llm.generate(storyboard_prompt, max_length=200)
                     self._update_stage(stage, "completed", storyboard)
 
                 elif stage == "image_generation":
+                    from backend.ai_providers.flux_provider import FluxProvider
+                    flux = FluxProvider()
                     image_path = f"output/image_{self.job_id}.png"
-                    # Usa lo storyboard per un prompt più dettagliato
                     image_prompt = f"Immagine di alta qualità per un video su: {self.profile.topic}. Scene: {storyboard}"
-                    self.flux.generate(image_prompt, image_path)
+                    flux.generate(image_prompt, image_path)
                     self._update_stage(stage, "completed", image_path)
 
                 elif stage == "video_generation":
+                    from backend.ai_providers.wan_provider import WanProvider
+                    wan = WanProvider()
                     video_path = f"output/video_{self.job_id}.mp4"
-                    # Usa lo script per un prompt video più contestualizzato
                     video_prompt = f"Video short verticale basato su questo script: {script}"
-                    self.wan.generate(video_prompt, video_path)
+                    wan.generate(video_prompt, video_path)
                     self._update_stage(stage, "completed", video_path)
 
                 elif stage == "audio_generation":
+                    from backend.ai_providers.mmaudio_provider import MMAudioProvider
+                    mmaudio = MMAudioProvider()
                     audio_path = f"output/audio_{self.job_id}.wav"
-                    # Usa lo storyboard per generare effetti sonori contestualizzati
                     audio_prompt = f"Effetti sonori e musica di sottofondo per queste scene: {storyboard}"
-                    self.mmaudio.generate(audio_prompt, audio_path)
+                    mmaudio.generate(audio_prompt, audio_path)
                     self._update_stage(stage, "completed", audio_path)
 
                 elif stage == "video_assembly":

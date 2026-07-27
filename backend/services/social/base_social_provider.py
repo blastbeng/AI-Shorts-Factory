@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 class BaseSocialProvider(ABC):
     @abstractmethod
-    def authenticate(self, credentials: dict):
+    def authenticate(self, credentials: dict = None):
         pass
 
     @abstractmethod
