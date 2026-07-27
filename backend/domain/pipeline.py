@@ -171,6 +171,8 @@ class PipelineOrchestrator:
                     self._update_stage(stage, "completed", audio_path)
 
                 elif stage == "video_assembly":
+                    if not os.path.exists(video_path) or not os.path.exists(voice_path) or not os.path.exists(audio_path):
+                        raise RuntimeError("File di input mancanti per l'assemblaggio video.")
                     success = FFmpegUtils.assemble_video(video_path, voice_path, audio_path, final_video_path)
                     if not success:
                         raise RuntimeError("Assemblaggio video fallito.")
@@ -181,18 +183,20 @@ class PipelineOrchestrator:
                     self._update_stage(stage, "completed", str(quality_score))
 
                 elif stage == "storage":
-                    video_record = Video(
-                        job_id=self.job_id,
-                        file_path=final_video_path,
-                        quality_score=float(quality_score),
-                        approved=False
-                    )
-                    self.db.add(video_record)
-                    self.db.commit()
+                    existing_video = self.db.query(Video).filter(Video.job_id == self.job_id).first()
+                    if not existing_video:
+                        video_record = Video(
+                            job_id=self.job_id,
+                            file_path=final_video_path,
+                            quality_score=float(quality_score),
+                            approved=False
+                        )
+                        self.db.add(video_record)
+                        self.db.commit()
                     self._update_stage(stage, "completed", final_video_path)
 
                 elif stage == "dashboard_review":
-                    self._update_stage(stage, "completed", "In attesa di revisione manuale")
+                    self._update_stage(stage, "waiting_for_review", "In attesa di revisione manuale")
 
             except Exception as e:
                 self._update_stage(stage, "failed", str(e))
