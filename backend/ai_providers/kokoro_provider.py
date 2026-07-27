@@ -30,10 +30,11 @@ class KokoroProvider(BaseAIProvider):
         required_vram = reqs.get("vram_required_gb", 0)
         logger.info(f"Kokoro richiede {required_vram}GB di VRAM per la voice generation.")
         
-        gpu = self.gm.get_gpu_for_task("voice_generation", required_vram)
+        preferred_backend = self.model_info.get("backend")
+        gpu = self.gm.get_gpu_for_task("voice_generation", required_vram, preferred_backend=preferred_backend)
         if not gpu:
             logger.warning("Nessuna GPU con VRAM sufficiente per Kokoro. Uso GPU con offload su RAM.")
-            gpu = self.gm.get_gpu_for_task_ignore_vram("voice_generation")
+            gpu = self.gm.get_gpu_for_task_ignore_vram("voice_generation", preferred_backend=preferred_backend)
             if not gpu:
                 raise RuntimeError("Nessuna GPU assegnata per la voice generation.")
             use_cpu_offload = True
