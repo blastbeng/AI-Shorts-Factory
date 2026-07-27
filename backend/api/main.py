@@ -20,6 +20,28 @@ from backend.services.config_validator import ConfigValidator
 from backend.services.subprocess_manager import SubprocessManager
 import os
 import yaml
+import platform
+import sys
+import importlib.metadata
+
+def log_environment_info():
+    logger.info("=== Informazioni Ambiente ===")
+    logger.info(f"Python: {sys.version.split(' ')[0]}")
+    logger.info(f"OS: {platform.platform()}")
+    
+    packages = [
+        "fastapi", "uvicorn", "sqlalchemy", "pyyaml", "torch", "torchvision", 
+        "torchaudio", "transformers", "diffusers", "kokoro", "spacy", 
+        "huggingface_hub", "numpy", "sentencepiece", "tiktoken", "llama-cpp-python"
+    ]
+    
+    for pkg in packages:
+        try:
+            version = importlib.metadata.version(pkg)
+            logger.info(f"{pkg}: {version}")
+        except importlib.metadata.PackageNotFoundError:
+            logger.warning(f"{pkg}: non installato")
+    logger.info("===============================")
 
 app = FastAPI(title="AI Shorts Factory")
 
@@ -43,6 +65,7 @@ db_startup.commit()
 db_startup.close()
 
 logger.info("Avvio dell'applicazione AI Shorts Factory")
+log_environment_info()
 
 # Validazione configurazione
 ConfigValidator.validate_and_exit()
