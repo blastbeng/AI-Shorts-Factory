@@ -97,14 +97,14 @@ class PipelineOrchestrator:
                     llm = LLMProvider()
                     
                     if self.profile.custom_prompt:
-                        prompt = f"Espandi questo topic per un video short: {self.profile.custom_prompt}"
+                        prompt = f"Espandi questo topic per un video short: {self.profile.custom_prompt}. Genera il testo in lingua: {self.profile.language}."
                     else:
                         genre = self.profile.genre
                         if not genre or genre == "random":
                             genre = random.choice(self.templates.get("genres", ["generale"]))
                         
                         instruction = self.templates.get("random_prompt_instruction", "Genera un'idea per un video di genere {genre}.").replace("{genre}", genre)
-                        prompt = instruction
+                        prompt = f"{instruction} Genera il testo in lingua: {self.profile.language}."
                     
                     expanded_topic = llm.generate(prompt, max_length=100)
                     self._update_stage(stage, "completed", expanded_topic)
@@ -112,7 +112,7 @@ class PipelineOrchestrator:
                 elif stage == "script_generation":
                     from backend.ai_providers.llm_provider import LLMProvider
                     llm = LLMProvider()
-                    script_prompt = f"Scrivi uno script di {self.profile.duration_seconds} secondi per un video su: {expanded_topic or self.profile.custom_prompt or self.profile.topic}"
+                    script_prompt = f"Scrivi uno script di {self.profile.duration_seconds} secondi per un video su: {expanded_topic or self.profile.custom_prompt or self.profile.topic}. Lo script deve essere scritto in lingua: {self.profile.language}."
                     script = llm.generate(script_prompt, max_length=300)
                     self._update_stage(stage, "completed", script)
 
@@ -130,7 +130,7 @@ class PipelineOrchestrator:
                 elif stage == "storyboard_creation":
                     from backend.ai_providers.llm_provider import LLMProvider
                     llm = LLMProvider()
-                    storyboard_prompt = f"Crea uno storyboard di 3 scene per questo script: {script}"
+                    storyboard_prompt = f"Crea uno storyboard di 3 scene per questo script: {script}. Lo storyboard deve essere in lingua: {self.profile.language}."
                     storyboard = llm.generate(storyboard_prompt, max_length=200)
                     self._update_stage(stage, "completed", storyboard)
 
@@ -138,7 +138,7 @@ class PipelineOrchestrator:
                     from backend.ai_providers.flux_provider import FluxProvider
                     flux = FluxProvider()
                     image_path = f"output/image_{self.job_id}.png"
-                    image_prompt = f"Immagine di alta qualità per un video su: {self.profile.topic}. Scene: {storyboard}"
+                    image_prompt = f"Immagine di alta qualità per un video su: {self.profile.topic}. Scene: {storyboard}. Eventuale testo nell'immagine deve essere in lingua: {self.profile.language}."
                     if not flux.health_check():
                         logger.warning("Flux non installato. Uso immagine dummy.")
                         self._generate_dummy_media("image", image_path)
@@ -150,7 +150,7 @@ class PipelineOrchestrator:
                     from backend.ai_providers.wan_provider import WanProvider
                     wan = WanProvider()
                     video_path = f"output/video_{self.job_id}.mp4"
-                    video_prompt = f"Video short verticale basato su questo script: {script}"
+                    video_prompt = f"Video short verticale basato su questo script: {script}. Il video deve essere coerente con la lingua: {self.profile.language}."
                     if not wan.health_check():
                         logger.warning("Wan 2.2 non installato. Uso video dummy.")
                         self._generate_dummy_media("video", video_path)
@@ -162,7 +162,7 @@ class PipelineOrchestrator:
                     from backend.ai_providers.mmaudio_provider import MMAudioProvider
                     mmaudio = MMAudioProvider()
                     audio_path = f"output/audio_{self.job_id}.wav"
-                    audio_prompt = f"Effetti sonori e musica di sottofondo per queste scene: {storyboard}"
+                    audio_prompt = f"Effetti sonori e musica di sottofondo per queste scene: {storyboard}. Eventuale voce o audio deve essere in lingua: {self.profile.language}."
                     if not mmaudio.health_check():
                         logger.warning("MMAudio non installato. Uso file audio dummy.")
                         self._generate_dummy_media("audio", audio_path)

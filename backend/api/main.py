@@ -37,6 +37,7 @@ class ProfileCreate(BaseModel):
     name: str
     genre: str = "random"
     custom_prompt: str = ""
+    language: str = "italian"
     style: str = "default"
     duration_seconds: int = 30
 

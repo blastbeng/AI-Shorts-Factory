@@ -7,6 +7,7 @@ type Profile = {
   name: string;
   genre: string;
   custom_prompt: string;
+  language: string;
   topic: string | null;
   style: string;
   duration_seconds: number;
@@ -41,7 +42,7 @@ export default function Home() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [gpus, setGpus] = useState<Gpu[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newProfile, setNewProfile] = useState({ name: "", genre: "random", custom_prompt: "", duration_seconds: 30 });
+  const [newProfile, setNewProfile] = useState({ name: "", genre: "random", custom_prompt: "", language: "italian", duration_seconds: 30 });
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -77,7 +78,7 @@ export default function Home() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newProfile)
     });
-    setNewProfile({ name: "", genre: "random", custom_prompt: "", duration_seconds: 30 });
+    setNewProfile({ name: "", genre: "random", custom_prompt: "", language: "italian", duration_seconds: 30 });
     fetchData();
   };
 
@@ -151,6 +152,17 @@ export default function Home() {
               value={newProfile.custom_prompt}
               onChange={(e) => setNewProfile({ ...newProfile, custom_prompt: e.target.value })}
             ></textarea>
+            <select
+              className="w-full p-2 bg-gray-700 rounded"
+              value={newProfile.language}
+              onChange={(e) => setNewProfile({ ...newProfile, language: e.target.value })}
+            >
+              <option value="italian">Italian</option>
+              <option value="english">English</option>
+              <option value="spanish">Spanish</option>
+              <option value="french">French</option>
+              <option value="german">German</option>
+            </select>
             <input
               type="number"
               placeholder="Durata (s)"

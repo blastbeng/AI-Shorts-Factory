@@ -45,6 +45,7 @@ class GenerationProfile(Base):
     name = Column(String, nullable=False)
     genre = Column(String, default="random")
     custom_prompt = Column(String, nullable=True)
+    language = Column(String, default="italian")
     topic = Column(String, nullable=True) # Make topic nullable since it might be generated
     style = Column(String, default="default")
     duration_seconds = Column(Integer, default=30)
