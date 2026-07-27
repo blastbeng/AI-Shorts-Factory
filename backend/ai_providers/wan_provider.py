@@ -93,7 +93,7 @@ class WanProvider(BaseAIProvider):
         # Aggiungi parametri per video verticale (Shorts)
         video = self.pipeline(
             prompt, 
-            num_inference_steps=30, 
+            num_inference_steps=20, 
             height=960, 
             width=544,
             num_frames=49
