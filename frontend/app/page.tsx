@@ -271,7 +271,7 @@ export default function Home() {
               <span className="w-2 h-2 bg-yellow-500 rounded-full"></span> Stato Generazioni
             </h2>
             {loading ? <p className="text-gray-400">Caricamento...</p> : (
-              <ul className="space-y-3 flex-1 overflow-y-auto pr-2">
+              <ul className="space-y-3 flex-1 overflow-y-auto pr-2 max-h-[400px]">
                 {jobs.length === 0 ? <li className="text-gray-500 text-sm">Nessun job attivo.</li> : jobs.map((j) => {
                   const progressPercent = j.progress.total > 0 ? (j.progress.completed / j.progress.total) * 100 : 0;
                   return (
