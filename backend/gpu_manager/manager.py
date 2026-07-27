@@ -11,7 +11,9 @@ class GPUManager:
             self.config = yaml.safe_load(f)
 
     def get_gpus(self):
-        return self.config.get("gpus", [])
+        gpus = self.config.get("gpus", [])
+        # Ordina per VRAM decrescente per prioritizzare la GPU più potente
+        return sorted(gpus, key=lambda g: g.get("vram_gb", 0), reverse=True)
 
     def get_gpu_for_task(self, task_name, required_vram_gb=0):
         if required_vram_gb is None:
