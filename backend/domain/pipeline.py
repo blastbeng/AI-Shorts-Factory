@@ -138,7 +138,7 @@ class PipelineOrchestrator:
                     from backend.ai_providers.flux_provider import FluxProvider
                     flux = FluxProvider()
                     image_path = f"output/image_{self.job_id}.png"
-                    image_prompt = f"Immagine di alta qualità per un video su: {self.profile.topic}. Scene: {storyboard}. Eventuale testo nell'immagine deve essere in lingua: {self.profile.language}."
+                    image_prompt = f"Immagine di alta qualità per un video su: {expanded_topic or self.profile.custom_prompt or self.profile.topic}. Scene: {storyboard}. Eventuale testo nell'immagine deve essere in lingua: {self.profile.language}."
                     if not flux.health_check():
                         logger.warning("Flux non installato. Uso immagine dummy.")
                         self._generate_dummy_media("image", image_path)

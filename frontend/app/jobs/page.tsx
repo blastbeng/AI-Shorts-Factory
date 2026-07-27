@@ -6,6 +6,8 @@ type Stage = {
   name: string;
   status: string;
   result: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 type JobDetails = {
@@ -92,6 +94,11 @@ export default function JobsPage() {
                     {s.result && (
                       <p className="text-xs text-gray-400 mt-1 truncate">
                         Result: {s.result.substring(0, 50)}...
+                      </p>
+                    )}
+                    {s.updated_at && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Updated: {new Date(s.updated_at).toLocaleTimeString()}
                       </p>
                     )}
                   </li>

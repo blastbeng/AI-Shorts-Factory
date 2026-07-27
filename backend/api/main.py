@@ -186,7 +186,7 @@ def get_job_details(job_id: int, db: Session = Depends(get_db)):
         "job_id": job.id,
         "status": job.status,
         "profile_id": job.profile_id,
-        "stages": [{"name": s.stage_name, "status": s.status, "result": s.result} for s in stages]
+        "stages": [{"name": s.stage_name, "status": s.status, "result": s.result, "created_at": s.created_at, "updated_at": s.updated_at} for s in stages]
     }
 
 @app.get("/jobs/")
