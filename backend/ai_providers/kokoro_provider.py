@@ -45,7 +45,11 @@ class KokoroProvider(BaseAIProvider):
         if self.model is None:
             logger.info("Caricamento modello Kokoro TTS...")
             model_path = self.model_info.get("path")
-            self.tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
+            try:
+                self.tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
+            except Exception as e:
+                logger.exception(f"Errore nel caricamento del tokenizer lento. Tentativo con tokenizer veloce.")
+                self.tokenizer = AutoTokenizer.from_pretrained(model_path)
             try:
                 if use_cpu_offload:
                     self.model = AutoModel.from_pretrained(model_path, trust_remote_code=True, torch_dtype=torch.float16, device_map="auto")
