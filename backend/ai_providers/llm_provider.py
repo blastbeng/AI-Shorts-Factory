@@ -1,49 +1,49 @@
 import os
 import yaml
-import torch
-from transformers import pipeline
+from openai import OpenAI
 from backend.ai_providers.base_provider import BaseAIProvider
-from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger
 
 class LLMProvider(BaseAIProvider):
     def __init__(self):
         with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
             self.models_config = yaml.safe_load(f)
-        # Assumiamo ci sia una sezione 'text' in models.yaml per l'LLM
         self.model_info = self.models_config.get("text", {}).get("llm_base", {})
-        self.gm = GPUManager()
-        self.generator = None
+        
+        # Leggi configurazioni API da .env
+        self.api_base = os.getenv("LLM_API_BASE", "http://localhost:11434/v1")
+        self.api_key = os.getenv("LLM_API_KEY", "ollama") # Ollama richiede una key fittizia
+        self.model_name = os.getenv("LLM_MODEL_NAME", self.model_info.get("model_name", "gpt-3.5-turbo"))
+        
+        self.client = OpenAI(base_url=self.api_base, api_key=self.api_key)
 
     def install_status(self):
-        return self.model_info.get("status", "not_installed")
+        # Considerato installato se l'API base è configurata
+        return "installed" if self.api_base else "not_installed"
 
     def health_check(self):
         return self.install_status() == "installed"
 
     def generate(self, prompt: str, max_length: int = 500, *args, **kwargs):
         if not self.health_check():
-            raise RuntimeError("Modello LLM non installato.")
-            
-        gpu = self.gm.get_gpu_for_task("text_generation")
-        if not gpu:
-            # Fallback su CPU se nessuna GPU assegnata
-            device = -1
-        else:
-            device = gpu['id'] if gpu["backend"] == "cuda" else -1 # Semplificato per CPU/CUDA
-            
-        if self.generator is None:
-            logger.info("Caricamento pipeline LLM...")
-            model_path = self.model_info.get("path", "gpt2")
-            self.generator = pipeline("text-generation", model=model_path, device=device)
-            
-        logger.info(f"Generazione testo per prompt: {prompt}")
-        result = self.generator(prompt, max_length=max_length, num_return_sequences=1, truncation=True)
-        generated_text = result[0]["generated_text"]
-        return generated_text
+            raise RuntimeError("LLM non configurato. Controlla il file .env.")
+        
+        logger.info(f"Generazione testo tramite LLM ({self.model_name}) su {self.api_base}")
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=max_length
+            )
+            generated_text = response.choices[0].message.content
+            return generated_text
+        except Exception as e:
+            logger.error(f"Errore nella generazione LLM: {e}")
+            raise
 
     def get_capabilities(self):
-        return {"type": "text", "model": "llm_base"}
+        return {"type": "text", "model": self.model_name, "api_base": self.api_base}
 
     def get_gpu_requirements(self):
-        return {"vram_required_gb": self.model_info.get("vram_required_gb", 4), "backend": self.model_info.get("backend", "cuda")}
+        # Basato su API, nessun requisito VRAM locale
+        return {"vram_required_gb": 0, "backend": "api"}
