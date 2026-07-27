@@ -40,22 +40,29 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [genParams, setGenParams] = useState({ genre: "random", custom_prompt: "", language: "italian", duration_seconds: 30 });
   const [schedulerRunning, setSchedulerRunning] = useState(false);
+  const [models, setModels] = useState<{name: string, status: string}[]>([]);
+  const [stats, setStats] = useState({total_videos: 0, approved_videos: 0, published_videos: 0, total_jobs: 0});
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
   const fetchData = async () => {
     try {
-      const [videosRes, jobsRes, gpusRes, logsRes] = await Promise.all([
+      const [videosRes, jobsRes, gpusRes, logsRes, modelsRes, statsRes] = await Promise.all([
         fetch(`${apiUrl}/videos/`),
         fetch(`${apiUrl}/jobs/`),
         fetch(`${apiUrl}/gpus`),
-        fetch(`${apiUrl}/logs`)
+        fetch(`${apiUrl}/logs`),
+        fetch(`${apiUrl}/models/status`),
+        fetch(`${apiUrl}/stats`)
       ]);
       setVideos(await videosRes.json());
       setJobs(await jobsRes.json());
       setGpus(await gpusRes.json());
       const logsData = await logsRes.json();
       setLogs(logsData.logs || []);
+      const modelsData = await modelsRes.json();
+      setModels(modelsData.models || []);
+      setStats(await statsRes.json());
     } catch (error) {
       console.error("Errore:", error);
     } finally {
@@ -150,6 +157,31 @@ export default function Home() {
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Quick Stats */}
+          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-lg md:col-span-2 lg:col-span-3">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 bg-cyan-500 rounded-full"></span> Statistiche Rapide
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="bg-gray-700/50 p-4 rounded-lg text-center">
+                <div className="text-3xl font-bold text-blue-400">{stats.total_videos}</div>
+                <div className="text-xs text-gray-400 mt-1">Video Totali</div>
+              </div>
+              <div className="bg-gray-700/50 p-4 rounded-lg text-center">
+                <div className="text-3xl font-bold text-green-400">{stats.approved_videos}</div>
+                <div className="text-xs text-gray-400 mt-1">Approvati</div>
+              </div>
+              <div className="bg-gray-700/50 p-4 rounded-lg text-center">
+                <div className="text-3xl font-bold text-purple-400">{stats.published_videos}</div>
+                <div className="text-xs text-gray-400 mt-1">Pubblicati</div>
+              </div>
+              <div className="bg-gray-700/50 p-4 rounded-lg text-center">
+                <div className="text-3xl font-bold text-yellow-400">{stats.total_jobs}</div>
+                <div className="text-xs text-gray-400 mt-1">Jobs Totali</div>
+              </div>
+            </div>
+          </div>
+
           {/* Generazione Video */}
           <div className="bg-gray-800/50 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-lg">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
@@ -327,6 +359,25 @@ export default function Home() {
               )}
             </div>
             <p className="text-xs text-gray-500 mt-2">Genera automaticamente nuovi video ogni 60 minuti per i profili esistenti.</p>
+          </div>
+
+          {/* AI Models Status */}
+          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-lg">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 bg-red-500 rounded-full"></span> Stato Modelli AI
+            </h2>
+            {loading ? <p className="text-gray-400">Caricamento...</p> : (
+              <ul className="space-y-2">
+                {models.map((m, i) => (
+                  <li key={i} className="flex justify-between items-center text-sm">
+                    <span className="text-gray-300">{m.name}</span>
+                    <span className={`text-xs px-2 py-1 rounded-full ${m.status === 'installed' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                      {m.status === 'installed' ? 'Pronto' : 'Non Installato'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* Log Console */}

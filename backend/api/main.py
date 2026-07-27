@@ -19,6 +19,7 @@ from backend.services.scheduler import auto_scheduler
 from backend.services.config_validator import ConfigValidator
 from backend.services.subprocess_manager import SubprocessManager
 import os
+import yaml
 
 app = FastAPI(title="AI Shorts Factory")
 
@@ -240,6 +241,39 @@ def get_job_details(job_id: str, db: Session = Depends(get_db)):
         "profile_id": job.profile_id,
         "stages": [{"name": s.stage_name, "status": s.status, "result": s.result, "created_at": s.created_at, "updated_at": s.updated_at} for s in stages]
     }
+
+@app.get("/stats")
+def get_stats(db: Session = Depends(get_db)):
+    total_videos = db.query(Video).count()
+    approved_videos = db.query(Video).filter(Video.approved == True).count()
+    published_videos = db.query(Video).filter(Video.published == True).count()
+    total_jobs = db.query(Job).count()
+    return {
+        "total_videos": total_videos,
+        "approved_videos": approved_videos,
+        "published_videos": published_videos,
+        "total_jobs": total_jobs
+    }
+
+@app.get("/models/status")
+def models_status():
+    with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
+        config = yaml.safe_load(f)
+    
+    models = []
+    # LLM
+    llm_provider = os.getenv("LLM_PROVIDER", "llama_cpp")
+    if llm_provider == "llama_cpp":
+        models.append({"name": "LLM (llama.cpp)", "status": "installed" if os.path.exists(os.getenv("LLAMA_CPP_MODEL_PATH", "")) else "not_installed"})
+    else:
+        models.append({"name": f"LLM ({llm_provider})", "status": "installed" if os.getenv("OPENAI_API_KEY") or os.getenv("OLLAMA_API_BASE") else "not_installed"})
+
+    # Video, Audio, Voice, Image, Speech
+    for category in ["video", "audio", "voice", "image", "speech"]:
+        for name, info in config.get(category, {}).items():
+            models.append({"name": f"{category.capitalize()} ({name})", "status": info.get("status", "not_installed")})
+            
+    return {"models": models}
 
 @app.get("/logs")
 def get_logs():
