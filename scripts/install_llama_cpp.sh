@@ -15,8 +15,8 @@ cd /opt/llama.cpp
 
 # Compila con backend Vulkan
 echo "Compilazione di llama.cpp con GGML_VULKAN=1..."
-sudo cmake -B build -DGGML_VULKAN=1
-sudo cmake --build build --config Release -j
+sudo cmake -B build-vulkan -DGGML_VULKAN=1
+sudo cmake --build build-vulkan --config Release -j
 
 # Crea la directory per i modelli se non esiste
 sudo mkdir -p /opt/models
