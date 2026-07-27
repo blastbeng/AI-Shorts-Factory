@@ -11,9 +11,6 @@ fi
 echo "Attivazione dell'ambiente virtuale..."
 source venv/bin/activate
 
-# Specifica il percorso corretto per amdgpu.ids per evitare warning di libdrm durante l'installazione
-export AMDGPU_IDS=/usr/share/libdrm/amdgpu.ids
-
 echo "Aggiornamento di pip..."
 pip install --upgrade pip
 

@@ -29,9 +29,6 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export HIP_VISIBLE_DEVICES=0
 export ROCR_VISIBLE_DEVICES=0
 
-# Specifica il percorso corretto per amdgpu.ids per evitare warning di libdrm
-export AMDGPU_IDS=/usr/share/libdrm/amdgpu.ids
-
 # Imposta valori predefiniti se non presenti nel .env
 BACKEND_HOST=${BACKEND_HOST:-"0.0.0.0"}
 BACKEND_PORT=${BACKEND_PORT:-"8000"}
