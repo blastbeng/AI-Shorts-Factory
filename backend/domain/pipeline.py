@@ -19,6 +19,7 @@ class PipelineOrchestrator:
             "voice_generation",
             "image_generation",
             "video_generation",
+            "video_upscaling",
             "audio_generation",
             "video_assembly",
             "quality_scoring",
@@ -91,6 +92,8 @@ class PipelineOrchestrator:
             elif s.stage_name == "image_generation":
                 image_path = s.result or ""
             elif s.stage_name == "video_generation":
+                video_path = s.result or ""
+            elif s.stage_name == "video_upscaling":
                 video_path = s.result or ""
             elif s.stage_name == "audio_generation":
                 audio_path = s.result or ""
@@ -194,6 +197,22 @@ class PipelineOrchestrator:
                             wan.generate(video_prompt, video_path)
                     finally:
                         wan.cleanup()
+                    self._update_stage(stage, "completed", video_path)
+
+                elif stage == "video_upscaling":
+                    from backend.ai_providers.upscaler_provider import UpscalerProvider
+                    upscaler = UpscalerProvider()
+                    try:
+                        upscaled_video_path = f"output/upscaled_video_{self.job_id}.mp4"
+                        if not upscaler.health_check():
+                            logger.warning("Upscaler non installato. Salto l'upscaling.")
+                            import shutil
+                            shutil.copy(video_path, upscaled_video_path)
+                        else:
+                            upscaler.generate(video_path, upscaled_video_path)
+                    finally:
+                        upscaler.cleanup()
+                    video_path = upscaled_video_path # Update video_path for assembly
                     self._update_stage(stage, "completed", video_path)
 
                 elif stage == "audio_generation":

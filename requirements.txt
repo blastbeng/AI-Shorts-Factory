@@ -21,3 +21,4 @@ tiktoken
 psutil
 bitsandbytes
 accelerate
+realesrgan
