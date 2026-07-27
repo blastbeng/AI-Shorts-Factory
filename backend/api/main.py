@@ -119,8 +119,19 @@ def delete_video(video_id: int, db: Session = Depends(get_db)):
     video = db.query(Video).filter(Video.id == video_id).first()
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
+    
+    # Elimina il file fisico
     if os.path.exists(video.file_path):
         os.remove(video.file_path)
+    
+    # Elimina gli stadi della pipeline associati al job
+    db.query(PipelineStage).filter(PipelineStage.job_id == video.job_id).delete()
+    
+    # Opzionale: elimina anche il job se non ha altri video associati
+    job = db.query(Job).filter(Job.id == video.job_id).first()
+    if job and len(job.videos) == 1:  # Se questo è l'unico video
+        db.delete(job)
+    
     db.delete(video)
     db.commit()
     return {"status": "deleted", "video_id": video_id}

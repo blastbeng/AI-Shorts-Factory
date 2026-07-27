@@ -105,17 +105,23 @@ class PipelineOrchestrator:
 
                 elif stage == "image_generation":
                     image_path = f"output/image_{self.job_id}.png"
-                    self.flux.generate(self.profile.topic, image_path)
+                    # Usa lo storyboard per un prompt più dettagliato
+                    image_prompt = f"Immagine di alta qualità per un video su: {self.profile.topic}. Scene: {storyboard}"
+                    self.flux.generate(image_prompt, image_path)
                     self._update_stage(stage, "completed", image_path)
 
                 elif stage == "video_generation":
                     video_path = f"output/video_{self.job_id}.mp4"
-                    self.wan.generate(self.profile.topic, video_path)
+                    # Usa lo script per un prompt video più contestualizzato
+                    video_prompt = f"Video short verticale basato su questo script: {script}"
+                    self.wan.generate(video_prompt, video_path)
                     self._update_stage(stage, "completed", video_path)
 
                 elif stage == "audio_generation":
                     audio_path = f"output/audio_{self.job_id}.wav"
-                    self.mmaudio.generate(self.profile.topic, audio_path)
+                    # Usa lo storyboard per generare effetti sonori contestualizzati
+                    audio_prompt = f"Effetti sonori e musica di sottofondo per queste scene: {storyboard}"
+                    self.mmaudio.generate(audio_prompt, audio_path)
                     self._update_stage(stage, "completed", audio_path)
 
                 elif stage == "video_assembly":

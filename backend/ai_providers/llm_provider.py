@@ -39,6 +39,8 @@ class LLMProvider(BaseAIProvider):
         return "installed" if self.api_base else "not_installed"
 
     def health_check(self):
+        if self.provider_type == "llama_cpp":
+            return os.path.exists(self.model_path) and os.path.exists(self.bin_path)
         return self.install_status() == "installed"
 
     def generate(self, prompt: str, max_length: int = 500, *args, **kwargs):

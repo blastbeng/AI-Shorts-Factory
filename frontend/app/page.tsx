@@ -208,12 +208,18 @@ export default function Home() {
                       )}
                     </div>
                     {v.approved && (
-                      <div className="flex gap-2 mt-2">
-                        <button onClick={() => handlePublish(v.id, "tiktok")} className="flex-1 bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded text-xs">
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        <button onClick={() => handlePublish(v.id, "tiktok")} className="bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded text-xs">
                           TikTok
                         </button>
-                        <button onClick={() => handlePublish(v.id, "youtube")} className="flex-1 bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-xs">
+                        <button onClick={() => handlePublish(v.id, "youtube")} className="bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-xs">
                           YouTube
+                        </button>
+                        <button onClick={() => handlePublish(v.id, "instagram")} className="bg-pink-600 hover:bg-pink-700 px-2 py-1 rounded text-xs">
+                          Instagram
+                        </button>
+                        <button onClick={() => handlePublish(v.id, "facebook")} className="bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs">
+                          Facebook
                         </button>
                       </div>
                     )}
