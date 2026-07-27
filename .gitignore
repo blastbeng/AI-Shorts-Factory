@@ -37,3 +37,7 @@ Thumbs.db
 
 # Aider
 .aider*
+
+# Logs
+logs/
+*.log
