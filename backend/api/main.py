@@ -2,10 +2,11 @@ from dotenv import load_dotenv
 load_dotenv() # Carica le variabili d'ambiente dal file .env
 
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from backend.database.session import Base, engine, get_db, SessionLocal
-from backend.database.models import GenerationProfile, Job, Video
+from backend.database.models import GenerationProfile, Job, Video, PipelineStage
 from backend.gpu_manager.manager import GPUManager
 from backend.domain.pipeline import PipelineOrchestrator
 from backend.services.logger import logger
@@ -18,6 +19,10 @@ import os
 app = FastAPI(title="AI Shorts Factory")
 Base.metadata.create_all(bind=engine)
 logger.info("Avvio dell'applicazione AI Shorts Factory")
+
+# Monta la directory output per servire i video generati
+os.makedirs("output", exist_ok=True)
+app.mount("/output", StaticFiles(directory="output"), name="output")
 
 class ProfileCreate(BaseModel):
     name: str
@@ -162,3 +167,21 @@ def publish_video(video_id: int, platform: str, db: Session = Depends(get_db)):
         return {"status": "publish_started", "platform": platform, "result": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/jobs/{job_id}")
+def get_job_details(job_id: int, db: Session = Depends(get_db)):
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    stages = db.query(PipelineStage).filter(PipelineStage.job_id == job_id).all()
+    return {
+        "job_id": job.id,
+        "status": job.status,
+        "profile_id": job.profile_id,
+        "stages": [{"name": s.stage_name, "status": s.status, "result": s.result} for s in stages]
+    }
+
+@app.get("/jobs/")
+def get_all_jobs(db: Session = Depends(get_db)):
+    jobs = db.query(Job).all()
+    return [{"id": j.id, "status": j.status, "profile_id": j.profile_id} for j in jobs]
