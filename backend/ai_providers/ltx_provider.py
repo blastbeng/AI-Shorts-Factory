@@ -28,15 +28,36 @@ class LtxProvider(BaseAIProvider):
             
         gpu = self.gm.get_gpu_for_task("video_generation", self.get_gpu_requirements().get("vram_required_gb", 0))
         if not gpu:
-            raise RuntimeError("Nessuna GPU assegnata per la video generation.")
+            logger.warning("Nessuna GPU con VRAM sufficiente per LTX Video. Uso GPU con offload su RAM.")
+            gpu = self.gm.get_gpu_for_task_ignore_vram("video_generation")
+            if not gpu:
+                raise RuntimeError("Nessuna GPU assegnata per la video generation.")
+            use_cpu_offload = True
+        else:
+            use_cpu_offload = False
             
         device = self.gm.get_device_string(gpu['id'], preferred_backend=self.model_info.get("backend"))
         
         if self.pipeline is None:
             logger.info("Caricamento pipeline LTX Video...")
             model_path = os.path.join(self.model_info.get("path"), "ltx-video-2b-v0.9.5")
-            self.pipeline = LTXVideoPipeline.from_pretrained(model_path, torch_dtype=torch.float16)
-            self.pipeline.to(device)
+            try:
+                self.pipeline = LTXVideoPipeline.from_pretrained(model_path, torch_dtype=torch.float16)
+                if use_cpu_offload:
+                    self.pipeline.enable_model_cpu_offload(device=device)
+                else:
+                    self.pipeline.to(device)
+            except Exception as e:
+                logger.warning(f"Errore nel caricamento del modello su GPU ({e}). Fallback con offload su RAM.")
+                if self.pipeline is not None:
+                    del self.pipeline
+                    self.pipeline = None
+                    import gc
+                    import torch
+                    gc.collect()
+                    torch.cuda.empty_cache()
+                self.pipeline = LTXVideoPipeline.from_pretrained(model_path, torch_dtype=torch.float16)
+                self.pipeline.enable_model_cpu_offload(device=device)
             
         logger.info(f"Generazione video LTX per prompt: {prompt}")
         video = self.pipeline(

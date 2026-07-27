@@ -79,19 +79,29 @@ class LLMProvider(BaseAIProvider):
         if LLMProvider._llm_instance is None or LLMProvider._llm_model_path != self.model_path:
             logger.info(f"Caricamento modello llama.cpp: {self.model_path}")
             from llama_cpp import Llama
-            LLMProvider._llm_instance = Llama(
-                model_path=self.model_path,
-                n_gpu_layers=self.n_gpu_layers,
-                n_ctx=self.n_ctx,
-                n_threads=self.n_threads,
-                n_batch=self.n_batch,
-                n_ubatch=self.n_ubatch,
-                tensor_split=self.tensor_split,
-                flash_attn=self.flash_attn,
-                type_k=self.type_k,
-                type_v=self.type_v,
-                verbose=False
-            )
+            n_gpu_layers = self.n_gpu_layers
+            while True:
+                try:
+                    LLMProvider._llm_instance = Llama(
+                        model_path=self.model_path,
+                        n_gpu_layers=n_gpu_layers,
+                        n_ctx=self.n_ctx,
+                        n_threads=self.n_threads,
+                        n_batch=self.n_batch,
+                        n_ubatch=self.n_ubatch,
+                        tensor_split=self.tensor_split,
+                        flash_attn=self.flash_attn,
+                        type_k=self.type_k,
+                        type_v=self.type_v,
+                        verbose=False
+                    )
+                    break
+                except Exception as e:
+                    logger.warning(f"Errore nel caricamento del modello LLM con n_gpu_layers={n_gpu_layers} ({e}). Riduzione layer su GPU.")
+                    if n_gpu_layers > 1:
+                        n_gpu_layers = max(1, n_gpu_layers // 2)
+                    else:
+                        raise
             LLMProvider._llm_model_path = self.model_path
         self.llm = LLMProvider._llm_instance
 

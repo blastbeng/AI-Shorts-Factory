@@ -23,6 +23,12 @@ class GPUManager:
                     return gpu
         return None
 
+    def get_gpu_for_task_ignore_vram(self, task_name):
+        for gpu in self.get_gpus():
+            if task_name in gpu.get("assigned_tasks", []):
+                return gpu
+        return None
+
     def get_device_string(self, gpu_id, preferred_backend=None):
         """Restituisce la stringa del dispositivo PyTorch corretta."""
         gpu = next((g for g in self.get_gpus() if g["id"] == gpu_id), None)

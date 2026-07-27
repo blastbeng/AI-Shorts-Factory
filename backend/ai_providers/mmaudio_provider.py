@@ -28,15 +28,35 @@ class MMAudioProvider(BaseAIProvider):
             
         gpu = self.gm.get_gpu_for_task("audio_generation", self.get_gpu_requirements().get("vram_required_gb", 0))
         if not gpu:
-            raise RuntimeError("Nessuna GPU assegnata per l'audio generation.")
+            logger.warning("Nessuna GPU con VRAM sufficiente per MMAudio. Uso GPU con offload su RAM.")
+            gpu = self.gm.get_gpu_for_task_ignore_vram("audio_generation")
+            if not gpu:
+                raise RuntimeError("Nessuna GPU assegnata per l'audio generation.")
+            use_cpu_offload = True
+        else:
+            use_cpu_offload = False
             
         device = self.gm.get_device_string(gpu['id'], preferred_backend=self.model_info.get("backend"))
         
         if self.model is None:
             logger.info("Caricamento modello MMAudio...")
             model_path = self.model_info.get("path")
-            self.processor = AutoProcessor.from_pretrained(model_path)
-            self.model = AutoModel.from_pretrained(model_path).to(device)
+            try:
+                self.processor = AutoProcessor.from_pretrained(model_path)
+                if use_cpu_offload:
+                    self.model = AutoModel.from_pretrained(model_path, torch_dtype=torch.float16, device_map="auto")
+                else:
+                    self.model = AutoModel.from_pretrained(model_path, torch_dtype=torch.float16).to(device)
+            except Exception as e:
+                logger.warning(f"Errore nel caricamento del modello su GPU ({e}). Fallback con offload su RAM.")
+                if self.model is not None:
+                    del self.model
+                    self.model = None
+                    import gc
+                    import torch
+                    gc.collect()
+                    torch.cuda.empty_cache()
+                self.model = AutoModel.from_pretrained(model_path, torch_dtype=torch.float16, device_map="auto")
             
         logger.info(f"Generazione audio per prompt: {prompt}")
         inputs = self.processor(text=prompt, return_tensors="pt").to(device)

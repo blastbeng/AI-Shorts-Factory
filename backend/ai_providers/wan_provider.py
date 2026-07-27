@@ -27,15 +27,36 @@ class WanProvider(BaseAIProvider):
 
         gpu = self.gm.get_gpu_for_task("video_generation", self.get_gpu_requirements().get("vram_required_gb", 0))
         if not gpu:
-            raise RuntimeError("Nessuna GPU assegnata per la video generation.")
+            logger.warning("Nessuna GPU con VRAM sufficiente per Wan 2.2. Uso GPU con offload su RAM.")
+            gpu = self.gm.get_gpu_for_task_ignore_vram("video_generation")
+            if not gpu:
+                raise RuntimeError("Nessuna GPU assegnata per la video generation.")
+            use_cpu_offload = True
+        else:
+            use_cpu_offload = False
 
         device = self.gm.get_device_string(gpu['id'], preferred_backend=self.model_info.get("backend"))
 
         if self.pipeline is None:
             logger.info("Caricamento pipeline Wan 2.2...")
             model_path = self.model_info.get("path")
-            self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.float16)
-            self.pipeline.to(device)
+            try:
+                self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.float16)
+                if use_cpu_offload:
+                    self.pipeline.enable_model_cpu_offload(device=device)
+                else:
+                    self.pipeline.to(device)
+            except Exception as e:
+                logger.warning(f"Errore nel caricamento del modello su GPU ({e}). Fallback con offload su RAM.")
+                if self.pipeline is not None:
+                    del self.pipeline
+                    self.pipeline = None
+                    import gc
+                    import torch
+                    gc.collect()
+                    torch.cuda.empty_cache()
+                self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.float16)
+                self.pipeline.enable_model_cpu_offload(device=device)
 
         logger.info(f"Generazione video per prompt: {prompt}")
         # Aggiungi parametri per video verticale (Shorts)
