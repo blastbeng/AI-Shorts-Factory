@@ -70,10 +70,10 @@ class WanProvider(BaseAIProvider):
         # Aggiungi parametri per video verticale (Shorts)
         video = self.pipeline(
             prompt, 
-            num_inference_steps=50, 
+            num_inference_steps=30, 
             height=960, 
             width=540,
-            num_frames=49  # Aggiungi un numero di frame, es. 49 per ~2 secondi a 24fps
+            num_frames=49
         ).frames[0]
 
         if isinstance(video, torch.Tensor):

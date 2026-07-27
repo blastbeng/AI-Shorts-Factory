@@ -67,8 +67,14 @@ class KokoroProvider(BaseAIProvider):
                 
         logger.info(f"Generazione voce per testo: {text}")
         
-        # Kokoro requires a voice name, defaulting to 'af_heart'
-        voice_name = kwargs.get("voice_name", "af_heart")
+        # Mappa la lingua al miglior voce Kokoro disponibile
+        voice_map = {
+            "english": "af_heart",
+            "italian": "im_nicola",  # Voce maschile italiana
+            "spanish": "ef_dora",    # Voce femminile spagnola
+            "french": "ff_siwis"     # Voce femminile francese
+        }
+        voice_name = kwargs.get("voice_name", voice_map.get(app_language, "af_heart"))
         
         import numpy as np
         

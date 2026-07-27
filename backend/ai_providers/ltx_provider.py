@@ -72,7 +72,7 @@ class LtxProvider(BaseAIProvider):
         logger.info(f"Generazione video LTX per prompt: {prompt}")
         video = self.pipeline(
             prompt, 
-            num_inference_steps=30, 
+            num_inference_steps=25, 
             height=960, 
             width=540,
             num_frames=49
