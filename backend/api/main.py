@@ -17,6 +17,7 @@ from backend.services.social.facebook_provider import FacebookProvider
 from backend.workers.job_worker import job_worker
 from backend.services.scheduler import auto_scheduler
 from backend.services.config_validator import ConfigValidator
+from backend.services.subprocess_manager import SubprocessManager
 import os
 
 app = FastAPI(title="AI Shorts Factory")
@@ -272,6 +273,7 @@ def stop_scheduler():
 @app.on_event("shutdown")
 def shutdown_event():
     logger.info("Arresto dell'applicazione in corso...")
+    SubprocessManager.kill_all()
     job_worker.stop()
     auto_scheduler.stop()
-    logger.info("Worker e Scheduler arrestati correttamente.")
+    logger.info("Worker, Scheduler e Processi AI arrestati correttamente.")

@@ -4,6 +4,7 @@ import subprocess
 from openai import OpenAI
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.services.logger import logger
+from backend.services.subprocess_manager import SubprocessManager
 
 class LLMProvider(BaseAIProvider):
     def __init__(self):
@@ -67,6 +68,7 @@ class LLMProvider(BaseAIProvider):
                 try:
                     # Usa Popen per streamare i log di llama.cpp (stderr) in tempo reale
                     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                    SubprocessManager.add(process)
                     
                     # Leggi e logga stderr in tempo reale (log di llama.cpp)
                     while True:
@@ -84,6 +86,7 @@ class LLMProvider(BaseAIProvider):
                         raise RuntimeError("llama.cpp exited with non-zero status")
                     
                     generated_text = stdout.strip()
+                    SubprocessManager.remove(process)
                     return generated_text
                 finally:
                     os.remove(temp_file_path)
