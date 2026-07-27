@@ -14,6 +14,8 @@ class GPUManager:
         return self.config.get("gpus", [])
 
     def get_gpu_for_task(self, task_name, required_vram_gb=0):
+        if required_vram_gb is None:
+            required_vram_gb = 0
         for gpu in self.get_gpus():
             if task_name in gpu.get("assigned_tasks", []):
                 vram_info = self.monitor_vram(gpu["id"])

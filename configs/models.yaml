@@ -25,6 +25,7 @@ text:
   llm_base:
     backend: vulkan
     model_name: Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive
+    path: /opt/models/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q6_K_P.gguf
     status: installed
 video:
   ltx_video:
