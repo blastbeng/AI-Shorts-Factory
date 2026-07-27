@@ -53,7 +53,16 @@ class WanProvider(BaseAIProvider):
             logger.info("Caricamento pipeline Wan 2.2...")
             model_path = self.model_info.get("path")
             try:
-                self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16)
+                try:
+                    logger.info("Caricamento pipeline Wan 2.2 con Flash Attention 2...")
+                    self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16, attn_implementation="flash_attention_2")
+                except Exception as attn_e:
+                    logger.warning(f"Flash Attention 2 non disponibile, tentativo con Sage Attention: {attn_e}")
+                    try:
+                        self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16, attn_implementation="sage_attention")
+                    except Exception as sage_e:
+                        logger.warning(f"Sage Attention non disponibile, caricamento standard: {sage_e}")
+                        self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16)
                 # Rimuoviamo enable_attention_slicing() per velocizzare, se va in OOM il fallback lo riattiverà
                 if hasattr(self.pipeline, "enable_vae_tiling"):
                     self.pipeline.enable_vae_tiling()
@@ -91,7 +100,13 @@ class WanProvider(BaseAIProvider):
                     raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Operazione annullata per evitare il blocco del sistema.")
                 
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso model CPU offload per evitare OOM (più veloce del sequential).")
-                self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16)
+                try:
+                    self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16, attn_implementation="flash_attention_2")
+                except Exception:
+                    try:
+                        self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16, attn_implementation="sage_attention")
+                    except Exception:
+                        self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16)
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline, "enable_vae_slicing"):
                     self.pipeline.enable_vae_slicing()
