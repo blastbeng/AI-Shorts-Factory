@@ -61,10 +61,20 @@ class KokoroProvider(BaseAIProvider):
         if self.model is None:
             logger.info("Caricamento modello Kokoro TTS...")
             try:
-                logger.info("Kokoro: Inizializzazione KModel...")
-                # Forza float32 per evitare problemi di stabilità con ROCm/FP16
-                self.model = KModel(disable_complex=True).to(device).float()
-                logger.info(f"Kokoro: KModel caricato su {device} con dtype float32.")
+                logger.info("Kokoro: costruzione modello CPU")
+                self.model = KModel(disable_complex=True)
+                logger.info("Kokoro: modello CPU pronto")
+                self.model.eval()
+                
+                logger.info("Kokoro: spostamento GPU...")
+                self.model = self.model.to(
+                    device=torch.device(device),
+                    dtype=torch.float32
+                )
+                if torch.cuda.is_available():
+                    torch.cuda.synchronize()
+                logger.info("Kokoro: GPU transfer completato")
+                
                 logger.info("Kokoro: Inizializzazione KPipeline...")
                 self.pipeline = KPipeline(model=self.model, lang_code=kokoro_lang)
                 logger.info("Kokoro: KPipeline inizializzata.")
