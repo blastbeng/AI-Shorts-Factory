@@ -9,6 +9,8 @@ from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger
 
+torch.set_num_threads(1)
+
 class KokoroProvider(BaseAIProvider):
     def __init__(self):
         with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
@@ -44,6 +46,8 @@ class KokoroProvider(BaseAIProvider):
             use_cpu_offload = False
             
         device = self.gm.get_device_string(gpu['id'], preferred_backend=self.model_info.get("backend"))
+        logger.info(f"Kokoro device ricevuto: {device}")
+        logger.info(f"Torch device: {torch.device(device)}")
         
         # Mappa la lingua dell'app al codice lingua di Kokoro
         lang_map = {
@@ -62,7 +66,9 @@ class KokoroProvider(BaseAIProvider):
             logger.info("Caricamento modello Kokoro TTS...")
             try:
                 logger.info("Kokoro: costruzione modello CPU")
+                logger.info("PRIMA KModel")
                 self.model = KModel(disable_complex=True)
+                logger.info("DOPO KModel")
                 logger.info("Kokoro: modello CPU pronto")
                 self.model.eval()
                 
