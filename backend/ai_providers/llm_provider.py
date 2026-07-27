@@ -69,9 +69,26 @@ class LLMProvider(BaseAIProvider):
                 ] + self.params.split()
                 
                 try:
-                    # Usa Popen per streamare i log di llama.cpp (stderr) in tempo reale
                     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                     SubprocessManager.add(process)
+                    
+                    stdout_lines = []
+                    
+                    def read_stream(stream, is_stderr):
+                        while True:
+                            line = stream.readline()
+                            if line == '' and process.poll() is not None:
+                                break
+                            if line:
+                                if is_stderr:
+                                    logger.info(f"[llama.cpp] {line.strip()}")
+                                else:
+                                    stdout_lines.append(line)
+                    
+                    stdout_thread = threading.Thread(target=read_stream, args=(process.stdout, False), daemon=True)
+                    stderr_thread = threading.Thread(target=read_stream, args=(process.stderr, True), daemon=True)
+                    stdout_thread.start()
+                    stderr_thread.start()
                     
                     def monitor_interruption(proc, check_func):
                         while proc.poll() is None:
@@ -84,24 +101,17 @@ class LLMProvider(BaseAIProvider):
                     interrupt_thread = threading.Thread(target=monitor_interruption, args=(process, is_interrupted), daemon=True)
                     interrupt_thread.start()
                     
-                    # Leggi e logga stderr in tempo reale (log di llama.cpp)
-                    while True:
-                        output = process.stderr.readline()
-                        if output == '' and process.poll() is not None:
-                            break
-                        if output:
-                            logger.info(f"[llama.cpp] {output.strip()}")
-                    
-                    # Leggi l'output generato (stdout)
-                    stdout = process.stdout.read()
                     process.wait()
+                    stdout_thread.join()
+                    stderr_thread.join()
+                    interrupt_thread.join(timeout=1)
                     
                     if process.returncode != 0:
                         if is_interrupted and is_interrupted():
                             return ""
                         raise RuntimeError("llama.cpp exited with non-zero status")
                     
-                    generated_text = stdout.strip()
+                    generated_text = "".join(stdout_lines).strip()
                     SubprocessManager.remove(process)
                     return generated_text
                 finally:

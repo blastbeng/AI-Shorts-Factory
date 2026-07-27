@@ -41,8 +41,13 @@ class PipelineOrchestrator:
         logger.info(f"[Job {self.job_id}] Stage {stage_name}: {status}")
 
     def _is_interrupted(self):
-        job = self.db.query(Job).filter(Job.id == self.job_id).first()
-        return job.status == "interrupted"
+        from backend.database.session import SessionLocal
+        db = SessionLocal()
+        try:
+            job = db.query(Job).filter(Job.id == self.job_id).first()
+            return job.status == "interrupted"
+        finally:
+            db.close()
 
     def _generate_dummy_media(self, media_type, output_path):
         import subprocess
