@@ -55,6 +55,15 @@ class WanProvider(BaseAIProvider):
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline, "enable_vae_tiling"):
                     self.pipeline.enable_vae_tiling()
+                if hasattr(self.pipeline, "enable_vae_slicing"):
+                    self.pipeline.enable_vae_slicing()
+                
+                # Usa torch.compile per ottimizzare il modello (richiede PyTorch 2.0+)
+                try:
+                    logger.info("Compilazione del modello UNet con torch.compile per migliorare le prestazioni...")
+                    self.pipeline.unet = torch.compile(self.pipeline.unet, mode="reduce-overhead", fullgraph=False)
+                except Exception as compile_e:
+                    logger.warning(f"torch.compile non riuscito, si procede senza ottimizzazione: {compile_e}")
                 if use_cpu_offload:
                     logger.info("Uso model CPU offload per evitare OOM (più veloce del sequential).")
                     self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
@@ -76,6 +85,8 @@ class WanProvider(BaseAIProvider):
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso model CPU offload per evitare OOM (più veloce del sequential).")
                 self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16)
                 self.pipeline.enable_attention_slicing()
+                if hasattr(self.pipeline, "enable_vae_slicing"):
+                    self.pipeline.enable_vae_slicing()
                 self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
 
         logger.info(f"Generazione video per prompt: {prompt}")
