@@ -70,7 +70,7 @@ class LLMProvider(BaseAIProvider):
                 ] + self.params.split()
                 
                 try:
-                    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL, text=True)
                     SubprocessManager.add(process)
                     
                     stdout_lines = []
