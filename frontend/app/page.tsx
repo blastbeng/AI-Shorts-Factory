@@ -144,7 +144,7 @@ export default function Home() {
               placeholder="Durata (s)"
               className="w-full p-2 bg-gray-700 rounded"
               value={genParams.duration_seconds}
-              onChange={(e) => setGenParams({ ...genParams, duration_seconds: parseInt(e.target.value) })}
+              onChange={(e) => setGenParams({ ...genParams, duration_seconds: parseInt(e.target.value) || 30 })}
             />
             <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 p-2 rounded font-bold">
               Genera

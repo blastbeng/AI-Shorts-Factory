@@ -15,7 +15,7 @@ sleep 5
 echo "Creazione profilo di test..."
 PROFILE_RESPONSE=$(curl -s -X POST http://127.0.0.1:8000/profiles/ \
   -H "Content-Type: application/json" \
-  -d '{"name": "Test Profile", "topic": "Gatti spaziali", "duration_seconds": 15}')
+  -d '{"name": "Test Profile", "genre": "Sci-Fi", "custom_prompt": "Gatti spaziali che esplorano Marte", "language": "italian", "duration_seconds": 15}')
 
 PROFILE_ID=$(echo $PROFILE_RESPONSE | python3 -c "import sys, json; print(json.load(sys.stdin)['id'])")
 echo "Profilo creato con ID: $PROFILE_ID"
