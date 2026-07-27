@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 type Video = {
   id: number;
@@ -42,6 +42,7 @@ export default function Home() {
   const [schedulerRunning, setSchedulerRunning] = useState(false);
   const [models, setModels] = useState<{name: string, status: string}[]>([]);
   const [stats, setStats] = useState({total_videos: 0, approved_videos: 0, published_videos: 0, total_jobs: 0});
+  const logContainerRef = useRef<HTMLDivElement>(null);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -79,6 +80,12 @@ export default function Home() {
     }, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (logContainerRef.current) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    }
+  }, [logs]);
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -385,7 +392,7 @@ export default function Home() {
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
               <span className="w-2 h-2 bg-purple-500 rounded-full"></span> Log Console
             </h2>
-            <div className="bg-black/50 p-4 rounded-lg h-48 overflow-y-auto font-mono text-xs text-gray-300 border border-gray-700">
+            <div ref={logContainerRef} className="bg-black/50 p-4 rounded-lg h-48 overflow-y-auto font-mono text-xs text-gray-300 border border-gray-700">
               {logs.length === 0 ? <p>Nessun log disponibile.</p> : logs.map((log, i) => (
                 <div key={i} className="py-0.5 border-b border-gray-800/50">{log}</div>
               ))}
