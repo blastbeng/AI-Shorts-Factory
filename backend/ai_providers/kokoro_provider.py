@@ -70,10 +70,17 @@ class KokoroProvider(BaseAIProvider):
         # Kokoro requires a voice name, defaulting to 'af_heart'
         voice_name = kwargs.get("voice_name", "af_heart")
         
+        import numpy as np
+        
         with torch.no_grad():
-            audio, out_ps = self.pipeline(text, voice=voice_name, speed=1.0)
+            audio_chunks = []
+            for graphemes, phonemes, audio in self.pipeline(text, voice=voice_name, speed=1.0):
+                audio_chunks.append(audio.cpu().numpy().squeeze())
+                
+        if not audio_chunks:
+            raise RuntimeError("Kokoro non ha generato alcun audio.")
             
-        audio_data = audio.cpu().numpy().squeeze()
+        audio_data = np.concatenate(audio_chunks)
         # Converti da float32 [-1, 1] a int16
         audio_data = (audio_data * 32767).astype("int16")
         wavfile.write(output_path, 24000, audio_data)
