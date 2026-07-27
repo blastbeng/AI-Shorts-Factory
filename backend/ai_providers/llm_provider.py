@@ -129,10 +129,13 @@ class LLMProvider(BaseAIProvider):
                     return ""
                 
                 system_prompt = f"You are a professional scriptwriter. Follow the user's instructions exactly. Do not output any thinking process, reasoning, meta-text, prompt analysis, or step-by-step breakdowns. Output ONLY a valid JSON object with a single key 'content' containing the final text. The output MUST be in the language requested by the user. Do not include any introductory or concluding remarks. Do not output the prompt or any part of it. Never output your internal thoughts or translate the prompt. Example: {{\"content\": \"The generated text here.\"}}"
+                # Aggiunge /no_think al prompt per disabilitare il processo di pensiero nei modelli Qwen3
+                user_prompt = f"{prompt}\n/no_think"
+                
                 response = self.llm.create_chat_completion(
                     messages=[
                         {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": prompt}
+                        {"role": "user", "content": user_prompt}
                     ],
                     max_tokens=max_length,
                     temperature=self.temperature,
