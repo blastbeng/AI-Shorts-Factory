@@ -120,8 +120,8 @@ def delete_video(video_id: int, db: Session = Depends(get_db)):
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
     
-    # Elimina il file fisico
-    if os.path.exists(video.file_path):
+    # Elimina il file fisico se esiste
+    if video.file_path and os.path.exists(video.file_path):
         os.remove(video.file_path)
     
     # Elimina gli stadi della pipeline associati al job

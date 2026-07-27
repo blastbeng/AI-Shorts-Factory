@@ -45,6 +45,7 @@ class PipelineOrchestrator:
         storyboard = ""
         expanded_topic = ""
         final_video_path = f"output/final_video_{self.job_id}.mp4"
+        quality_score = 0.0
 
         # Recupera gli stage già completati per supportare il resume
         completed_stages = self.db.query(PipelineStage).filter(
@@ -134,14 +135,14 @@ class PipelineOrchestrator:
                     self._update_stage(stage, "completed", final_video_path)
 
                 elif stage == "quality_scoring":
-                    score = self.scorer.score(final_video_path)
-                    self._update_stage(stage, "completed", str(score))
+                    quality_score = self.scorer.score(final_video_path)
+                    self._update_stage(stage, "completed", str(quality_score))
 
                 elif stage == "storage":
                     video_record = Video(
                         job_id=self.job_id,
                         file_path=final_video_path,
-                        quality_score=float(self.scorer.score(final_video_path)),
+                        quality_score=float(quality_score),
                         approved=False
                     )
                     self.db.add(video_record)
