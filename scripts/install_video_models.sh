@@ -8,18 +8,16 @@ if [ ! -f "$PYTHON_BIN" ]; then
     PYTHON_BIN="python3"
 fi
 
-# Verifica Wan 2.1 1.3B
-WAN_STATUS=$("$PYTHON_BIN" -c "import yaml; print(yaml.safe_load(open('configs/models.yaml')).get('video', {}).get('wan_2_1_1_3b', {}).get('status', 'not_installed'))")
-if [ "$WAN_STATUS" != "installed" ]; then
-    ./scripts/download_models.sh "wan_2_1_1_3b" "Wan-AI/Wan2.1-T2V-1.3B-Diffusers" "./models/video/wan_2_1_1_3b" "video" "wan_2_1_1_3b"
+WAN_DIR="./models/video/wan_2_1_1_3b"
+if [ ! -d "$WAN_DIR" ] || [ ! -f "$WAN_DIR/.download_complete" ]; then
+    ./scripts/download_models.sh "wan_2_1_1_3b" "Wan-AI/Wan2.1-T2V-1.3B-Diffusers" "$WAN_DIR" "video" "wan_2_1_1_3b"
 else
     echo "[OK] Modello wan_2_1_1_3b già installato."
 fi
 
-# Verifica LTX Video
-LTX_STATUS=$("$PYTHON_BIN" -c "import yaml; print(yaml.safe_load(open('configs/models.yaml')).get('video', {}).get('ltx_video', {}).get('status', 'not_installed'))")
-if [ "$LTX_STATUS" != "installed" ]; then
-    ./scripts/download_models.sh "ltx_video" "Lightricks/LTX-Video" "./models/video/ltx_video" "video" "ltx_video" "ltx-video-2b-v0.9.5/*"
+LTX_DIR="./models/video/ltx_video"
+if [ ! -d "$LTX_DIR" ] || [ ! -f "$LTX_DIR/.download_complete" ]; then
+    ./scripts/download_models.sh "ltx_video" "Lightricks/LTX-Video" "$LTX_DIR" "video" "ltx_video" "ltx-video-2b-v0.9.5/*"
 else
     echo "[OK] Modello ltx_video già installato."
 fi

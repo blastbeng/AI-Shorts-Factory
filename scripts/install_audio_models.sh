@@ -8,9 +8,9 @@ if [ ! -f "$PYTHON_BIN" ]; then
     PYTHON_BIN="python3"
 fi
 
-MMAUDIO_STATUS=$("$PYTHON_BIN" -c "import yaml; print(yaml.safe_load(open('configs/models.yaml')).get('audio', {}).get('mmaudio', {}).get('status', 'not_installed'))")
-if [ "$MMAUDIO_STATUS" != "installed" ]; then
-    ./scripts/download_models.sh "mmaudio" "hkchengrex/MMAudio" "./models/audio/mmaudio" "audio" "mmaudio"
+MMAUDIO_DIR="./models/audio/mmaudio"
+if [ ! -d "$MMAUDIO_DIR" ] || [ ! -f "$MMAUDIO_DIR/.download_complete" ]; then
+    ./scripts/download_models.sh "mmaudio" "hkchengrex/MMAudio" "$MMAUDIO_DIR" "audio" "mmaudio"
 else
     echo "[OK] Modello mmaudio già installato."
 fi

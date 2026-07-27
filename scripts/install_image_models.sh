@@ -8,16 +8,16 @@ if [ ! -f "$PYTHON_BIN" ]; then
     PYTHON_BIN="python3"
 fi
 
-FLUX_STATUS=$("$PYTHON_BIN" -c "import yaml; print(yaml.safe_load(open('configs/models.yaml')).get('image', {}).get('flux', {}).get('status', 'not_installed'))")
-if [ "$FLUX_STATUS" != "installed" ]; then
-    ./scripts/download_models.sh "flux" "lllyasviel/flux1-dev-bnb-nf4" "./models/image/flux" "image" "flux"
+FLUX_DIR="./models/image/flux"
+if [ ! -d "$FLUX_DIR" ] || [ ! -f "$FLUX_DIR/.download_complete" ]; then
+    ./scripts/download_models.sh "flux" "lllyasviel/flux1-dev-bnb-nf4" "$FLUX_DIR" "image" "flux"
 else
     echo "[OK] Modello flux già installato."
 fi
 
-QWEN_STATUS=$("$PYTHON_BIN" -c "import yaml; print(yaml.safe_load(open('configs/models.yaml')).get('image', {}).get('qwen_image', {}).get('status', 'not_installed'))")
-if [ "$QWEN_STATUS" != "installed" ]; then
-    ./scripts/download_models.sh "qwen_image" "Qwen/Qwen2-VL-2B-Instruct" "./models/image/qwen_image" "image" "qwen_image"
+QWEN_DIR="./models/image/qwen_image"
+if [ ! -d "$QWEN_DIR" ] || [ ! -f "$QWEN_DIR/.download_complete" ]; then
+    ./scripts/download_models.sh "qwen_image" "Qwen/Qwen2-VL-2B-Instruct" "$QWEN_DIR" "image" "qwen_image"
 else
     echo "[OK] Modello qwen_image già installato."
 fi
