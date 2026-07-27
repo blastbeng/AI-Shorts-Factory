@@ -26,6 +26,8 @@ class WanProvider(BaseAIProvider):
         if not self.health_check():
             raise RuntimeError("Modello Wan 2.2 non installato.")
 
+        torch.backends.cudnn.benchmark = True
+
         # Log PyTorch's view of the GPUs
         if torch.cuda.is_available():
             logger.info(f"PyTorch vede {torch.cuda.device_count()} dispositivi CUDA:")
@@ -52,16 +54,22 @@ class WanProvider(BaseAIProvider):
             model_path = self.model_info.get("path")
             try:
                 self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16)
-                self.pipeline.enable_attention_slicing()
+                # Rimuoviamo enable_attention_slicing() per velocizzare, se va in OOM il fallback lo riattiverà
                 if hasattr(self.pipeline, "enable_vae_tiling"):
                     self.pipeline.enable_vae_tiling()
                 if hasattr(self.pipeline, "enable_vae_slicing"):
                     self.pipeline.enable_vae_slicing()
                 
-                # Usa torch.compile per ottimizzare il modello (richiede PyTorch 2.0+)
+                # Usa torch.compile per ottimizzare il modello e il VAE (richiede PyTorch 2.0+)
                 try:
-                    logger.info("Compilazione del modello UNet con torch.compile per migliorare le prestazioni...")
-                    self.pipeline.unet = torch.compile(self.pipeline.unet, mode="reduce-overhead", fullgraph=False)
+                    logger.info("Compilazione del modello e VAE con torch.compile per migliorare le prestazioni...")
+                    if hasattr(self.pipeline, "transformer"):
+                        self.pipeline.transformer = torch.compile(self.pipeline.transformer, mode="reduce-overhead", fullgraph=False)
+                    elif hasattr(self.pipeline, "unet"):
+                        self.pipeline.unet = torch.compile(self.pipeline.unet, mode="reduce-overhead", fullgraph=False)
+                    
+                    if hasattr(self.pipeline, "vae"):
+                        self.pipeline.vae = torch.compile(self.pipeline.vae, mode="reduce-overhead", fullgraph=False)
                 except Exception as compile_e:
                     logger.warning(f"torch.compile non riuscito, si procede senza ottimizzazione: {compile_e}")
                 if use_cpu_offload:
