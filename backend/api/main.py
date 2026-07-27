@@ -35,7 +35,8 @@ app.mount("/output", StaticFiles(directory="output"), name="output")
 
 class ProfileCreate(BaseModel):
     name: str
-    topic: str
+    genre: str = "random"
+    custom_prompt: str = ""
     style: str = "default"
     duration_seconds: int = 30
 

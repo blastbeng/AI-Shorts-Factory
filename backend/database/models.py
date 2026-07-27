@@ -43,7 +43,9 @@ class GenerationProfile(Base):
     __tablename__ = "generation_profiles"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    topic = Column(String, nullable=False)
+    genre = Column(String, default="random")
+    custom_prompt = Column(String, nullable=True)
+    topic = Column(String, nullable=True) # Make topic nullable since it might be generated
     style = Column(String, default="default")
     duration_seconds = Column(Integer, default=30)
     created_at = Column(DateTime, default=datetime.utcnow)

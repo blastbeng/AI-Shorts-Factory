@@ -3,6 +3,8 @@ from backend.services.logger import logger
 from backend.services.quality_scorer import QualityScorer
 from backend.media.ffmpeg_utils import FFmpegUtils
 import os
+import random
+import yaml
 
 class PipelineOrchestrator:
     def __init__(self, job_id, profile, db):
@@ -24,6 +26,8 @@ class PipelineOrchestrator:
             "dashboard_review"
         ]
         os.makedirs("output", exist_ok=True)
+        with open("configs/prompts_templates.yaml", "r") as f:
+            self.templates = yaml.safe_load(f)
 
     def _update_stage(self, stage_name, status, result=None):
         stage = PipelineStage(
@@ -91,13 +95,24 @@ class PipelineOrchestrator:
                 if stage == "topic_generation":
                     from backend.ai_providers.llm_provider import LLMProvider
                     llm = LLMProvider()
-                    expanded_topic = llm.generate(f"Espandi questo topic per un video short: {self.profile.topic}", max_length=100)
+                    
+                    if self.profile.custom_prompt:
+                        prompt = f"Espandi questo topic per un video short: {self.profile.custom_prompt}"
+                    else:
+                        genre = self.profile.genre
+                        if not genre or genre == "random":
+                            genre = random.choice(self.templates.get("genres", ["generale"]))
+                        
+                        instruction = self.templates.get("random_prompt_instruction", "Genera un'idea per un video di genere {genre}.").replace("{genre}", genre)
+                        prompt = instruction
+                    
+                    expanded_topic = llm.generate(prompt, max_length=100)
                     self._update_stage(stage, "completed", expanded_topic)
 
                 elif stage == "script_generation":
                     from backend.ai_providers.llm_provider import LLMProvider
                     llm = LLMProvider()
-                    script_prompt = f"Scrivi uno script di {self.profile.duration_seconds} secondi per un video su: {expanded_topic or self.profile.topic}"
+                    script_prompt = f"Scrivi uno script di {self.profile.duration_seconds} secondi per un video su: {expanded_topic or self.profile.custom_prompt or self.profile.topic}"
                     script = llm.generate(script_prompt, max_length=300)
                     self._update_stage(stage, "completed", script)
 

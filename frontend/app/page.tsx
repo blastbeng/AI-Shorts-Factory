@@ -5,7 +5,9 @@ import { useEffect, useState } from "react";
 type Profile = {
   id: number;
   name: string;
-  topic: string;
+  genre: string;
+  custom_prompt: string;
+  topic: string | null;
   style: string;
   duration_seconds: number;
 };
@@ -39,7 +41,7 @@ export default function Home() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [gpus, setGpus] = useState<Gpu[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newProfile, setNewProfile] = useState({ name: "", topic: "", duration_seconds: 30 });
+  const [newProfile, setNewProfile] = useState({ name: "", genre: "random", custom_prompt: "", duration_seconds: 30 });
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -75,7 +77,7 @@ export default function Home() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newProfile)
     });
-    setNewProfile({ name: "", topic: "", duration_seconds: 30 });
+    setNewProfile({ name: "", genre: "random", custom_prompt: "", duration_seconds: 30 });
     fetchData();
   };
 
@@ -121,14 +123,34 @@ export default function Home() {
               onChange={(e) => setNewProfile({ ...newProfile, name: e.target.value })}
               required
             />
-            <input
-              type="text"
-              placeholder="Topic"
+            <select
               className="w-full p-2 bg-gray-700 rounded"
-              value={newProfile.topic}
-              onChange={(e) => setNewProfile({ ...newProfile, topic: e.target.value })}
-              required
-            />
+              value={newProfile.genre}
+              onChange={(e) => setNewProfile({ ...newProfile, genre: e.target.value })}
+            >
+              <option value="random">Random Genre</option>
+              <option value="Horror">Horror</option>
+              <option value="Sci-Fi">Sci-Fi</option>
+              <option value="Fantasy">Fantasy</option>
+              <option value="True Crime">True Crime</option>
+              <option value="Commedia">Commedia</option>
+              <option value="Dramma">Dramma</option>
+              <option value="Thriller">Thriller</option>
+              <option value="Documentario">Documentario</option>
+              <option value="Mistero">Mistero</option>
+              <option value="Azione">Azione</option>
+              <option value="Romantico">Romantico</option>
+              <option value="Storico">Storico</option>
+              <option value="Post-Apocalittico">Post-Apocalittico</option>
+              <option value="Cyberpunk">Cyberpunk</option>
+              <option value="Surrealista">Surrealista</option>
+            </select>
+            <textarea
+              placeholder="Prompt personalizzato (opzionale)"
+              className="w-full p-2 bg-gray-700 rounded"
+              value={newProfile.custom_prompt}
+              onChange={(e) => setNewProfile({ ...newProfile, custom_prompt: e.target.value })}
+            ></textarea>
             <input
               type="number"
               placeholder="Durata (s)"
