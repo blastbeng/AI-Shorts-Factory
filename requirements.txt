@@ -22,3 +22,7 @@ psutil
 bitsandbytes
 accelerate
 realesrgan
+basicsr
+facexlib
+gfpgan
+opencv-python
