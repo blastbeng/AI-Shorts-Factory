@@ -2,17 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-type Profile = {
-  id: number;
-  name: string;
-  genre: string;
-  custom_prompt: string;
-  language: string;
-  topic: string | null;
-  style: string;
-  duration_seconds: number;
-};
-
 type Video = {
   id: number;
   job_id: number;
@@ -37,24 +26,21 @@ type Gpu = {
 };
 
 export default function Home() {
-  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [gpus, setGpus] = useState<Gpu[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newProfile, setNewProfile] = useState({ name: "", genre: "random", custom_prompt: "", language: "italian", duration_seconds: 30 });
+  const [genParams, setGenParams] = useState({ genre: "random", custom_prompt: "", language: "italian", duration_seconds: 30 });
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
   const fetchData = async () => {
     try {
-      const [profilesRes, videosRes, jobsRes, gpusRes] = await Promise.all([
-        fetch(`${apiUrl}/profiles/`),
+      const [videosRes, jobsRes, gpusRes] = await Promise.all([
         fetch(`${apiUrl}/videos/`),
         fetch(`${apiUrl}/jobs/`),
         fetch(`${apiUrl}/gpus`)
       ]);
-      setProfiles(await profilesRes.json());
       setVideos(await videosRes.json());
       setJobs(await jobsRes.json());
       setGpus(await gpusRes.json());
@@ -67,23 +53,21 @@ export default function Home() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 5000); // Aggiorna ogni 5 secondi
+    const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleCreateProfile = async (e: React.FormEvent) => {
+  const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    await fetch(`${apiUrl}/profiles/`, {
+    // Crea un profilo temporaneo e avvia il job
+    const res = await fetch(`${apiUrl}/profiles/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newProfile)
+      body: JSON.stringify({ name: `Gen ${new Date().toLocaleString()}`, ...genParams })
     });
-    setNewProfile({ name: "", genre: "random", custom_prompt: "", language: "italian", duration_seconds: 30 });
-    fetchData();
-  };
-
-  const handleStartJob = async (profileId: number) => {
-    await fetch(`${apiUrl}/jobs/${profileId}`, { method: "POST" });
+    const profile = await res.json();
+    await fetch(`${apiUrl}/jobs/${profile.id}`, { method: "POST" });
+    setGenParams({ genre: "random", custom_prompt: "", language: "italian", duration_seconds: 30 });
     fetchData();
   };
 
@@ -107,29 +91,21 @@ export default function Home() {
       <h1 className="text-4xl font-bold mb-8">
         AI Shorts Factory{" "}
         <a href="/jobs" className="text-blue-400 hover:text-blue-300 text-2xl underline">
-          Vai a Jobs
+          Dettagli Jobs
         </a>
       </h1>
       
       <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Creazione Profilo */}
+        {/* Generazione Video */}
         <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-          <h2 className="text-2xl mb-4">Crea Profilo</h2>
-          <form onSubmit={handleCreateProfile} className="space-y-4">
-            <input
-              type="text"
-              placeholder="Nome"
-              className="w-full p-2 bg-gray-700 rounded"
-              value={newProfile.name}
-              onChange={(e) => setNewProfile({ ...newProfile, name: e.target.value })}
-              required
-            />
+          <h2 className="text-2xl mb-4">Genera Video</h2>
+          <form onSubmit={handleGenerate} className="space-y-4">
             <select
               className="w-full p-2 bg-gray-700 rounded"
-              value={newProfile.genre}
-              onChange={(e) => setNewProfile({ ...newProfile, genre: e.target.value })}
+              value={genParams.genre}
+              onChange={(e) => setGenParams({ ...genParams, genre: e.target.value })}
             >
-              <option value="random">Random Genre</option>
+              <option value="random">Genere Casuale</option>
               <option value="Horror">Horror</option>
               <option value="Sci-Fi">Sci-Fi</option>
               <option value="Fantasy">Fantasy</option>
@@ -149,52 +125,46 @@ export default function Home() {
             <textarea
               placeholder="Prompt personalizzato (opzionale)"
               className="w-full p-2 bg-gray-700 rounded"
-              value={newProfile.custom_prompt}
-              onChange={(e) => setNewProfile({ ...newProfile, custom_prompt: e.target.value })}
+              value={genParams.custom_prompt}
+              onChange={(e) => setGenParams({ ...genParams, custom_prompt: e.target.value })}
             ></textarea>
             <select
               className="w-full p-2 bg-gray-700 rounded"
-              value={newProfile.language}
-              onChange={(e) => setNewProfile({ ...newProfile, language: e.target.value })}
+              value={genParams.language}
+              onChange={(e) => setGenParams({ ...genParams, language: e.target.value })}
             >
-              <option value="italian">Italian</option>
-              <option value="english">English</option>
-              <option value="spanish">Spanish</option>
-              <option value="french">French</option>
-              <option value="german">German</option>
+              <option value="italian">Italiano</option>
+              <option value="english">Inglese</option>
+              <option value="spanish">Spagnolo</option>
+              <option value="french">Francese</option>
+              <option value="german">Tedesco</option>
             </select>
             <input
               type="number"
               placeholder="Durata (s)"
               className="w-full p-2 bg-gray-700 rounded"
-              value={newProfile.duration_seconds}
-              onChange={(e) => setNewProfile({ ...newProfile, duration_seconds: parseInt(e.target.value) })}
+              value={genParams.duration_seconds}
+              onChange={(e) => setGenParams({ ...genParams, duration_seconds: parseInt(e.target.value) })}
             />
             <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 p-2 rounded font-bold">
-              Crea
+              Genera
             </button>
           </form>
         </div>
 
-        {/* Lista Profili e Job */}
+        {/* Stato Generazioni */}
         <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-          <h2 className="text-2xl mb-4">Profili & Jobs</h2>
+          <h2 className="text-2xl mb-4">Stato Generazioni</h2>
           {loading ? <p>Caricamento...</p> : (
             <ul className="space-y-3 max-h-96 overflow-y-auto">
-              {profiles.map((p) => (
-                <li key={p.id} className="bg-gray-700 p-3 rounded">
-                  <div className="flex justify-between items-center mb-2">
-                    <strong>{p.name}</strong>
-                    <button onClick={() => handleStartJob(p.id)} className="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm">
-                      Avvia
-                    </button>
+              {jobs.map((j) => (
+                <li key={j.id} className="bg-gray-700 p-3 rounded">
+                  <div className="flex justify-between items-center">
+                    <strong>Job #{j.id}</strong>
+                    <span className={`text-xs ${j.status === 'completed' ? 'text-green-400' : j.status === 'failed' ? 'text-red-400' : 'text-yellow-400'}`}>
+                      {j.status}
+                    </span>
                   </div>
-                  <p className="text-xs text-gray-400">Topic: {p.topic}</p>
-                  {jobs.filter(j => j.profile_id === p.id).map(j => (
-                    <p key={j.id} className={`text-xs mt-1 ${j.status === 'completed' ? 'text-green-400' : j.status === 'failed' ? 'text-red-400' : 'text-yellow-400'}`}>
-                      Job #{j.id}: {j.status}
-                    </p>
-                  ))}
                 </li>
               ))}
             </ul>
