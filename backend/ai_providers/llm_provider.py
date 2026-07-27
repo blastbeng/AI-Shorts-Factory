@@ -127,8 +127,12 @@ class LLMProvider(BaseAIProvider):
                 if is_interrupted and is_interrupted():
                     return ""
                 
+                system_prompt = "You are a professional scriptwriter. Follow the user's instructions exactly. Do not repeat the prompt. Do not output any thinking process, reasoning, or meta-text. Output ONLY the final content directly in the requested language."
                 response = self.llm.create_chat_completion(
-                    messages=[{"role": "user", "content": prompt}],
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": prompt}
+                    ],
                     max_tokens=max_length,
                     temperature=self.temperature,
                     top_p=self.top_p,
@@ -138,11 +142,18 @@ class LLMProvider(BaseAIProvider):
                 )
                 generated_text = response["choices"][0]["message"]["content"].strip()
                 
+                # Rimozione del prompt se il modello lo ha ecoato
+                if prompt in generated_text:
+                    generated_text = generated_text.replace(prompt, "").strip()
+                
                 # Pulizia del processo di pensiero (se presente)
                 generated_text = re.sub(r'<think>.*?</think>', '', generated_text, flags=re.DOTALL).strip()
                 generated_text = re.sub(r'^.*?(Here\'s a thinking process:|Thinking Process:).*?\n', '', generated_text, flags=re.IGNORECASE).strip()
+                # Rimozione di prefissi comuni di meta-testo
+                generated_text = re.sub(r'^(Sure, here is|Here is|Here\'s|This is|Il seguente è|Ecco).*?:\s*', '', generated_text, flags=re.IGNORECASE).strip()
                 # Rimozione di asterischi e markdown residuo
                 generated_text = re.sub(r'\*+', '', generated_text).strip()
+                generated_text = re.sub(r'#+', '', generated_text).strip()
                 
                 if is_interrupted and is_interrupted():
                     return ""
