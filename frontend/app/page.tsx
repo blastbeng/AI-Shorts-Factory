@@ -88,6 +88,11 @@ export default function Home() {
     fetchData();
   };
 
+  const handleInterrupt = async (jobId: number) => {
+    await fetch(`${apiUrl}/jobs/${jobId}/interrupt`, { method: "POST" });
+    fetchData();
+  };
+
   const handlePublish = async (videoId: number, platform: string) => {
     await fetch(`${apiUrl}/videos/${videoId}/publish/${platform}`, { method: "POST" });
     alert(`Pubblicazione su ${platform} avviata (simulata).`);
@@ -188,9 +193,16 @@ export default function Home() {
                 {jobs.length === 0 ? <li className="text-gray-500 text-sm">Nessun job attivo.</li> : jobs.map((j) => (
                   <li key={j.id} className="bg-gray-700/50 p-3 rounded-lg flex justify-between items-center">
                     <span className="text-sm font-medium">Job #{j.id}</span>
-                    <span className={`text-xs px-2 py-1 rounded-full ${j.status === 'completed' ? 'bg-green-500/20 text-green-400' : j.status === 'failed' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                      {j.status}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-1 rounded-full ${j.status === 'completed' ? 'bg-green-500/20 text-green-400' : j.status === 'failed' ? 'bg-red-500/20 text-red-400' : j.status === 'interrupted' ? 'bg-orange-500/20 text-orange-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                        {j.status}
+                      </span>
+                      {(j.status === 'running' || j.status === 'pending') && (
+                        <button onClick={() => handleInterrupt(j.id)} className="text-xs bg-red-600/80 hover:bg-red-600 px-2 py-1 rounded-full">
+                          Interrompi
+                        </button>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>

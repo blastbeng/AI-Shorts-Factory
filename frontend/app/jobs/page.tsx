@@ -66,7 +66,7 @@ export default function JobsPage() {
                   onClick={() => fetchJobDetails(j.id)}
                 >
                   <strong>Job #{j.id}</strong> (Profile: {j.profile_id}) - 
-                  <span className={`ml-2 ${j.status === 'completed' ? 'text-green-400' : j.status === 'failed' ? 'text-red-400' : 'text-yellow-400'}`}>
+                  <span className={`ml-2 ${j.status === 'completed' ? 'text-green-400' : j.status === 'failed' ? 'text-red-400' : j.status === 'interrupted' ? 'text-orange-400' : 'text-yellow-400'}`}>
                     {j.status}
                   </span>
                 </li>

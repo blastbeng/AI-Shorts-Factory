@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from backend.database.session import Base, engine, get_db
+from backend.database.session import Base, engine, get_db, SessionLocal
 from backend.database.models import GenerationProfile, Job, Video, PipelineStage
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger, log_buffer
@@ -31,6 +31,15 @@ app.add_middleware(
 )
 
 Base.metadata.create_all(bind=engine)
+
+# Reset running jobs to interrupted on startup
+db_startup = SessionLocal()
+running_jobs = db_startup.query(Job).filter(Job.status == "running").all()
+for job in running_jobs:
+    job.status = "interrupted"
+db_startup.commit()
+db_startup.close()
+
 logger.info("Avvio dell'applicazione AI Shorts Factory")
 
 # Validazione configurazione
@@ -95,6 +104,18 @@ def start_job(profile_id: int, db: Session = Depends(get_db)):
     db.refresh(job)
 
     return {"job_id": job.id, "status": "pending", "message": "Job aggiunto alla coda. Il worker lo processerà a breve."}
+
+@app.post("/jobs/{job_id}/interrupt")
+def interrupt_job(job_id: int, db: Session = Depends(get_db)):
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.status not in ["running", "pending"]:
+        raise HTTPException(status_code=400, detail=f"Impossibile interrompere un job con stato {job.status}")
+    job.status = "interrupted"
+    db.commit()
+    db.refresh(job)
+    return {"status": "interrupted", "job_id": job_id}
 
 @app.get("/videos/")
 def get_videos(db: Session = Depends(get_db)):
