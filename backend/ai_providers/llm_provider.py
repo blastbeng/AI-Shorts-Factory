@@ -13,14 +13,12 @@ class LLMProvider(BaseAIProvider):
         self.provider_type = os.getenv("LLM_PROVIDER", "ollama").lower()
         
         if self.provider_type == "openai":
-            self.api_base = "https://api.openai.com/v1"
+            self.api_base = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
             self.api_key = os.getenv("OPENAI_API_KEY", "")
             self.model_name = os.getenv("OPENAI_MODEL_NAME", "gpt-3.5-turbo")
         elif self.provider_type == "ollama":
-            # Ollama espone un'API compatibile con OpenAI all'endpoint /v1
-            base = os.getenv("OLLAMA_API_BASE", "http://localhost:11434")
-            self.api_base = f"{base}/v1"
-            self.api_key = "ollama" # Ollama non richiede una vera API key, ma il client ne ha bisogno
+            self.api_base = os.getenv("OLLAMA_API_BASE", "http://localhost:11434/v1")
+            self.api_key = os.getenv("OLLAMA_API_KEY", "ollama")
             self.model_name = os.getenv("OLLAMA_MODEL_NAME", "llama3")
         else:
             self.api_base = None
