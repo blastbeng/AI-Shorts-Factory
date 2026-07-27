@@ -1,3 +1,4 @@
+import os
 import yaml
 import torch
 from diffusers import LTXVideoPipeline
@@ -8,7 +9,7 @@ import imageio
 
 class LtxProvider(BaseAIProvider):
     def __init__(self):
-        with open("configs/models.yaml", "r") as f:
+        with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
             self.models_config = yaml.safe_load(f)
         self.model_info = self.models_config.get("video", {}).get("ltx_video", {})
         self.gm = GPUManager()

@@ -1,3 +1,4 @@
+import os
 import yaml
 import torch
 from diffusers import FluxPipeline
@@ -7,7 +8,7 @@ from backend.services.logger import logger
 
 class FluxProvider(BaseAIProvider):
     def __init__(self):
-        with open("configs/models.yaml", "r") as f:
+        with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
             self.models_config = yaml.safe_load(f)
         self.model_info = self.models_config.get("image", {}).get("flux", {})
         self.gm = GPUManager()

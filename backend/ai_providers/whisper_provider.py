@@ -1,3 +1,4 @@
+import os
 import yaml
 import torch
 from transformers import WhisperProcessor, WhisperForConditionalGeneration
@@ -8,7 +9,7 @@ import librosa
 
 class WhisperProvider(BaseAIProvider):
     def __init__(self):
-        with open("configs/models.yaml", "r") as f:
+        with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
             self.models_config = yaml.safe_load(f)
         self.model_info = self.models_config.get("speech", {}).get("whisper", {})
         self.gm = GPUManager()

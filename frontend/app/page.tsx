@@ -27,11 +27,12 @@ export default function Home() {
     // Assumendo che il backend giri su localhost:8000
     const fetchData = async () => {
       try {
-        const profilesRes = await fetch("http://localhost:8000/profiles/");
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const profilesRes = await fetch(`${apiUrl}/profiles/`);
         const profilesData = await profilesRes.json();
         setProfiles(profilesData);
 
-        const gpusRes = await fetch("http://localhost:8000/gpus");
+        const gpusRes = await fetch(`${apiUrl}/gpus`);
         const gpusData = await gpusRes.json();
         setGpus(gpusData);
       } catch (error) {

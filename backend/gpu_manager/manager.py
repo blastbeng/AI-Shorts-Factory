@@ -1,11 +1,13 @@
+import os
 import yaml
 import subprocess
 import json
 from backend.services.logger import logger
 
 class GPUManager:
-    def __init__(self, config_path="configs/gpu.yaml"):
-        with open(config_path, "r") as f:
+    def __init__(self, config_path=None):
+        path = config_path or os.getenv("GPU_CONFIG_PATH", "configs/gpu.yaml")
+        with open(path, "r") as f:
             self.config = yaml.safe_load(f)
 
     def get_gpus(self):
