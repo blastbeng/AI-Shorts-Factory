@@ -28,7 +28,7 @@ class QwenImageProvider(BaseAIProvider):
         if not gpu:
             raise RuntimeError("Nessuna GPU assegnata per l'image generation.")
             
-        device = self.gm.get_device_string(gpu['id'])
+        device = self.gm.get_device_string(gpu['id'], preferred_backend=self.model_info.get("backend"))
         
         if self.pipeline is None:
             logger.info("Caricamento pipeline Qwen Image...")

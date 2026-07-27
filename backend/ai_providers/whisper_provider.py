@@ -30,7 +30,7 @@ class WhisperProvider(BaseAIProvider):
         if not gpu:
             raise RuntimeError("Nessuna GPU assegnata per lo speech recognition.")
             
-        device = self.gm.get_device_string(gpu['id'])
+        device = self.gm.get_device_string(gpu['id'], preferred_backend=self.model_info.get("backend"))
         
         if self.model is None:
             logger.info("Caricamento modello Whisper...")

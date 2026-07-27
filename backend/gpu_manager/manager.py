@@ -19,22 +19,28 @@ class GPUManager:
                 return gpu
         return None
 
-    def get_device_string(self, gpu_id):
+    def get_device_string(self, gpu_id, preferred_backend=None):
         """Restituisce la stringa del dispositivo PyTorch corretta."""
         gpu = next((g for g in self.get_gpus() if g["id"] == gpu_id), None)
         if not gpu:
             return "cpu"
         
-        backend = gpu.get("backend", "cpu")
-        if backend in ["cuda", "rocm"]:
-            # In PyTorch, ROCm è accessibile tramite il device name 'cuda'
-            return f"cuda:{gpu['id']}"
-        elif backend == "vulkan":
-            # PyTorch non supporta nativamente il device string 'vulkan'.
-            # Usiamo 'cpu' come fallback per i provider PyTorch.
-            # llama.cpp gestisce Vulkan nativamente tramite subprocess e non usa questo metodo.
-            logger.debug("Backend Vulkan selezionato per PyTorch. Uso fallback su CPU.")
-            return "cpu"
+        backends = gpu.get("backends", [])
+        
+        # Se un backend preferito è specificato e supportato, usalo
+        if preferred_backend and preferred_backend in backends:
+            if preferred_backend in ["cuda", "rocm"]:
+                return f"cuda:{gpu['id']}"
+            elif preferred_backend == "vulkan":
+                logger.debug("Backend Vulkan selezionato per PyTorch. Uso fallback su CPU.")
+                return "cpu"
+        
+        # Altrimenti, cerca il primo backend supportato da PyTorch (cuda o rocm)
+        for b in backends:
+            if b in ["cuda", "rocm"]:
+                return f"cuda:{gpu['id']}"
+        
+        # Se nessun backend PyTorch è disponibile, fallback su cpu
         return "cpu"
 
     def monitor_vram(self, gpu_id):
@@ -44,7 +50,8 @@ class GPUManager:
 
         vram_total = gpu["vram_gb"]
         vram_used = 0
-        backend = gpu.get("backend", "cpu")
+        backends = gpu.get("backends", [])
+        backend = backends[0] if backends else "cpu"
 
         try:
             if backend == "cuda":

@@ -28,7 +28,7 @@ class WanProvider(BaseAIProvider):
         if not gpu:
             raise RuntimeError("Nessuna GPU assegnata per la video generation.")
 
-        device = self.gm.get_device_string(gpu['id'])
+        device = self.gm.get_device_string(gpu['id'], preferred_backend=self.model_info.get("backend"))
 
         if self.pipeline is None:
             logger.info("Caricamento pipeline Wan 2.2...")
