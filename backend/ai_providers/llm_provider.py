@@ -139,7 +139,8 @@ class LLMProvider(BaseAIProvider):
                     top_k=self.top_k,
                     repeat_penalty=self.repeat_penalty,
                     stream=False,
-                    stop=["</final_output>"]
+                    stop=["</final_output>"],
+                    chat_template_kwargs={"enable_thinking": False}
                 )
                 generated_text = response["choices"][0]["message"]["content"].strip()
                 
