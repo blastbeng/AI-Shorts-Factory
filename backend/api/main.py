@@ -78,6 +78,7 @@ def gpus():
             "vram_total_gb": vram_info["vram_total_gb"] if vram_info else gpu["vram_gb"],
             "vram_used_gb": vram_info["vram_used_gb"] if vram_info else 0,
             "vram_free_gb": vram_info["vram_free_gb"] if vram_info else gpu["vram_gb"],
+            "gpu_utilization": vram_info["gpu_utilization"] if vram_info else 0,
             "backends": gpu.get("backends", []),
             "assigned_tasks": gpu.get("assigned_tasks", [])
         })

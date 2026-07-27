@@ -52,29 +52,31 @@ class GPUManager:
 
         vram_total = gpu["vram_gb"]
         vram_used = 0
+        gpu_util = 0
         backends = gpu.get("backends", [])
-        backend = backends[0] if backends else "cpu"
 
         try:
-            if backend == "cuda":
+            if "cuda" in backends:
                 result = subprocess.run(
-                    ["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits", "-i", str(gpu_id)],
+                    ["nvidia-smi", "--query-gpu=memory.used,utilization.gpu", "--format=csv,noheader,nounits", "-i", str(gpu_id)],
                     capture_output=True, text=True, check=True
                 )
-                vram_used_mb = int(result.stdout.strip())
+                parts = result.stdout.strip().split(", ")
+                vram_used_mb = int(parts[0])
                 vram_used = vram_used_mb / 1024
-            elif backend == "rocm":
+                gpu_util = int(parts[1])
+            elif "rocm" in backends:
                 result = subprocess.run(
-                    ["rocm-smi", "--showmeminfo", "vram", "--json"],
+                    ["rocm-smi", "--showmeminfo", "vram", "--showuse", "gpu", "--json"],
                     capture_output=True, text=True, check=True
                 )
                 data = json.loads(result.stdout)
-                vram_used_mb = int(data.get(f"card{gpu_id}", {}).get("VRAM Total Used Memory (B)", 0)) / (1024 * 1024)
+                card_data = data.get(f"card{gpu_id}", {})
+                vram_used_mb = int(card_data.get("VRAM Total Used Memory (B)", 0)) / (1024 * 1024)
                 vram_used = vram_used_mb / 1024
-            elif backend == "vulkan":
-                # Non esiste uno strumento standard CLI per monitorare la VRAM Vulkan.
-                # Restituiamo un valore fittizio per ora.
-                logger.debug("Monitoraggio VRAM per Vulkan non supportato via CLI.")
+                gpu_util = int(card_data.get("GPU use (%)", 0))
+            else:
+                logger.debug(f"Nessun backend supportato per il monitoraggio VRAM su GPU {gpu_id}.")
                 vram_used = 0
         except Exception as e:
             logger.error(f"Errore nel monitoraggio VRAM per GPU {gpu_id}: {e}")
@@ -84,5 +86,6 @@ class GPUManager:
             "gpu_id": gpu_id,
             "vram_total_gb": vram_total,
             "vram_used_gb": round(vram_used, 2),
-            "vram_free_gb": round(vram_total - vram_used, 2)
+            "vram_free_gb": round(vram_total - vram_used, 2),
+            "gpu_utilization": gpu_util
         }

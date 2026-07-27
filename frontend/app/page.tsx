@@ -27,6 +27,7 @@ type Gpu = {
   vram_total_gb: number;
   vram_used_gb: number;
   vram_free_gb: number;
+  gpu_utilization: number;
   backends: string[];
   assigned_tasks: string[];
 };
@@ -280,7 +281,16 @@ export default function Home() {
                           ))}
                         </div>
                       </div>
-                      <div className="mb-1">
+                      <div className="mb-2">
+                        <div className="flex justify-between text-xs text-gray-400 mb-1">
+                          <span>Utilizzo GPU</span>
+                          <span>{g.gpu_utilization}%</span>
+                        </div>
+                        <div className="w-full bg-gray-600 rounded-full h-2">
+                          <div className="bg-blue-500 h-2 rounded-full transition-all duration-500" style={{ width: `${g.gpu_utilization}%` }}></div>
+                        </div>
+                      </div>
+                      <div>
                         <div className="flex justify-between text-xs text-gray-400 mb-1">
                           <span>VRAM</span>
                           <span>{g.vram_used_gb.toFixed(1)} / {g.vram_total_gb.toFixed(1)} GB</span>
