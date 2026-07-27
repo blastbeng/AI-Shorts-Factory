@@ -97,7 +97,7 @@ class LLMProvider(BaseAIProvider):
                     )
                     break
                 except Exception as e:
-                    logger.warning(f"Errore nel caricamento del modello LLM con n_gpu_layers={n_gpu_layers} ({e}). Riduzione layer su GPU.")
+                    logger.exception(f"Errore nel caricamento del modello LLM con n_gpu_layers={n_gpu_layers}. Riduzione layer su GPU.")
                     if n_gpu_layers > 1:
                         n_gpu_layers = max(1, n_gpu_layers // 2)
                     else:
