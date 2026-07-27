@@ -87,10 +87,15 @@ class GPUManager:
             try:
                 import torch
                 if torch.cuda.is_available():
-                    if idx < torch.cuda.device_count():
+                    count = torch.cuda.device_count()
+                    # Se PyTorch vede solo una GPU, l'indice deve essere 0 
+                    # indipendentemente dall'indice di sistema (device_index)
+                    if count == 1:
+                        return "cuda:0"
+                    elif idx < count:
                         return f"cuda:{idx}"
                     else:
-                        logger.warning(f"Device index {idx} out of range for PyTorch (available: {torch.cuda.device_count()}). Falling back to cuda:0.")
+                        logger.warning(f"Device index {idx} out of range for PyTorch (available: {count}). Falling back to cuda:0.")
                         return "cuda:0"
                 else:
                     logger.warning("PyTorch CUDA non disponibile. Fallback su CPU.")
