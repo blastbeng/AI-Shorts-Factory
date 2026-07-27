@@ -12,26 +12,26 @@ fi
 
 echo "Sistema operativo rilevato: $OS"
 
-install_packages() {
-    case $OS in
-        ubuntu|debian)
-            sudo apt-get update
-            sudo apt-get install -y "$@"
-            ;;
-        fedora)
-            sudo dnf install -y "$@"
-            ;;
-        arch)
-            sudo pacman -Sy --noconfirm "$@"
-            ;;
-        *)
-            echo "Sistema operativo non supportato: $OS"
-            exit 1
-            ;;
-    esac
-}
-
 echo "Installazione delle dipendenze di sistema essenziali..."
-install_packages python3 python3-pip python3-venv git curl wget ffmpeg build-essential
+
+case $OS in
+    ubuntu|debian)
+        sudo apt-get update
+        sudo apt-get install -y python3 python3-pip python3-venv git curl wget ffmpeg build-essential
+        ;;
+    fedora)
+        # Su Fedora, python3-venv è incluso in python3, build-essential è sostituito da gcc/gcc-c++/make.
+        # Usiamo --allowerasing per risolvere il conflitto tra ffmpeg-free e ffmpeg (se rpmfusion è abilitato).
+        sudo dnf install -y python3 python3-pip python3-devel git curl wget ffmpeg gcc gcc-c++ make --allowerasing
+        ;;
+    arch)
+        sudo pacman -Sy --noconfirm python python-pip git curl wget ffmpeg base-devel
+        ;;
+    *)
+        echo "Sistema operativo non supportato: $OS"
+        echo "Assicurati di installare manualmente: python3, pip, venv, git, curl, wget, ffmpeg, build-essential (o equivalenti)."
+        exit 1
+        ;;
+esac
 
 echo "Dipendenze di sistema installate con successo."
