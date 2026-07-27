@@ -11,14 +11,14 @@ type Stage = {
 };
 
 type JobDetails = {
-  job_id: number;
+  job_id: string;
   status: string;
   profile_id: number;
   stages: Stage[];
 };
 
 export default function JobsPage() {
-  const [jobs, setJobs] = useState<{ id: number; status: string; profile_id: number }[]>([]);
+  const [jobs, setJobs] = useState<{ id: string; status: string; profile_id: number }[]>([]);
   const [selectedJob, setSelectedJob] = useState<JobDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -75,7 +75,7 @@ export default function JobsPage() {
                     className={`bg-gray-700/50 p-3 rounded-lg cursor-pointer hover:bg-gray-600 transition-colors ${selectedJob?.job_id === j.id ? 'ring-2 ring-blue-500' : ''}`}
                     onClick={() => fetchJobDetails(j.id)}
                   >
-                    <strong>Job #{j.id}</strong> (Profile: {j.profile_id}) - 
+                    <strong>Job {j.id.substring(0, 8)}</strong> (Profile: {j.profile_id}) - 
                     <span className={`ml-2 ${j.status === 'completed' ? 'text-green-400' : j.status === 'failed' ? 'text-red-400' : j.status === 'interrupted' ? 'text-orange-400' : 'text-yellow-400'}`}>
                       {j.status}
                     </span>

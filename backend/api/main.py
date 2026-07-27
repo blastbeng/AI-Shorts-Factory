@@ -119,7 +119,7 @@ def start_job(profile_id: int, db: Session = Depends(get_db)):
     return {"job_id": job.id, "status": "pending", "message": "Job aggiunto alla coda. Il worker lo processerà a breve."}
 
 @app.post("/jobs/{job_id}/interrupt")
-def interrupt_job(job_id: int, db: Session = Depends(get_db)):
+def interrupt_job(job_id: str, db: Session = Depends(get_db)):
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -228,7 +228,7 @@ def publish_video(video_id: int, platform: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/jobs/{job_id}")
-def get_job_details(job_id: int, db: Session = Depends(get_db)):
+def get_job_details(job_id: str, db: Session = Depends(get_db)):
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -246,7 +246,7 @@ def get_logs():
 
 @app.get("/jobs/")
 def get_all_jobs(db: Session = Depends(get_db)):
-    jobs = db.query(Job).all()
+    jobs = db.query(Job).order_by(Job.created_at.desc()).all()
     result = []
     for j in jobs:
         stages = db.query(PipelineStage).filter(PipelineStage.job_id == j.id).all()

@@ -1,3 +1,4 @@
+import uuid
 from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -11,7 +12,7 @@ class User(Base):
 
 class Job(Base):
     __tablename__ = "jobs"
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     status = Column(String, default="pending")  # pending, running, completed, failed
     profile_id = Column(Integer, ForeignKey("generation_profiles.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -21,7 +22,7 @@ class Job(Base):
 class Video(Base):
     __tablename__ = "videos"
     id = Column(Integer, primary_key=True, index=True)
-    job_id = Column(Integer, ForeignKey("jobs.id"))
+    job_id = Column(String, ForeignKey("jobs.id"))
     file_path = Column(String, nullable=False)
     quality_score = Column(Float, nullable=True)
     approved = Column(Boolean, default=False)
@@ -54,7 +55,7 @@ class GenerationProfile(Base):
 class PipelineStage(Base):
     __tablename__ = "pipeline_stages"
     id = Column(Integer, primary_key=True, index=True)
-    job_id = Column(Integer, ForeignKey("jobs.id"))
+    job_id = Column(String, ForeignKey("jobs.id"))
     stage_name = Column(String, nullable=False)
     status = Column(String, default="pending") # pending, running, completed, failed
     result = Column(String, nullable=True)
