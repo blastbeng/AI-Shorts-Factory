@@ -68,14 +68,15 @@ class GPUManager:
                 gpu_util = int(parts[1])
             elif "rocm" in backends:
                 result = subprocess.run(
-                    ["rocm-smi", "--showmeminfo", "vram", "--showuse", "gpu", "--json"],
+                    ["rocm-smi", "--showmeminfo", "vram", "--showuse", "--json"],
                     capture_output=True, text=True, check=True
                 )
                 data = json.loads(result.stdout)
                 card_data = data.get(f"card{device_index}", {})
-                vram_used_mb = int(card_data.get("VRAM Total Used Memory (B)", 0)) / (1024 * 1024)
-                vram_used = vram_used_mb / 1024
-                gpu_util = int(card_data.get("GPU use (%)", 0))
+                vram_used_bytes = float(card_data.get("VRAM Total Used Memory (B)", 0))
+                vram_used = vram_used_bytes / (1024 * 1024 * 1024)
+                gpu_util_str = str(card_data.get("GPU use (%)", "0")).replace("%", "").strip()
+                gpu_util = int(float(gpu_util_str))
             else:
                 logger.debug(f"Nessun backend supportato per il monitoraggio VRAM su GPU {gpu_id}.")
                 vram_used = 0
