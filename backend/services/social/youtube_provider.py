@@ -1,11 +1,12 @@
+import os
 from backend.services.social.base_social_provider import BaseSocialProvider
 from backend.services.logger import logger
 
 class YouTubeProvider(BaseSocialProvider):
-    def authenticate(self, credentials: dict):
-        self.token = credentials.get("token")
+    def authenticate(self, credentials: dict = None):
+        self.token = os.getenv("YOUTUBE_API_KEY")
         if not self.token:
-            raise ValueError("Token YouTube mancante")
+            raise ValueError("API Key YouTube mancante. Configura YOUTUBE_API_KEY nel file .env")
         logger.info("Autenticazione YouTube riuscita (simulata).")
         return True
 

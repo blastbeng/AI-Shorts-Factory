@@ -1,11 +1,12 @@
+import os
 from backend.services.social.base_social_provider import BaseSocialProvider
 from backend.services.logger import logger
 
 class FacebookProvider(BaseSocialProvider):
-    def authenticate(self, credentials: dict):
-        self.token = credentials.get("token")
+    def authenticate(self, credentials: dict = None):
+        self.token = os.getenv("FACEBOOK_ACCESS_TOKEN")
         if not self.token:
-            raise ValueError("Token Facebook mancante")
+            raise ValueError("Token Facebook mancante. Configura FACEBOOK_ACCESS_TOKEN nel file .env")
         logger.info("Autenticazione Facebook riuscita (simulata).")
         return True
 

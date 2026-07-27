@@ -1,11 +1,12 @@
+import os
 from backend.services.social.base_social_provider import BaseSocialProvider
 from backend.services.logger import logger
 
 class InstagramProvider(BaseSocialProvider):
-    def authenticate(self, credentials: dict):
-        self.token = credentials.get("token")
+    def authenticate(self, credentials: dict = None):
+        self.token = os.getenv("INSTAGRAM_ACCESS_TOKEN")
         if not self.token:
-            raise ValueError("Token Instagram mancante")
+            raise ValueError("Token Instagram mancante. Configura INSTAGRAM_ACCESS_TOKEN nel file .env")
         logger.info("Autenticazione Instagram riuscita (simulata).")
         return True
 
