@@ -99,7 +99,7 @@ export default function Home() {
     fetchData();
   };
 
-  const handleInterrupt = async (jobId: number) => {
+  const handleInterrupt = async (jobId: string) => {
     await fetch(`${apiUrl}/jobs/${jobId}/interrupt`, { method: "POST" });
     fetchData();
   };

@@ -35,7 +35,7 @@ export default function JobsPage() {
     }
   };
 
-  const fetchJobDetails = async (jobId: number) => {
+  const fetchJobDetails = async (jobId: string) => {
     try {
       const res = await fetch(`${apiUrl}/jobs/${jobId}`);
       setSelectedJob(await res.json());
