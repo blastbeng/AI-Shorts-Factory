@@ -140,7 +140,9 @@ class LLMProvider(BaseAIProvider):
                 
                 # Pulizia del processo di pensiero (se presente)
                 generated_text = re.sub(r'<think>.*?</think>', '', generated_text, flags=re.DOTALL).strip()
-                generated_text = re.sub(r'^(Here\'s a thinking process:|Thinking Process:).*?\n', '', generated_text, flags=re.IGNORECASE).strip()
+                generated_text = re.sub(r'^.*?(Here\'s a thinking process:|Thinking Process:).*?\n', '', generated_text, flags=re.IGNORECASE).strip()
+                # Rimozione di asterischi e markdown residuo
+                generated_text = re.sub(r'\*+', '', generated_text).strip()
                 
                 if is_interrupted and is_interrupted():
                     return ""
