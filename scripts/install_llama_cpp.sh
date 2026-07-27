@@ -1,7 +1,5 @@
-#!/bin/bash
-set -e
-
-echo "=== Download del modello LLM (Qwen GGUF) ==="
+# This script has been renamed to download_llama_cpp.sh
+exit 0
 
 # Crea la directory per i modelli se non esiste
 sudo mkdir -p /opt/models
