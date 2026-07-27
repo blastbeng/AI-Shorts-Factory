@@ -1,7 +1,9 @@
 import os
 import yaml
 import torch
+import random
 import scipy.io.wavfile as wavfile
+from scipy.signal import butter, lfilter
 from kokoro import KModel, KPipeline
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
@@ -77,26 +79,56 @@ class KokoroProvider(BaseAIProvider):
         
         logger.info(f"Generazione voce per testo: {text}")
         
-        # Mappa la lingua al miglior voce Kokoro disponibile
+        # Mappa la lingua a una lista di voci Kokoro disponibili
         voice_map = {
-            "english": "af_heart",
-            "italian": "im_nicola",  # Voce maschile italiana
-            "spanish": "ef_dora",    # Voce femminile spagnola
-            "french": "ff_siwis"     # Voce femminile francese
+            "english": ["af_heart", "af_bella", "af_sky", "am_adam", "am_michael"],
+            "italian": ["im_nicola", "if_sara"],
+            "spanish": ["ef_dora", "em_alex"],
+            "french": ["ff_siwis"]
         }
-        voice_name = kwargs.get("voice_name", voice_map.get(app_language, "af_heart"))
+        available_voices = voice_map.get(app_language, ["af_heart"])
+        voice_name = kwargs.get("voice_name", random.choice(available_voices))
+        
+        # Variazione casuale della velocità per cambiare leggermente la tonalità
+        speed = random.uniform(0.95, 1.05)
         
         import numpy as np
         
         with torch.no_grad():
             audio_chunks = []
-            for graphemes, phonemes, audio in self.pipeline(text, voice=voice_name, speed=1.0):
+            for graphemes, phonemes, audio in self.pipeline(text, voice=voice_name, speed=speed):
                 audio_chunks.append(audio.cpu().numpy().squeeze())
                 
         if not audio_chunks:
             raise RuntimeError("Kokoro non ha generato alcun audio.")
             
         audio_data = np.concatenate(audio_chunks)
+        
+        # Applicazione di un equalizzatore casuale a 3 bande (basso, medio, alto)
+        try:
+            sr = 24000
+            # Banda bassa
+            low_cutoff = random.uniform(100, 500)
+            b_low, a_low = butter(2, low_cutoff / (sr / 2), btype='low')
+            low_part = lfilter(b_low, a_low, audio_data)
+            
+            # Banda alta
+            high_cutoff = random.uniform(2000, 5000)
+            b_high, a_high = butter(2, high_cutoff / (sr / 2), btype='high')
+            high_part = lfilter(b_high, a_high, audio_data)
+            
+            # Banda media (resto del segnale)
+            mid_part = audio_data - low_part - high_part
+            
+            # Guadagni casuali per ogni banda
+            low_gain = random.uniform(0.5, 1.5)
+            mid_gain = random.uniform(0.8, 1.2)
+            high_gain = random.uniform(0.5, 1.5)
+            
+            audio_data = low_part * low_gain + mid_part * mid_gain + high_part * high_gain
+        except Exception as eq_e:
+            logger.warning(f"Errore nell'applicazione dell'equalizzatore casuale: {eq_e}")
+        
         # Converti da float32 [-1, 1] a int16
         audio_data = (audio_data * 32767).astype("int16")
         wavfile.write(output_path, 24000, audio_data)
