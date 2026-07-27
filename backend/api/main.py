@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from backend.database.session import Base, engine, get_db
 from backend.database.models import GenerationProfile, Job, Video, PipelineStage
 from backend.gpu_manager.manager import GPUManager
-from backend.services.logger import logger
+from backend.services.logger import logger, log_buffer
 from backend.services.social.tiktok_provider import TikTokProvider
 from backend.services.social.youtube_provider import YouTubeProvider
 from backend.services.social.instagram_provider import InstagramProvider
@@ -205,6 +205,10 @@ def get_job_details(job_id: int, db: Session = Depends(get_db)):
         "profile_id": job.profile_id,
         "stages": [{"name": s.stage_name, "status": s.status, "result": s.result, "created_at": s.created_at, "updated_at": s.updated_at} for s in stages]
     }
+
+@app.get("/logs")
+def get_logs():
+    return {"logs": list(log_buffer)}
 
 @app.get("/jobs/")
 def get_all_jobs(db: Session = Depends(get_db)):
