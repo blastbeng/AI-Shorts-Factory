@@ -19,6 +19,23 @@ class GPUManager:
                 return gpu
         return None
 
+    def get_device_string(self, gpu_id):
+        """Restituisce la stringa del dispositivo PyTorch corretta."""
+        gpu = next((g for g in self.get_gpus() if g["id"] == gpu_id), None)
+        if not gpu:
+            return "cpu"
+        
+        backend = gpu.get("backend", "cpu")
+        if backend in ["cuda", "rocm"]:
+            # In PyTorch, ROCm è accessibile tramite il device name 'cuda'
+            return f"cuda:{gpu['id']}"
+        elif backend == "vulkan":
+            # PyTorch Vulkan è sperimentale e non usa un device string come cuda.
+            # Per ora restituiamo 'cpu' come fallback o per gestirlo in modo specifico nei provider.
+            logger.warning("Backend Vulkan selezionato. Assicurati che il provider supporti l'inferenza Vulkan.")
+            return "cpu"
+        return "cpu"
+
     def monitor_vram(self, gpu_id):
         gpu = next((g for g in self.get_gpus() if g["id"] == gpu_id), None)
         if not gpu:
@@ -26,16 +43,17 @@ class GPUManager:
 
         vram_total = gpu["vram_gb"]
         vram_used = 0
+        backend = gpu.get("backend", "cpu")
 
         try:
-            if gpu["backend"] == "cuda":
+            if backend == "cuda":
                 result = subprocess.run(
                     ["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits", "-i", str(gpu_id)],
                     capture_output=True, text=True, check=True
                 )
                 vram_used_mb = int(result.stdout.strip())
                 vram_used = vram_used_mb / 1024
-            elif gpu["backend"] == "rocm":
+            elif backend == "rocm":
                 result = subprocess.run(
                     ["rocm-smi", "--showmeminfo", "vram", "--json"],
                     capture_output=True, text=True, check=True
@@ -43,6 +61,11 @@ class GPUManager:
                 data = json.loads(result.stdout)
                 vram_used_mb = int(data.get(f"card{gpu_id}", {}).get("VRAM Total Used Memory (B)", 0)) / (1024 * 1024)
                 vram_used = vram_used_mb / 1024
+            elif backend == "vulkan":
+                # Non esiste uno strumento standard CLI per monitorare la VRAM Vulkan.
+                # Restituiamo un valore fittizio per ora.
+                logger.debug("Monitoraggio VRAM per Vulkan non supportato via CLI.")
+                vram_used = 0
         except Exception as e:
             logger.error(f"Errore nel monitoraggio VRAM per GPU {gpu_id}: {e}")
             vram_used = 0

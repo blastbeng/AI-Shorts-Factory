@@ -2,14 +2,14 @@ gpus:
   - id: 0
     name: "AMD Radeon RX 7800 XT"
     vram_gb: 16
-    backend: "rocm"
+    backend: "rocm" # Può essere "rocm", "cuda" o "vulkan"
     assigned_tasks:
       - "video_generation"
       - "image_generation"
   - id: 1
     name: "NVIDIA RTX 3060"
     vram_gb: 12
-    backend: "cuda"
+    backend: "cuda" # Può essere "rocm", "cuda" o "vulkan"
     assigned_tasks:
       - "voice_generation"
       - "speech_recognition"

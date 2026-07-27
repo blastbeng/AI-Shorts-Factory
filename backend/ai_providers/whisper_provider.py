@@ -30,7 +30,7 @@ class WhisperProvider(BaseAIProvider):
         if not gpu:
             raise RuntimeError("Nessuna GPU assegnata per lo speech recognition.")
             
-        device = f"cuda:{gpu['id']}" if gpu["backend"] == "cuda" else f"rocm:{gpu['id']}"
+        device = self.gm.get_device_string(gpu['id'])
         
         if self.model is None:
             logger.info("Caricamento modello Whisper...")
