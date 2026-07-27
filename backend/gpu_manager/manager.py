@@ -83,10 +83,26 @@ class GPUManager:
         backends = gpu.get("backends", [])
         device_index = gpu.get("device_index", 0)
         
+        def get_valid_cuda_device(idx):
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    if idx < torch.cuda.device_count():
+                        return f"cuda:{idx}"
+                    else:
+                        logger.warning(f"Device index {idx} out of range for PyTorch (available: {torch.cuda.device_count()}). Falling back to cuda:0.")
+                        return "cuda:0"
+                else:
+                    logger.warning("PyTorch CUDA non disponibile. Fallback su CPU.")
+                    return "cpu"
+            except ImportError:
+                logger.warning("Torch non installato. Fallback su CPU.")
+                return "cpu"
+
         # Se un backend preferito è specificato e supportato, usalo
         if preferred_backend and preferred_backend in backends:
             if preferred_backend in ["cuda", "rocm"]:
-                return f"cuda:{device_index}"
+                return get_valid_cuda_device(device_index)
             elif preferred_backend == "vulkan":
                 logger.debug("Backend Vulkan selezionato per PyTorch. Uso fallback su CPU.")
                 return "cpu"
@@ -94,7 +110,7 @@ class GPUManager:
         # Altrimenti, cerca il primo backend supportato da PyTorch (cuda o rocm)
         for b in backends:
             if b in ["cuda", "rocm"]:
-                return f"cuda:{device_index}"
+                return get_valid_cuda_device(device_index)
         
         # Se nessun backend PyTorch è disponibile, fallback su cpu
         return "cpu"
