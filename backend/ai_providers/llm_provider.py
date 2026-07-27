@@ -127,7 +127,7 @@ class LLMProvider(BaseAIProvider):
                 if is_interrupted and is_interrupted():
                     return ""
                 
-                system_prompt = f"You are a professional scriptwriter. Follow the user's instructions exactly. Do not repeat the prompt. Do not output any thinking process, reasoning, or meta-text. Output ONLY the final content directly. The output MUST be in the language requested by the user. Do not include any introductory or concluding remarks. Do not output the prompt or any part of it. Start directly with the script content."
+                system_prompt = f"You are a professional scriptwriter. Follow the user's instructions exactly. Do not repeat the prompt. Do not output any thinking process, reasoning, meta-text, prompt analysis, or step-by-step breakdowns. Output ONLY the final content directly. The output MUST be in the language requested by the user. Do not include any introductory or concluding remarks. Do not output the prompt or any part of it. Start directly with the script content. Never output your internal thoughts or translate the prompt."
                 response = self.llm.create_chat_completion(
                     messages=[
                         {"role": "system", "content": system_prompt},
@@ -147,7 +147,7 @@ class LLMProvider(BaseAIProvider):
                     generated_text = generated_text.replace(prompt, "").strip()
 
                 # Rimozione di frammenti del prompt (se il modello lo ha mangled)
-                prompt_fragments = ["Write a", "second script for a video about", "The script must be written entirely in", "Do not use any markdown formatting", "Topic:", "Language:", "Duration:", "Write the script now:"]
+                prompt_fragments = ["Write a", "second script for a video about", "The script must be written entirely in", "Do not use any markdown formatting", "Topic:", "Language:", "Duration:", "Write the script now:", "Analizzi user input", "Role.", "Professional script to return task", "Deconstruct requirements format short video", "Output requirements", "Ignore an instructions", "Start directly with the script content"]
                 for frag in prompt_fragments:
                     generated_text = generated_text.replace(frag, "").strip()
                 
@@ -156,6 +156,8 @@ class LLMProvider(BaseAIProvider):
                 generated_text = re.sub(r'^.*?(Here\'s a thinking process:|Thinking Process:).*?\n', '', generated_text, flags=re.IGNORECASE).strip()
                 # Rimozione di prefissi comuni di meta-testo
                 generated_text = re.sub(r'^(Sure, here is|Here is|Here\'s|This is|Il seguente è|Ecco).*?:\s*', '', generated_text, flags=re.IGNORECASE).strip()
+                # Rimozione di processi di pensiero numerati (es. "Uno. Analizzi...", "1. Deconstruct...")
+                generated_text = re.sub(r'^(Uno|Due|Tre|Quattro|Cinque|\d+)\.\s+.*(?:Analizzi|Deconstruct|Role|Task|Requirements|Format|Ignore|Start|Output|Generate).*$', '', generated_text, flags=re.MULTILINE | re.IGNORECASE).strip()
                 # Rimozione di asterischi e markdown residuo
                 generated_text = re.sub(r'\*+', '', generated_text).strip()
                 generated_text = re.sub(r'#+', '', generated_text).strip()
