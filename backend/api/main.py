@@ -234,7 +234,22 @@ def get_logs():
 @app.get("/jobs/")
 def get_all_jobs(db: Session = Depends(get_db)):
     jobs = db.query(Job).all()
-    return [{"id": j.id, "status": j.status, "profile_id": j.profile_id} for j in jobs]
+    result = []
+    for j in jobs:
+        stages = db.query(PipelineStage).filter(PipelineStage.job_id == j.id).all()
+        total_stages = len(stages)
+        # Considera 'completed' e 'waiting_for_review' come completati per la barra di progresso
+        completed_stages = len([s for s in stages if s.status in ("completed", "waiting_for_review")])
+        result.append({
+            "id": j.id, 
+            "status": j.status, 
+            "profile_id": j.profile_id,
+            "progress": {
+                "completed": completed_stages,
+                "total": total_stages
+            }
+        })
+    return result
 
 @app.get("/scheduler/status")
 def scheduler_status():
