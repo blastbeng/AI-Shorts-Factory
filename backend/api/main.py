@@ -1,3 +1,6 @@
+import os
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+
 from dotenv import load_dotenv
 load_dotenv() # Carica le variabili d'ambiente dal file .env
 
