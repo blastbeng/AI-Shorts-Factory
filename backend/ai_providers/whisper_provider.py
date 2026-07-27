@@ -62,9 +62,10 @@ class WhisperProvider(BaseAIProvider):
         audio, sampling_rate = librosa.load(audio_path, sr=16000)
         
         inputs = self.processor(audio, sampling_rate=sampling_rate, return_tensors="pt")
-        # Move inputs to the model's actual device (handles device_map="auto")
+        # Move inputs to the model's actual device and dtype (handles device_map="auto")
         model_device = next(self.model.parameters()).device
-        inputs = {k: v.to(model_device) for k, v in inputs.items()}
+        model_dtype = next(self.model.parameters()).dtype
+        inputs = {k: v.to(model_device, model_dtype) for k, v in inputs.items()}
         
         with torch.no_grad():
             predicted_ids = self.model.generate(**inputs)
@@ -113,9 +114,10 @@ class WhisperProvider(BaseAIProvider):
         audio, sampling_rate = librosa.load(audio_path, sr=16000)
         
         inputs = self.processor(audio, sampling_rate=sampling_rate, return_tensors="pt")
-        # Move inputs to the model's actual device (handles device_map="auto")
+        # Move inputs to the model's actual device and dtype (handles device_map="auto")
         model_device = next(self.model.parameters()).device
-        inputs = {k: v.to(model_device) for k, v in inputs.items()}
+        model_dtype = next(self.model.parameters()).dtype
+        inputs = {k: v.to(model_device, model_dtype) for k, v in inputs.items()}
         
         with torch.no_grad():
             predicted_ids = self.model.generate(**inputs, return_timestamps=True)
