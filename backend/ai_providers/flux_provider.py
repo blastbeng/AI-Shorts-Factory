@@ -51,7 +51,6 @@ class FluxProvider(BaseAIProvider):
                     del self.pipeline
                     self.pipeline = None
                     import gc
-                    import torch
                     gc.collect()
                     torch.cuda.empty_cache()
                 self.pipeline = FluxPipeline.from_pretrained(model_path, torch_dtype=torch.float16)
