@@ -53,8 +53,10 @@ class FluxProvider(BaseAIProvider):
                 if self.pipeline is not None:
                     self.pipeline.to("cpu")
                     import gc
+                    import torch
                     gc.collect()
-                    torch.cuda.empty_cache()
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
                 
                 # Check system RAM before attempting CPU offload
                 available_ram = self.gm.get_available_system_ram_gb()

@@ -55,7 +55,8 @@ class WhisperProvider(BaseAIProvider):
                     import gc
                     import torch
                     gc.collect()
-                    torch.cuda.empty_cache()
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
                 self.model = WhisperForConditionalGeneration.from_pretrained(model_path, torch_dtype=torch.float16, device_map="auto")
             
         logger.info(f"Trascrizione audio da: {audio_path}")
@@ -106,7 +107,8 @@ class WhisperProvider(BaseAIProvider):
                     import gc
                     import torch
                     gc.collect()
-                    torch.cuda.empty_cache()
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
                 self.model = WhisperForConditionalGeneration.from_pretrained(model_path, torch_dtype=torch.float16, device_map="auto")
             
         logger.info(f"Trascrizione audio per sottotitoli da: {audio_path}")

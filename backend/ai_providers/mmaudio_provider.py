@@ -53,8 +53,10 @@ class MMAudioProvider(BaseAIProvider):
                     del self.model
                     self.model = None
                     import gc
+                    import torch
                     gc.collect()
-                    torch.cuda.empty_cache()
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
                 
                 available_ram = self.gm.get_available_system_ram_gb()
                 if available_ram < 4.0:
