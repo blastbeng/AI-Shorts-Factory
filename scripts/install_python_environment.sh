@@ -14,6 +14,9 @@ source venv/bin/activate
 echo "Aggiornamento di pip..."
 pip install --upgrade pip
 
+echo "Installazione di PyTorch con supporto ROCm per GPU AMD..."
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.1
+
 echo "Installazione delle librerie Python di base..."
 pip install -r requirements.txt
 
