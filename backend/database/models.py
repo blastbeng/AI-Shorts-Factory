@@ -13,7 +13,7 @@ class Job(Base):
     __tablename__ = "jobs"
     id = Column(Integer, primary_key=True, index=True)
     status = Column(String, default="pending")  # pending, running, completed, failed
-    profile_id = Column(Integer, nullable=True)
+    profile_id = Column(Integer, ForeignKey("generation_profiles.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     videos = relationship("Video", backref="job")

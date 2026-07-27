@@ -2,7 +2,7 @@ import os
 import yaml
 import torch
 import scipy.io.wavfile as wavfile
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModel
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger
@@ -26,7 +26,7 @@ class KokoroProvider(BaseAIProvider):
         if not self.health_check():
             raise RuntimeError("Modello Kokoro TTS non installato.")
             
-        gpu = self.gm.get_gpu_for_task("voice_generation")
+        gpu = self.gm.get_gpu_for_task("voice_generation", self.get_gpu_requirements().get("vram_required_gb", 0))
         if not gpu:
             raise RuntimeError("Nessuna GPU assegnata per la voice generation.")
             
@@ -36,7 +36,7 @@ class KokoroProvider(BaseAIProvider):
             logger.info("Caricamento modello Kokoro TTS...")
             model_path = self.model_info.get("path")
             self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-            self.model = AutoModelForCausalLM.from_pretrained(model_path).to(device)
+            self.model = AutoModel.from_pretrained(model_path, trust_remote_code=True).to(device)
             
         logger.info(f"Generazione voce per testo: {text}")
         inputs = self.tokenizer(text, return_tensors="pt").to(device)

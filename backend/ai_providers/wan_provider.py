@@ -24,7 +24,7 @@ class WanProvider(BaseAIProvider):
         if not self.health_check():
             raise RuntimeError("Modello Wan 2.2 non installato.")
 
-        gpu = self.gm.get_gpu_for_task("video_generation")
+        gpu = self.gm.get_gpu_for_task("video_generation", self.get_gpu_requirements().get("vram_required_gb", 0))
         if not gpu:
             raise RuntimeError("Nessuna GPU assegnata per la video generation.")
 

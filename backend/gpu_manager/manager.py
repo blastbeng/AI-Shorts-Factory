@@ -13,10 +13,12 @@ class GPUManager:
     def get_gpus(self):
         return self.config.get("gpus", [])
 
-    def get_gpu_for_task(self, task_name):
+    def get_gpu_for_task(self, task_name, required_vram_gb=0):
         for gpu in self.get_gpus():
             if task_name in gpu.get("assigned_tasks", []):
-                return gpu
+                vram_info = self.monitor_vram(gpu["id"])
+                if vram_info and vram_info["vram_free_gb"] >= required_vram_gb:
+                    return gpu
         return None
 
     def get_device_string(self, gpu_id, preferred_backend=None):
