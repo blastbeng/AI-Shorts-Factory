@@ -5,9 +5,11 @@ from backend.database.session import Base, engine, get_db
 from backend.database.models import GenerationProfile, Job
 from backend.gpu_manager.manager import GPUManager
 from backend.domain.pipeline import PipelineOrchestrator
+from backend.services.logger import logger
 
 app = FastAPI(title="AI Shorts Factory")
 Base.metadata.create_all(bind=engine)
+logger.info("Avvio dell'applicazione AI Shorts Factory")
 
 class ProfileCreate(BaseModel):
     name: str
@@ -23,6 +25,16 @@ def health():
 def gpus():
     gm = GPUManager()
     return gm.get_gpus()
+
+@app.get("/monitor")
+def monitor():
+    gm = GPUManager()
+    gpus = gm.get_gpus()
+    logger.info("Richiesta monitoraggio ricevuta")
+    return {
+        "system_status": "operational",
+        "gpus": gpus
+    }
 
 @app.post("/profiles/")
 def create_profile(profile: ProfileCreate, db: Session = Depends(get_db)):
