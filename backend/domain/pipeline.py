@@ -6,6 +6,7 @@ from backend.ai_providers.kokoro_provider import KokoroProvider
 from backend.ai_providers.mmaudio_provider import MMAudioProvider
 from backend.ai_providers.flux_provider import FluxProvider
 from backend.ai_providers.llm_provider import LLMProvider
+from backend.media.ffmpeg_utils import FFmpegUtils
 import os
 import subprocess
 
@@ -118,24 +119,9 @@ class PipelineOrchestrator:
                     self._update_stage(stage, "completed", audio_path)
 
                 elif stage == "video_assembly":
-                    # Usa ffmpeg per unire video, voce e audio.
-                    # -map 0:v:0 seleziona il video dal primo input
-                    # -map 1:a:0 seleziona l'audio (voce) dal secondo input
-                    # -map 2:a:0 seleziona l'audio (effetti) dal terzo input
-                    # -filter_complex amix=inputs=2 mixa i due audio
-                    cmd = [
-                        "ffmpeg", "-y",
-                        "-i", video_path,
-                        "-i", voice_path,
-                        "-i", audio_path,
-                        "-map", "0:v:0",
-                        "-filter_complex", "[1:a:0][2:a:0]amix=inputs=2:duration=longest[a]",
-                        "-map", "[a]",
-                        "-c:v", "copy",
-                        "-c:a", "aac",
-                        final_video_path
-                    ]
-                    subprocess.run(cmd, check=True, capture_output=True)
+                    success = FFmpegUtils.assemble_video(video_path, voice_path, audio_path, final_video_path)
+                    if not success:
+                        raise RuntimeError("Assemblaggio video fallito.")
                     self._update_stage(stage, "completed", final_video_path)
 
                 elif stage == "quality_scoring":

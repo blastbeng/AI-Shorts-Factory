@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+sqlalchemy
+pyyaml
+torch
+torchvision
+torchaudio
+python-dotenv
+openai
+imageio
+librosa
+scipy
+transformers
+diffusers
+huggingface_hub
