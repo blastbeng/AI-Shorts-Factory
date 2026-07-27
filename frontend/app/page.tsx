@@ -42,19 +42,21 @@ export default function Home() {
   const [schedulerRunning, setSchedulerRunning] = useState(false);
   const [models, setModels] = useState<{name: string, status: string}[]>([]);
   const [stats, setStats] = useState({total_videos: 0, approved_videos: 0, published_videos: 0, total_jobs: 0});
+  const [health, setHealth] = useState<{status: string} | null>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
   const fetchData = async () => {
     try {
-      const [videosRes, jobsRes, gpusRes, logsRes, modelsRes, statsRes] = await Promise.all([
+      const [videosRes, jobsRes, gpusRes, logsRes, modelsRes, statsRes, healthRes] = await Promise.all([
         fetch(`${apiUrl}/videos/`),
         fetch(`${apiUrl}/jobs/`),
         fetch(`${apiUrl}/gpus`),
         fetch(`${apiUrl}/logs`),
         fetch(`${apiUrl}/models/status`),
-        fetch(`${apiUrl}/stats`)
+        fetch(`${apiUrl}/stats`),
+        fetch(`${apiUrl}/health`)
       ]);
       setVideos(await videosRes.json());
       setJobs(await jobsRes.json());
@@ -64,8 +66,10 @@ export default function Home() {
       const modelsData = await modelsRes.json();
       setModels(modelsData.models || []);
       setStats(await statsRes.json());
+      setHealth(await healthRes.json());
     } catch (error) {
       console.error("Errore:", error);
+      setHealth(null);
     } finally {
       setLoading(false);
     }
@@ -384,6 +388,33 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
+            )}
+          </div>
+
+          {/* System Health */}
+          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-lg">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 bg-teal-500 rounded-full"></span> Stato Sistema
+            </h2>
+            {loading ? <p className="text-gray-400">Caricamento...</p> : (
+              <div className="space-y-3">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-300">Backend API</span>
+                  <span className={`text-xs px-2 py-1 rounded-full ${health?.status === 'ok' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                    {health?.status === 'ok' ? 'Online' : 'Offline'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-300">API URL</span>
+                  <span className="text-xs text-gray-400 truncate ml-2">{apiUrl}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-300">Auto Scheduler</span>
+                  <span className={`text-xs px-2 py-1 rounded-full ${schedulerRunning ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                    {schedulerRunning ? 'Attivo' : 'Fermo'}
+                  </span>
+                </div>
+              </div>
             )}
           </div>
 
