@@ -266,12 +266,12 @@ export default function Home() {
           </div>
 
           {/* Stato Generazioni */}
-          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-lg">
+          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-lg h-full flex flex-col">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
               <span className="w-2 h-2 bg-yellow-500 rounded-full"></span> Stato Generazioni
             </h2>
             {loading ? <p className="text-gray-400">Caricamento...</p> : (
-              <ul className="space-y-3 max-h-64 overflow-y-auto pr-2">
+              <ul className="space-y-3 flex-1 overflow-y-auto pr-2">
                 {jobs.length === 0 ? <li className="text-gray-500 text-sm">Nessun job attivo.</li> : jobs.map((j) => {
                   const progressPercent = j.progress.total > 0 ? (j.progress.completed / j.progress.total) * 100 : 0;
                   return (
@@ -423,7 +423,7 @@ export default function Home() {
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
               <span className="w-2 h-2 bg-purple-500 rounded-full"></span> Log Console
             </h2>
-            <div ref={logContainerRef} className="bg-black/50 p-4 rounded-lg h-48 overflow-y-auto font-mono text-xs text-gray-300 border border-gray-700">
+            <div ref={logContainerRef} className="bg-black/50 p-4 rounded-lg h-96 overflow-y-auto font-mono text-xs text-gray-300 border border-gray-700">
               {logs.length === 0 ? <p>Nessun log disponibile.</p> : logs.map((log, i) => (
                 <div key={i} className="py-0.5 border-b border-gray-800/50">{log}</div>
               ))}
