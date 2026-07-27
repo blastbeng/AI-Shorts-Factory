@@ -4,6 +4,11 @@ video:
     vram_required_gb: 14
     backend: "rocm"
     status: "not_installed"
+  ltx_video:
+    path: "./models/video/ltx_video"
+    vram_required_gb: 10
+    backend: "rocm"
+    status: "not_installed"
 audio:
   mmaudio:
     path: "./models/audio/mmaudio"
@@ -20,6 +25,11 @@ image:
   flux:
     path: "./models/image/flux"
     vram_required_gb: 12
+    backend: "rocm"
+    status: "not_installed"
+  qwen_image:
+    path: "./models/image/qwen_image"
+    vram_required_gb: 10
     backend: "rocm"
     status: "not_installed"
 speech:
