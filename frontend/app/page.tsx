@@ -211,9 +211,13 @@ export default function Home() {
                           )}
                         </div>
                       </div>
-                      {j.progress.total > 0 && (
+                      {j.progress.total > 0 ? (
                         <div className="w-full bg-gray-600 rounded-full h-1.5">
                           <div className="bg-blue-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${progressPercent}%` }}></div>
+                        </div>
+                      ) : (j.status === 'running' || j.status === 'pending') && (
+                        <div className="flex justify-center mt-1">
+                          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                         </div>
                       )}
                     </li>

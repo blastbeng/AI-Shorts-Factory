@@ -61,8 +61,7 @@ class LLMProvider(BaseAIProvider):
                     "-m", self.model_path,
                     "-f", temp_file_path,
                     "-n", str(max_length),
-                    "--no-display-prompt",
-                    "--log-disable"
+                    "--no-display-prompt"
                 ] + self.params.split()
                 
                 try:
