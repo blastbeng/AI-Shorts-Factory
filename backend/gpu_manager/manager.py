@@ -16,11 +16,25 @@ class GPUManager:
     def get_gpu_for_task(self, task_name, required_vram_gb=0):
         if required_vram_gb is None:
             required_vram_gb = 0
+            
+        logger.info(f"Ricerca GPU per task '{task_name}' con requisito VRAM: {required_vram_gb}GB")
+        
         for gpu in self.get_gpus():
             if task_name in gpu.get("assigned_tasks", []):
                 vram_info = self.monitor_vram(gpu["id"])
-                if vram_info and vram_info["vram_free_gb"] >= required_vram_gb:
-                    return gpu
+                if vram_info:
+                    logger.info(f"GPU {gpu['id']} ({gpu['name']}) ha {vram_info['vram_free_gb']}GB liberi. Richiesti: {required_vram_gb}GB.")
+                    if vram_info["vram_free_gb"] >= required_vram_gb:
+                        logger.info(f"GPU {gpu['id']} assegnata per '{task_name}'.")
+                        return gpu
+                    else:
+                        logger.warning(f"GPU {gpu['id']} scartata per VRAM insufficiente.")
+                else:
+                    logger.warning(f"Impossibile ottenere info VRAM per GPU {gpu['id']}.")
+            else:
+                logger.debug(f"GPU {gpu['id']} non assegnata al task '{task_name}'.")
+                
+        logger.error(f"Nessuna GPU disponibile per il task '{task_name}' con {required_vram_gb}GB richiesti.")
         return None
 
     def get_gpu_for_task_ignore_vram(self, task_name):

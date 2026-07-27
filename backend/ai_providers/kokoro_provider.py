@@ -26,7 +26,11 @@ class KokoroProvider(BaseAIProvider):
         if not self.health_check():
             raise RuntimeError("Modello Kokoro TTS non installato.")
             
-        gpu = self.gm.get_gpu_for_task("voice_generation", self.get_gpu_requirements().get("vram_required_gb", 0))
+        reqs = self.get_gpu_requirements()
+        required_vram = reqs.get("vram_required_gb", 0)
+        logger.info(f"Kokoro richiede {required_vram}GB di VRAM per la voice generation.")
+        
+        gpu = self.gm.get_gpu_for_task("voice_generation", required_vram)
         if not gpu:
             logger.warning("Nessuna GPU con VRAM sufficiente per Kokoro. Uso GPU con offload su RAM.")
             gpu = self.gm.get_gpu_for_task_ignore_vram("voice_generation")
