@@ -202,4 +202,4 @@ class PipelineOrchestrator:
                 self._update_stage(stage, "failed", str(e))
                 logger.error(f"[Job {self.job_id}] Fallimento stage {stage}: {e}")
                 return False
-        return True
+        return "waiting_for_review"

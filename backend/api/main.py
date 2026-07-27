@@ -102,6 +102,9 @@ def approve_video(video_id: int, db: Session = Depends(get_db)):
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
     video.approved = True
+    job = db.query(Job).filter(Job.id == video.job_id).first()
+    if job:
+        job.status = "completed"
     db.commit()
     db.refresh(video)
     return video
@@ -112,6 +115,9 @@ def reject_video(video_id: int, db: Session = Depends(get_db)):
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
     video.approved = False
+    job = db.query(Job).filter(Job.id == video.job_id).first()
+    if job:
+        job.status = "rejected"
     db.commit()
     db.refresh(video)
     return video

@@ -52,8 +52,13 @@ class JobWorker:
                     
                     try:
                         orchestrator = PipelineOrchestrator(job.id, profile, db)
-                        success = orchestrator.run()
-                        job.status = "completed" if success else "failed"
+                        result = orchestrator.run()
+                        if result == "waiting_for_review":
+                            job.status = "waiting_for_review"
+                        elif result:
+                            job.status = "completed"
+                        else:
+                            job.status = "failed"
                     except Exception as e:
                         logger.error(f"[Worker] Errore job {job.id}: {e}")
                         job.status = "failed"
