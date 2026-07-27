@@ -63,7 +63,7 @@ class KokoroProvider(BaseAIProvider):
             try:
                 logger.info("Kokoro: Inizializzazione KModel...")
                 # Forza float32 per evitare problemi di stabilità con ROCm/FP16
-                self.model = KModel().to(device).float()
+                self.model = KModel(disable_complex=True).to(device).float()
                 logger.info(f"Kokoro: KModel caricato su {device} con dtype float32.")
                 logger.info("Kokoro: Inizializzazione KPipeline...")
                 self.pipeline = KPipeline(model=self.model, lang_code=kokoro_lang)
