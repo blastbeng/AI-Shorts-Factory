@@ -2,24 +2,24 @@ audio:
   mmaudio:
     backend: cuda
     path: ./models/audio/mmaudio
-    status: not_installed
+    status: installed
     vram_required_gb: 8
 image:
   flux:
     backend: rocm
     path: ./models/image/flux
-    status: not_installed
+    status: installed
     vram_required_gb: 12
   qwen_image:
     backend: rocm
     path: ./models/image/qwen_image
-    status: not_installed
+    status: installed
     vram_required_gb: 10
 speech:
   whisper:
     backend: cuda
     path: ./models/speech/whisper
-    status: not_installed
+    status: installed
     vram_required_gb: 4
 text:
   llm_base:
@@ -30,7 +30,7 @@ video:
   ltx_video:
     backend: rocm
     path: ./models/video/ltx_video
-    status: not_installed
+    status: installed
     vram_required_gb: 10
   wan_2_2_5b:
     backend: rocm
@@ -41,5 +41,5 @@ voice:
   kokoro_tts:
     backend: cuda
     path: ./models/voice/kokoro_tts
-    status: not_installed
+    status: installed
     vram_required_gb: 4
