@@ -46,6 +46,8 @@ class MMAudioProvider(BaseAIProvider):
             
         sampling_rate = self.model.config.audio_encoder.sampling_rate
         audio_values = audio_values.cpu().numpy().squeeze()
+        # Converti da float32 [-1, 1] a int16
+        audio_values = (audio_values * 32767).astype("int16")
         wavfile.write(output_path, sampling_rate, audio_values)
         logger.info(f"Audio salvato in {output_path}")
         return output_path

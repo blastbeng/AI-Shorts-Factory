@@ -50,6 +50,9 @@ class WanProvider(BaseAIProvider):
         if isinstance(video, torch.Tensor):
             video = video.cpu().numpy()
 
+        # Converti da [0, 1] float32 a [0, 255] uint8
+        video = (video * 255).round().astype("uint8")
+
         import imageio
         imageio.mimsave(output_path, video, fps=24)
         logger.info(f"Video salvato in {output_path}")

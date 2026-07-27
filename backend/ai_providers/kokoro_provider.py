@@ -47,6 +47,8 @@ class KokoroProvider(BaseAIProvider):
         # Assumendo che il modello restituisca un tensore audio
         # La logica di salvataggio dipende dall'output specifico del modello Kokoro
         audio_data = audio_output.cpu().numpy().squeeze()
+        # Converti da float32 [-1, 1] a int16
+        audio_data = (audio_data * 32767).astype("int16")
         wavfile.write(output_path, 24000, audio_data)
         logger.info(f"Voce salvata in {output_path}")
         return output_path
