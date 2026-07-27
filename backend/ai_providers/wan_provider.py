@@ -52,7 +52,6 @@ class WanProvider(BaseAIProvider):
                 if self.pipeline is not None:
                     self.pipeline.to("cpu")
                     import gc
-                    import torch
                     gc.collect()
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()
