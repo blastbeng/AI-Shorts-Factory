@@ -14,11 +14,21 @@ from backend.services.social.tiktok_provider import TikTokProvider
 from backend.services.social.youtube_provider import YouTubeProvider
 from backend.services.social.instagram_provider import InstagramProvider
 from backend.services.social.facebook_provider import FacebookProvider
+from backend.workers.job_worker import job_worker
+from backend.services.scheduler import auto_scheduler
+from backend.services.config_validator import ConfigValidator
 import os
 
 app = FastAPI(title="AI Shorts Factory")
 Base.metadata.create_all(bind=engine)
 logger.info("Avvio dell'applicazione AI Shorts Factory")
+
+# Validazione configurazione
+ConfigValidator.validate_and_exit()
+
+# Avvia worker e scheduler in background
+job_worker.start()
+auto_scheduler.start(interval_minutes=int(os.getenv("SCHEDULER_INTERVAL_MINUTES", "60")))
 
 # Monta la directory output per servire i video generati
 os.makedirs("output", exist_ok=True)
@@ -185,3 +195,21 @@ def get_job_details(job_id: int, db: Session = Depends(get_db)):
 def get_all_jobs(db: Session = Depends(get_db)):
     jobs = db.query(Job).all()
     return [{"id": j.id, "status": j.status, "profile_id": j.profile_id} for j in jobs]
+
+@app.get("/scheduler/status")
+def scheduler_status():
+    return {
+        "worker_running": job_worker._running,
+        "scheduler_running": auto_scheduler._running,
+        "scheduler_interval_minutes": auto_scheduler._interval_minutes
+    }
+
+@app.post("/scheduler/start")
+def start_scheduler(interval: int = 60):
+    auto_scheduler.start(interval_minutes=interval)
+    return {"status": "started", "interval_minutes": interval}
+
+@app.post("/scheduler/stop")
+def stop_scheduler():
+    auto_scheduler.stop()
+    return {"status": "stopped"}

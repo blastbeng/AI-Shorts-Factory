@@ -54,7 +54,30 @@ class PipelineOrchestrator:
         audio_path = ""
         final_video_path = "output/final_video.mp4"
 
+        # Recupera gli stage già completati per supportare il resume
+        completed_stages = self.db.query(PipelineStage).filter(
+            PipelineStage.job_id == self.job_id,
+            PipelineStage.status == "completed"
+        ).all()
+        completed_names = {s.stage_name for s in completed_stages}
+
+        # Recupera i risultati degli stage completati
+        for s in completed_stages:
+            if s.stage_name == "script_generation":
+                script = s.result or ""
+            elif s.stage_name == "voice_generation":
+                voice_path = s.result or ""
+            elif s.stage_name == "image_generation":
+                image_path = s.result or ""
+            elif s.stage_name == "video_generation":
+                video_path = s.result or ""
+            elif s.stage_name == "audio_generation":
+                audio_path = s.result or ""
+
         for stage in self.stages:
+            if stage in completed_names:
+                logger.info(f"[Job {self.job_id}] Stage {stage} già completato, salto.")
+                continue
             self._update_stage(stage, "running")
             try:
                 if stage == "topic_generation":
