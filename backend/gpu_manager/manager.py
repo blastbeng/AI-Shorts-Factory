@@ -71,7 +71,15 @@ class GPUManager:
                     ["rocm-smi", "--showmeminfo", "vram", "--showuse", "--json"],
                     capture_output=True, text=True, check=True
                 )
-                data = json.loads(result.stdout)
+                stdout = result.stdout
+                json_start = stdout.find('{')
+                json_end = stdout.rfind('}')
+                if json_start != -1 and json_end != -1:
+                    json_str = stdout[json_start:json_end+1]
+                    data = json.loads(json_str)
+                else:
+                    data = {}
+                
                 card_data = data.get(f"card{device_index}", {})
                 vram_used_bytes = float(card_data.get("VRAM Total Used Memory (B)", 0))
                 vram_used = vram_used_bytes / (1024 * 1024 * 1024)
