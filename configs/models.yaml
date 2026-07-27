@@ -40,6 +40,6 @@ speech:
     status: "not_installed"
 text:
   llm_base:
-    model_name: "llama3" # Verrà sovrascritto da .env
-    backend: "api"
+    model_name: "Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive"
+    backend: "vulkan"
     status: "installed"
