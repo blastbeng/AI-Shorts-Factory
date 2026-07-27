@@ -1,6 +1,7 @@
 import os
 import yaml
 import torch
+import numpy as np
 from diffusers import LTXVideoPipeline
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
@@ -38,8 +39,17 @@ class LtxProvider(BaseAIProvider):
             self.pipeline.to(device)
             
         logger.info(f"Generazione video LTX per prompt: {prompt}")
-        video = self.pipeline(prompt, num_inference_steps=30).frames[0]
-        
+        video = self.pipeline(
+            prompt, 
+            num_inference_steps=30, 
+            height=1920, 
+            width=1080,
+            num_frames=49
+        ).frames[0]
+
+        if isinstance(video, torch.Tensor):
+            video = video.cpu().numpy()
+
         imageio.mimsave(output_path, video, fps=24)
         logger.info(f"Video LTX salvato in {output_path}")
         return output_path

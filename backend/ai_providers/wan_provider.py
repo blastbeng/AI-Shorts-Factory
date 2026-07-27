@@ -1,6 +1,7 @@
 import os
 import yaml
 import torch
+import numpy as np
 from diffusers import DiffusionPipeline
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
@@ -37,7 +38,17 @@ class WanProvider(BaseAIProvider):
             self.pipeline.to(device)
 
         logger.info(f"Generazione video per prompt: {prompt}")
-        video = self.pipeline(prompt, num_inference_steps=50).frames[0]
+        # Aggiungi parametri per video verticale (Shorts)
+        video = self.pipeline(
+            prompt, 
+            num_inference_steps=50, 
+            height=1920, 
+            width=1080,
+            num_frames=49  # Aggiungi un numero di frame, es. 49 per ~2 secondi a 24fps
+        ).frames[0]
+
+        if isinstance(video, torch.Tensor):
+            video = video.cpu().numpy()
 
         import imageio
         imageio.mimsave(output_path, video, fps=24)

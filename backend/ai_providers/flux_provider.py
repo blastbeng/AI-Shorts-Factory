@@ -37,7 +37,12 @@ class FluxProvider(BaseAIProvider):
             self.pipeline.to(device)
             
         logger.info(f"Generazione immagine per prompt: {prompt}")
-        image = self.pipeline(prompt, num_inference_steps=30).images[0]
+        image = self.pipeline(
+            prompt, 
+            num_inference_steps=30, 
+            height=1920, 
+            width=1080
+        ).images[0]
         
         image.save(output_path)
         logger.info(f"Immagine salvata in {output_path}")
