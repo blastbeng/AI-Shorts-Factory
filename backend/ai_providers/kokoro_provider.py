@@ -93,8 +93,8 @@ class KokoroProvider(BaseAIProvider):
         if self.pipeline is not None:
             del self.pipeline
             self.pipeline = None
-            import gc
-            import torch
-            gc.collect()
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
+        import gc
+        import torch
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
