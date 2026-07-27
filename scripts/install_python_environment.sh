@@ -14,10 +14,7 @@ echo "Installazione delle librerie Python di base..."
 pip install -r requirements.txt
 
 echo "Installazione di llama-cpp-python con backend Vulkan..."
-CMAKE_ARGS="-DGGML_VULKAN=on" CMAKE_BUILD_PARALLEL_LEVEL=$(nproc) pip install llama-cpp-python --upgrade --force-reinstall --no-cache-dir -v
-
-echo "Ripristino della versione di numpy per compatibilità con numba..."
-pip install "numpy<2.5"
+CMAKE_ARGS="-DGGML_VULKAN=on" CMAKE_BUILD_PARALLEL_LEVEL=$(nproc) pip install llama-cpp-python "numpy<2.5" --upgrade --force-reinstall --no-cache-dir -v
 
 echo "Ambiente Python configurato con successo."
 deactivate
