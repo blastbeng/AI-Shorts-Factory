@@ -74,7 +74,7 @@ class FluxProvider(BaseAIProvider):
             num_inference_steps=4,
             guidance_scale=0.0,
             height=960, 
-            width=540
+            width=544
         ).images[0]
         
         image.save(output_path)

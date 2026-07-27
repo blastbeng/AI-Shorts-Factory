@@ -70,7 +70,7 @@ class WanProvider(BaseAIProvider):
             prompt, 
             num_inference_steps=30, 
             height=960, 
-            width=540,
+            width=544,
             num_frames=49
         ).frames[0]
 
