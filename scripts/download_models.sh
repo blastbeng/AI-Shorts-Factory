@@ -48,7 +48,11 @@ snapshot_download(repo_id='$REPO_ID', local_dir='$DEST_DIR', local_dir_use_symli
 fi
 
 echo "Aggiornamento di configs/models.yaml per $MODEL_NAME..."
-python3 -c "
+PYTHON_BIN="venv/bin/python"
+if [ ! -f "$PYTHON_BIN" ]; then
+    PYTHON_BIN="python3"
+fi
+"$PYTHON_BIN" -c "
 import yaml
 with open('configs/models.yaml', 'r') as f:
     config = yaml.safe_load(f)
