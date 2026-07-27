@@ -22,6 +22,8 @@ if [ -f ".env" ]; then
     set +a
 fi
 
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+
 # Imposta valori predefiniti se non presenti nel .env
 BACKEND_HOST=${BACKEND_HOST:-"0.0.0.0"}
 BACKEND_PORT=${BACKEND_PORT:-"8000"}
