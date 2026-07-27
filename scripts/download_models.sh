@@ -29,17 +29,20 @@ else
     
     mkdir -p "$DEST_DIR"
 
-    HF_CLI="venv/bin/hf"
+    PYTHON_BIN="venv/bin/python"
 
-    if [ -f "$HF_CLI" ]; then
-        echo "Utilizzo di hf dall'ambiente virtuale..."
-        "$HF_CLI" download "$REPO_ID" --local-dir "$DEST_DIR" --local-dir-use-symlinks False
+    if [ -f "$PYTHON_BIN" ]; then
+        echo "Utilizzo di Python dall'ambiente virtuale per il download..."
+        "$PYTHON_BIN" -c "
+from huggingface_hub import snapshot_download
+snapshot_download(repo_id='$REPO_ID', local_dir='$DEST_DIR', local_dir_use_symlinks=False)
+"
         
         # Crea il marker di completamento
         touch "$DEST_DIR/.download_complete"
         echo "[OK] Download completato e verificato."
     else
-        echo "[ERRORE] hf non trovato in venv/bin/. Assicurati di aver eseguito scripts/install_python_environment.sh"
+        echo "[ERRORE] Python non trovato in venv/bin/. Assicurati di aver eseguito scripts/install_python_environment.sh"
         exit 1
     fi
 fi
