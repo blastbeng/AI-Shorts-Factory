@@ -36,6 +36,17 @@ class PipelineOrchestrator:
         self.db.commit()
         logger.info(f"[Job {self.job_id}] Stage {stage_name}: {status}")
 
+    def _generate_dummy_media(self, media_type, output_path):
+        import subprocess
+        if media_type == "audio":
+            cmd = ["ffmpeg", "-y", "-f", "lavfi", "-i", "anullsrc=r=24000:cl=mono", "-t", "1", "-q:a", "9", "-acodec", "pcm_s16le", output_path]
+        elif media_type == "image":
+            cmd = ["ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=black:s=1080x1920", "-vframes", "1", output_path]
+        elif media_type == "video":
+            cmd = ["ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=black:s=1080x1920:r=24", "-t", "1", output_path]
+        subprocess.run(cmd, check=True, capture_output=True)
+        logger.warning(f"Generato file dummy per {media_type}: {output_path}")
+
     def run(self):
         script = ""
         voice_path = ""
@@ -94,7 +105,11 @@ class PipelineOrchestrator:
                     from backend.ai_providers.kokoro_provider import KokoroProvider
                     kokoro = KokoroProvider()
                     voice_path = f"output/voice_{self.job_id}.wav"
-                    kokoro.generate(script, voice_path)
+                    if not kokoro.health_check():
+                        logger.warning("Kokoro TTS non installato. Uso file audio dummy.")
+                        self._generate_dummy_media("audio", voice_path)
+                    else:
+                        kokoro.generate(script, voice_path)
                     self._update_stage(stage, "completed", voice_path)
 
                 elif stage == "storyboard_creation":
@@ -109,7 +124,11 @@ class PipelineOrchestrator:
                     flux = FluxProvider()
                     image_path = f"output/image_{self.job_id}.png"
                     image_prompt = f"Immagine di alta qualità per un video su: {self.profile.topic}. Scene: {storyboard}"
-                    flux.generate(image_prompt, image_path)
+                    if not flux.health_check():
+                        logger.warning("Flux non installato. Uso immagine dummy.")
+                        self._generate_dummy_media("image", image_path)
+                    else:
+                        flux.generate(image_prompt, image_path)
                     self._update_stage(stage, "completed", image_path)
 
                 elif stage == "video_generation":
@@ -117,7 +136,11 @@ class PipelineOrchestrator:
                     wan = WanProvider()
                     video_path = f"output/video_{self.job_id}.mp4"
                     video_prompt = f"Video short verticale basato su questo script: {script}"
-                    wan.generate(video_prompt, video_path)
+                    if not wan.health_check():
+                        logger.warning("Wan 2.2 non installato. Uso video dummy.")
+                        self._generate_dummy_media("video", video_path)
+                    else:
+                        wan.generate(video_prompt, video_path)
                     self._update_stage(stage, "completed", video_path)
 
                 elif stage == "audio_generation":
@@ -125,7 +148,11 @@ class PipelineOrchestrator:
                     mmaudio = MMAudioProvider()
                     audio_path = f"output/audio_{self.job_id}.wav"
                     audio_prompt = f"Effetti sonori e musica di sottofondo per queste scene: {storyboard}"
-                    mmaudio.generate(audio_prompt, audio_path)
+                    if not mmaudio.health_check():
+                        logger.warning("MMAudio non installato. Uso file audio dummy.")
+                        self._generate_dummy_media("audio", audio_path)
+                    else:
+                        mmaudio.generate(audio_prompt, audio_path)
                     self._update_stage(stage, "completed", audio_path)
 
                 elif stage == "video_assembly":
