@@ -1,5 +1,6 @@
 import os
 import re
+import json
 import yaml
 from openai import OpenAI
 from backend.ai_providers.base_provider import BaseAIProvider
@@ -127,7 +128,7 @@ class LLMProvider(BaseAIProvider):
                 if is_interrupted and is_interrupted():
                     return ""
                 
-                system_prompt = f"You are a professional scriptwriter. Follow the user's instructions exactly. Do not output any thinking process, reasoning, meta-text, prompt analysis, or step-by-step breakdowns. Do not output <think> or tags. Output ONLY the final content directly, wrapped between <final_output> and </final_output> tags. The output MUST be in the language requested by the user. Do not include any introductory or concluding remarks. Do not output the prompt or any part of it. Never output your internal thoughts or translate the prompt."
+                system_prompt = f"You are a professional scriptwriter. Follow the user's instructions exactly. Do not output any thinking process, reasoning, meta-text, prompt analysis, or step-by-step breakdowns. Output ONLY a valid JSON object with a single key 'content' containing the final text. The output MUST be in the language requested by the user. Do not include any introductory or concluding remarks. Do not output the prompt or any part of it. Never output your internal thoughts or translate the prompt. Example: {{\"content\": \"The generated text here.\"}}"
                 response = self.llm.create_chat_completion(
                     messages=[
                         {"role": "system", "content": system_prompt},
@@ -139,25 +140,29 @@ class LLMProvider(BaseAIProvider):
                     top_k=self.top_k,
                     repeat_penalty=self.repeat_penalty,
                     stream=False,
-                    stop=["</final_output>"],
+                    response_format={"type": "json_object"},
                     chat_template_kwargs={"enable_thinking": False}
                 )
                 generated_text = response["choices"][0]["message"]["content"].strip()
                 
-                # Estrazione del contenuto tra i tag <final_output>
-                match = re.search(r'<final_output>(.*?)</final_output>', generated_text, flags=re.DOTALL)
-                if match:
-                    generated_text = match.group(1).strip()
-                else:
-                    # Fallback: rimozione di eventuali tag di pensiero e meta-testo
-                    generated_text = re.sub(r'.*?```', '', generated_text, flags=re.DOTALL).strip()
-                    generated_text = re.sub(r'<think>.*?</think>', '', generated_text, flags=re.DOTALL).strip()
-                    generated_text = re.sub(r'<thought>.*?</thought>', '', generated_text, flags=re.DOTALL).strip()
-                    generated_text = re.sub(r'<reasoning>.*?</reasoning>', '', generated_text, flags=re.DOTALL).strip()
-                    generated_text = re.sub(r'^.*?(Here\'s a thinking process:|Thinking Process:).*?\n', '', generated_text, flags=re.IGNORECASE).strip()
-                    generated_text = re.sub(r'^(Sure, here is|Here is|Here\'s|This is|Il seguente è|Ecco).*?:\s*', '', generated_text, flags=re.IGNORECASE).strip()
-                    generated_text = re.sub(r'\*+', '', generated_text).strip()
-                    generated_text = re.sub(r'#+', '', generated_text).strip()
+                # Estrazione del contenuto dal JSON
+                try:
+                    parsed_json = json.loads(generated_text)
+                    generated_text = parsed_json.get("content", "").strip()
+                except json.JSONDecodeError:
+                    # Fallback: estrazione del campo content tramite regex
+                    match = re.search(r'"content"\s*:\s*"(.*?)"', generated_text, flags=re.DOTALL)
+                    if match:
+                        generated_text = match.group(1).strip()
+                    else:
+                        # Fallback finale: rimozione di eventuali tag di pensiero e meta-testo
+                        generated_text = re.sub(r'<think>.*?</think>', '', generated_text, flags=re.DOTALL).strip()
+                        generated_text = re.sub(r'<thought>.*?</thought>', '', generated_text, flags=re.DOTALL).strip()
+                        generated_text = re.sub(r'<reasoning>.*?</reasoning>', '', generated_text, flags=re.DOTALL).strip()
+                        generated_text = re.sub(r'^.*?(Here\'s a thinking process:|Thinking Process:).*?\n', '', generated_text, flags=re.IGNORECASE).strip()
+                        generated_text = re.sub(r'^(Sure, here is|Here is|Here\'s|This is|Il seguente è|Ecco).*?:\s*', '', generated_text, flags=re.IGNORECASE).strip()
+                        generated_text = re.sub(r'\*+', '', generated_text).strip()
+                        generated_text = re.sub(r'#+', '', generated_text).strip()
                 
                 if is_interrupted and is_interrupted():
                     return ""
