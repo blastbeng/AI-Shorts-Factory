@@ -58,6 +58,7 @@ class LLMProvider(BaseAIProvider):
                     temp_file_path = temp_file.name
                 
                 cmd = [
+                    "stdbuf", "-eL", "-oL",
                     self.bin_path,
                     "-m", self.model_path,
                     "-f", temp_file_path,

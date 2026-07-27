@@ -8,11 +8,16 @@ class BufferHandler(logging.Handler):
     def emit(self, record):
         log_buffer.append(self.format(record))
 
+class FlushStreamHandler(logging.StreamHandler):
+    def emit(self, record):
+        super().emit(record)
+        self.flush()
+
 def setup_logger():
     logger = logging.getLogger("ai_shorts_factory")
     logger.setLevel(logging.INFO)
     
-    handler = logging.StreamHandler(sys.stdout)
+    handler = FlushStreamHandler(sys.stdout)
     handler.setLevel(logging.INFO)
     
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
