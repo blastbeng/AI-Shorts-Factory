@@ -9,48 +9,10 @@ except RuntimeError:
 
 import threading
 import time
-import multiprocessing
 from backend.database.session import SessionLocal
 from backend.database.models import Job, GenerationProfile
 from backend.domain.pipeline import PipelineOrchestrator
 from backend.services.logger import logger
-
-def _run_job_process(job_id: int, profile_id: int):
-    """Esegue un singolo job in un processo separato per isolare il contesto CUDA."""
-    db = SessionLocal()
-    try:
-        job = db.query(Job).filter(Job.id == job_id).first()
-        if not job:
-            return
-        
-        profile = db.query(GenerationProfile).filter(
-            GenerationProfile.id == profile_id
-        ).first()
-        
-        if not profile:
-            job.status = "failed"
-            db.commit()
-            return
-        
-        try:
-            orchestrator = PipelineOrchestrator(job.id, profile, db)
-            result = orchestrator.run()
-            if result == "interrupted":
-                pass
-            elif result == "waiting_for_review":
-                job.status = "waiting_for_review"
-            elif result:
-                job.status = "completed"
-            else:
-                job.status = "failed"
-        except Exception as e:
-            logger.error(f"[Worker-Process] Errore job {job.id}: {e}")
-            job.status = "failed"
-        db.commit()
-    except Exception as e:
-        logger.error(f"[Worker-Process] Errore fatale per job {job_id}: {e}")
-    finally:
-        db.close()
 
 class JobWorker:
     _instance = None
@@ -86,23 +48,33 @@ class JobWorker:
                 for job in pending_jobs:
                     job.status = "running"
                     db.commit()
-                    logger.info(f"[Worker] Avvio elaborazione job {job.id} in subprocess")
+                    logger.info(f"[Worker] Avvio elaborazione job {job.id}")
                     
-                    # Avvia il job in un processo separato per isolare CUDA/PyTorch
-                    p = multiprocessing.Process(
-                        target=_run_job_process,
-                        args=(job.id, job.profile_id)
-                    )
-                    p.start()
-                    p.join() # Attende che il processo termini
+                    profile = db.query(GenerationProfile).filter(
+                        GenerationProfile.id == job.profile_id
+                    ).first()
                     
-                    if p.exitcode != 0:
-                        # Se il processo è crashato, assicurati che il job sia marcato come fallito
-                        current_job = db.query(Job).filter(Job.id == job.id).first()
-                        if current_job and current_job.status == "running":
-                            current_job.status = "failed"
-                            db.commit()
-                            logger.error(f"[Worker] Il subprocess per il job {job.id} è terminato con codice {p.exitcode}")
+                    if not profile:
+                        job.status = "failed"
+                        db.commit()
+                        continue
+                    
+                    try:
+                        orchestrator = PipelineOrchestrator(job.id, profile, db)
+                        result = orchestrator.run()
+                        if result == "interrupted":
+                            # Non sovrascrivere lo stato, è già "interrupted"
+                            pass
+                        elif result == "waiting_for_review":
+                            job.status = "waiting_for_review"
+                        elif result:
+                            job.status = "completed"
+                        else:
+                            job.status = "failed"
+                    except Exception as e:
+                        logger.error(f"[Worker] Errore job {job.id}: {e}")
+                        job.status = "failed"
+                    db.commit()
                 
                 db.close()
                 time.sleep(2)
