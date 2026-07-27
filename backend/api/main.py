@@ -26,9 +26,9 @@ logger.info("Avvio dell'applicazione AI Shorts Factory")
 # Validazione configurazione
 ConfigValidator.validate_and_exit()
 
-# Avvia worker e scheduler in background
+# Avvia il worker in background per processare i job avviati manualmente
 job_worker.start()
-auto_scheduler.start(interval_minutes=int(os.getenv("SCHEDULER_INTERVAL_MINUTES", "60")))
+logger.info("AutoScheduler non avviato automaticamente. Generazione manuale abilitata.")
 
 # Monta la directory output per servire i video generati
 os.makedirs("output", exist_ok=True)
