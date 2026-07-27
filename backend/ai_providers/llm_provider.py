@@ -10,15 +10,27 @@ class LLMProvider(BaseAIProvider):
             self.models_config = yaml.safe_load(f)
         self.model_info = self.models_config.get("text", {}).get("llm_base", {})
         
-        # Leggi configurazioni API da .env
-        self.api_base = os.getenv("LLM_API_BASE", "http://localhost:11434/v1")
-        self.api_key = os.getenv("LLM_API_KEY", "ollama") # Ollama richiede una key fittizia
-        self.model_name = os.getenv("LLM_MODEL_NAME", self.model_info.get("model_name", "gpt-3.5-turbo"))
+        self.provider_type = os.getenv("LLM_PROVIDER", "ollama").lower()
         
-        self.client = OpenAI(base_url=self.api_base, api_key=self.api_key)
+        if self.provider_type == "openai":
+            self.api_base = "https://api.openai.com/v1"
+            self.api_key = os.getenv("OPENAI_API_KEY", "")
+            self.model_name = os.getenv("OPENAI_MODEL_NAME", "gpt-3.5-turbo")
+        elif self.provider_type == "ollama":
+            # Ollama espone un'API compatibile con OpenAI all'endpoint /v1
+            base = os.getenv("OLLAMA_API_BASE", "http://localhost:11434")
+            self.api_base = f"{base}/v1"
+            self.api_key = "ollama" # Ollama non richiede una vera API key, ma il client ne ha bisogno
+            self.model_name = os.getenv("OLLAMA_MODEL_NAME", "llama3")
+        else:
+            self.api_base = None
+            self.api_key = None
+            self.model_name = None
+            
+        if self.api_base:
+            self.client = OpenAI(base_url=self.api_base, api_key=self.api_key)
 
     def install_status(self):
-        # Considerato installato se l'API base è configurata
         return "installed" if self.api_base else "not_installed"
 
     def health_check(self):
@@ -26,9 +38,9 @@ class LLMProvider(BaseAIProvider):
 
     def generate(self, prompt: str, max_length: int = 500, *args, **kwargs):
         if not self.health_check():
-            raise RuntimeError("LLM non configurato. Controlla il file .env.")
+            raise RuntimeError("LLM non configurato. Controlla il file .env e LLM_PROVIDER.")
         
-        logger.info(f"Generazione testo tramite LLM ({self.model_name}) su {self.api_base}")
+        logger.info(f"Generazione testo tramite LLM ({self.provider_type} - {self.model_name}) su {self.api_base}")
         try:
             response = self.client.chat.completions.create(
                 model=self.model_name,
@@ -42,7 +54,7 @@ class LLMProvider(BaseAIProvider):
             raise
 
     def get_capabilities(self):
-        return {"type": "text", "model": self.model_name, "api_base": self.api_base}
+        return {"type": "text", "provider": self.provider_type, "model": self.model_name, "api_base": self.api_base}
 
     def get_gpu_requirements(self):
         # Basato su API, nessun requisito VRAM locale
