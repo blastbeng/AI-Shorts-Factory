@@ -127,7 +127,7 @@ class LLMProvider(BaseAIProvider):
                 if is_interrupted and is_interrupted():
                     return ""
                 
-                system_prompt = f"You are a professional scriptwriter. Follow the user's instructions exactly. Do not output any thinking process, reasoning, meta-text, prompt analysis, or step-by-step breakdowns. Output ONLY the final content directly, wrapped between <final_output> and </final_output> tags. The output MUST be in the language requested by the user. Do not include any introductory or concluding remarks. Do not output the prompt or any part of it. Never output your internal thoughts or translate the prompt."
+                system_prompt = f"You are a professional scriptwriter. Follow the user's instructions exactly. Do not output any thinking process, reasoning, meta-text, prompt analysis, or step-by-step breakdowns. Do not output <think> or tags. Output ONLY the final content directly, wrapped between <final_output> and </final_output> tags. The output MUST be in the language requested by the user. Do not include any introductory or concluding remarks. Do not output the prompt or any part of it. Never output your internal thoughts or translate the prompt."
                 response = self.llm.create_chat_completion(
                     messages=[
                         {"role": "system", "content": system_prompt},
@@ -150,6 +150,7 @@ class LLMProvider(BaseAIProvider):
                 else:
                     # Fallback: rimozione di eventuali tag di pensiero e meta-testo
                     generated_text = re.sub(r'.*?```', '', generated_text, flags=re.DOTALL).strip()
+                    generated_text = re.sub(r'<think>.*?</think>', '', generated_text, flags=re.DOTALL).strip()
                     generated_text = re.sub(r'<thought>.*?</thought>', '', generated_text, flags=re.DOTALL).strip()
                     generated_text = re.sub(r'<reasoning>.*?</reasoning>', '', generated_text, flags=re.DOTALL).strip()
                     generated_text = re.sub(r'^.*?(Here\'s a thinking process:|Thinking Process:).*?\n', '', generated_text, flags=re.IGNORECASE).strip()
