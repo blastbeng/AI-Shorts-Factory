@@ -7,9 +7,10 @@ REPO_ID=$2
 DEST_DIR=$3
 YAML_SECTION=$4
 YAML_KEY=$5
+ALLOW_PATTERNS=$6
 
 if [ -z "$MODEL_NAME" ] || [ -z "$REPO_ID" ] || [ -z "$DEST_DIR" ] || [ -z "$YAML_SECTION" ] || [ -z "$YAML_KEY" ]; then
-    echo "Uso: $0 <nome_modello> <repo_id_huggingface> <directory_destinazione> <sezione_yaml> <chiave_yaml>"
+    echo "Uso: $0 <nome_modello> <repo_id_huggingface> <directory_destinazione> <sezione_yaml> <chiave_yaml> [allow_patterns]"
     exit 1
 fi
 
@@ -35,7 +36,8 @@ else
         echo "Utilizzo di Python dall'ambiente virtuale per il download..."
         "$PYTHON_BIN" -c "
 from huggingface_hub import snapshot_download
-snapshot_download(repo_id='$REPO_ID', local_dir='$DEST_DIR', local_dir_use_symlinks=False)
+allow_patterns = '$ALLOW_PATTERNS'.split() if '$ALLOW_PATTERNS' else None
+snapshot_download(repo_id='$REPO_ID', local_dir='$DEST_DIR', local_dir_use_symlinks=False, allow_patterns=allow_patterns)
 "
         
         # Crea il marker di completamento

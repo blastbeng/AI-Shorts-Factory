@@ -19,7 +19,7 @@ fi
 # Verifica LTX Video
 LTX_STATUS=$("$PYTHON_BIN" -c "import yaml; print(yaml.safe_load(open('configs/models.yaml')).get('video', {}).get('ltx_video', {}).get('status', 'not_installed'))")
 if [ "$LTX_STATUS" != "installed" ]; then
-    ./scripts/download_models.sh "ltx_video" "Lightricks/LTX-Video" "./models/video/ltx_video" "video" "ltx_video"
+    ./scripts/download_models.sh "ltx_video" "Lightricks/LTX-Video" "./models/video/ltx_video" "video" "ltx_video" "ltx-video-2b-v0.9.5/*"
 else
     echo "[OK] Modello ltx_video già installato."
 fi
