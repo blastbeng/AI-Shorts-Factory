@@ -14,7 +14,7 @@ echo "Installazione delle librerie Python di base..."
 pip install -r requirements.txt
 
 echo "Installazione di llama-cpp-python con backend Vulkan..."
-CMAKE_ARGS="-DGGML_VULKAN=on" pip install llama-cpp-python --upgrade --force-reinstall --no-cache-dir
+CMAKE_ARGS="-DGGML_VULKAN=on" CMAKE_BUILD_PARALLEL_LEVEL=$(nproc) pip install llama-cpp-python --upgrade --force-reinstall --no-cache-dir
 
 echo "Ambiente Python configurato con successo."
 deactivate
