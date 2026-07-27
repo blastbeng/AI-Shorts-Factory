@@ -53,9 +53,11 @@ class WanProvider(BaseAIProvider):
             try:
                 self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16)
                 self.pipeline.enable_attention_slicing()
+                if hasattr(self.pipeline, "enable_vae_tiling"):
+                    self.pipeline.enable_vae_tiling()
                 if use_cpu_offload:
-                    logger.info("Uso sequential CPU offload per evitare OOM.")
-                    self.pipeline.enable_sequential_cpu_offload(gpu_id=gpu['device_index'])
+                    logger.info("Uso model CPU offload per evitare OOM (più veloce del sequential).")
+                    self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
                 else:
                     self.pipeline.to(device)
             except Exception as e:
@@ -71,10 +73,10 @@ class WanProvider(BaseAIProvider):
                 if available_ram < 8.0:
                     raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Operazione annullata per evitare il blocco del sistema.")
                 
-                logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso sequential CPU offload per evitare OOM.")
+                logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso model CPU offload per evitare OOM (più veloce del sequential).")
                 self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16)
                 self.pipeline.enable_attention_slicing()
-                self.pipeline.enable_sequential_cpu_offload(gpu_id=gpu['device_index'])
+                self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
 
         logger.info(f"Generazione video per prompt: {prompt}")
         # Aggiungi parametri per video verticale (Shorts)
