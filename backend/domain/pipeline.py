@@ -118,9 +118,21 @@ class PipelineOrchestrator:
                     self._update_stage(stage, "completed", audio_path)
 
                 elif stage == "video_assembly":
+                    # Usa ffmpeg per unire video, voce e audio.
+                    # -map 0:v:0 seleziona il video dal primo input
+                    # -map 1:a:0 seleziona l'audio (voce) dal secondo input
+                    # -map 2:a:0 seleziona l'audio (effetti) dal terzo input
+                    # -filter_complex amix=inputs=2 mixa i due audio
                     cmd = [
-                        "ffmpeg", "-y", "-i", video_path, "-i", voice_path,
-                        "-i", audio_path, "-c:v", "copy", "-c:a", "aac",
+                        "ffmpeg", "-y",
+                        "-i", video_path,
+                        "-i", voice_path,
+                        "-i", audio_path,
+                        "-map", "0:v:0",
+                        "-filter_complex", "[1:a:0][2:a:0]amix=inputs=2:duration=longest[a]",
+                        "-map", "[a]",
+                        "-c:v", "copy",
+                        "-c:a", "aac",
                         final_video_path
                     ]
                     subprocess.run(cmd, check=True, capture_output=True)

@@ -48,20 +48,29 @@ class LLMProvider(BaseAIProvider):
         logger.info(f"Generazione testo tramite LLM ({self.provider_type})")
         try:
             if self.provider_type == "llama_cpp":
+                import tempfile
+                # Scrive il prompt in un file temporaneo per evitare problemi di escaping
+                with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as temp_file:
+                    temp_file.write(prompt)
+                    temp_file_path = temp_file.name
+                
                 cmd = [
                     self.bin_path,
                     "-m", self.model_path,
-                    "-p", prompt,
+                    "-f", temp_file_path,
                     "-n", str(max_length),
                     "--no-display-prompt",
                     "--log-disable"
                 ] + self.params.split()
                 
-                # Esegue llama-cli come subprocess bloccante. 
-                # Questo assicura che la VRAM venga liberata al termine.
-                result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-                generated_text = result.stdout.strip()
-                return generated_text
+                try:
+                    # Esegue llama-cli come subprocess bloccante. 
+                    # Questo assicura che la VRAM venga liberata al termine.
+                    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+                    generated_text = result.stdout.strip()
+                    return generated_text
+                finally:
+                    os.remove(temp_file_path)
             else:
                 response = self.client.chat.completions.create(
                     model=self.model_name,

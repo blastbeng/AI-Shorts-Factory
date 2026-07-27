@@ -190,3 +190,10 @@ def start_scheduler(interval: int = 60):
 def stop_scheduler():
     auto_scheduler.stop()
     return {"status": "stopped"}
+
+@app.on_event("shutdown")
+def shutdown_event():
+    logger.info("Arresto dell'applicazione in corso...")
+    job_worker.stop()
+    auto_scheduler.stop()
+    logger.info("Worker e Scheduler arrestati correttamente.")
