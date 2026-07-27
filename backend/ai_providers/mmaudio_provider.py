@@ -44,9 +44,9 @@ class MMAudioProvider(BaseAIProvider):
             try:
                 self.processor = AutoProcessor.from_pretrained(model_path)
                 if use_cpu_offload:
-                    self.model = AutoModel.from_pretrained(model_path, torch_dtype=torch.float16, device_map="auto")
+                    self.model = AutoModel.from_pretrained(model_path, torch_dtype=torch.bfloat16, device_map="auto")
                 else:
-                    self.model = AutoModel.from_pretrained(model_path, torch_dtype=torch.float16).to(device)
+                    self.model = AutoModel.from_pretrained(model_path, torch_dtype=torch.bfloat16).to(device)
             except Exception as e:
                 logger.exception(f"Errore nel caricamento del modello su GPU. Fallback con offload su RAM.")
                 if self.model is not None:
@@ -57,11 +57,11 @@ class MMAudioProvider(BaseAIProvider):
                     torch.cuda.empty_cache()
                 
                 available_ram = self.gm.get_available_system_ram_gb()
-                if available_ram < 4.0:  # MMAudio might need less RAM than video models
+                if available_ram < 4.0:
                     raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Operazione annullata per evitare il blocco del sistema.")
                 
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso offload su RAM.")
-                self.model = AutoModel.from_pretrained(model_path, torch_dtype=torch.float16, device_map="auto")
+                self.model = AutoModel.from_pretrained(model_path, torch_dtype=torch.bfloat16, device_map="auto")
             
         logger.info(f"Generazione audio per prompt: {prompt}")
         inputs = self.processor(text=prompt, return_tensors="pt").to(device)

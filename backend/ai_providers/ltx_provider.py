@@ -42,7 +42,9 @@ class LtxProvider(BaseAIProvider):
             logger.info("Caricamento pipeline LTX Video...")
             model_path = self.model_info.get("path")
             try:
-                self.pipeline = LTXVideoPipeline.from_pretrained(model_path, torch_dtype=torch.float16)
+                self.pipeline = LTXVideoPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16)
+                self.pipeline.enable_vae_tiling()
+                self.pipeline.enable_attention_slicing()
                 if use_cpu_offload:
                     self.pipeline.enable_model_cpu_offload(device=device)
                 else:
@@ -62,7 +64,9 @@ class LtxProvider(BaseAIProvider):
                     raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Operazione annullata per evitare il blocco del sistema.")
                 
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso sequential CPU offload per evitare OOM.")
-                self.pipeline = LTXVideoPipeline.from_pretrained(model_path, torch_dtype=torch.float16)
+                self.pipeline = LTXVideoPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16)
+                self.pipeline.enable_vae_tiling()
+                self.pipeline.enable_attention_slicing()
                 self.pipeline.enable_sequential_cpu_offload(device=device)
             
         logger.info(f"Generazione video LTX per prompt: {prompt}")
