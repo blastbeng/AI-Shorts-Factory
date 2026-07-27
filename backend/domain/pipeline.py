@@ -15,8 +15,8 @@ class PipelineOrchestrator:
         self.stages = [
             "topic_generation",
             "script_generation",
-            "voice_generation",
             "storyboard_creation",
+            "voice_generation",
             "image_generation",
             "video_generation",
             "audio_generation",
@@ -134,6 +134,16 @@ class PipelineOrchestrator:
                         return "interrupted"
                     self._update_stage(stage, "completed", script)
 
+                elif stage == "storyboard_creation":
+                    from backend.ai_providers.llm_provider import LLMProvider
+                    llm = LLMProvider()
+                    storyboard_prompt = f"Crea uno storyboard di 3 scene per questo script: {script}. Lo storyboard deve essere in lingua: {self.profile.language}."
+                    storyboard = llm.generate(storyboard_prompt, max_length=200, is_interrupted=self._is_interrupted)
+                    if self._is_interrupted():
+                        return "interrupted"
+                    llm.cleanup()
+                    self._update_stage(stage, "completed", storyboard)
+
                 elif stage == "voice_generation":
                     from backend.ai_providers.kokoro_provider import KokoroProvider
                     kokoro = KokoroProvider()
@@ -145,16 +155,6 @@ class PipelineOrchestrator:
                         kokoro.generate(script, voice_path)
                     kokoro.cleanup()
                     self._update_stage(stage, "completed", voice_path)
-
-                elif stage == "storyboard_creation":
-                    from backend.ai_providers.llm_provider import LLMProvider
-                    llm = LLMProvider()
-                    storyboard_prompt = f"Crea uno storyboard di 3 scene per questo script: {script}. Lo storyboard deve essere in lingua: {self.profile.language}."
-                    storyboard = llm.generate(storyboard_prompt, max_length=200, is_interrupted=self._is_interrupted)
-                    if self._is_interrupted():
-                        return "interrupted"
-                    llm.cleanup()
-                    self._update_stage(stage, "completed", storyboard)
 
                 elif stage == "image_generation":
                     from backend.ai_providers.flux_provider import FluxProvider
