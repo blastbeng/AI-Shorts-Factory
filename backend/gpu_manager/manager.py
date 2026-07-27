@@ -1,6 +1,7 @@
 import yaml
 import subprocess
 import json
+from backend.services.logger import logger
 
 class GPUManager:
     def __init__(self, config_path="configs/gpu.yaml"):
@@ -41,7 +42,7 @@ class GPUManager:
                 vram_used_mb = int(data.get(f"card{gpu_id}", {}).get("VRAM Total Used Memory (B)", 0)) / (1024 * 1024)
                 vram_used = vram_used_mb / 1024
         except Exception as e:
-            print(f"Errore nel monitoraggio VRAM per GPU {gpu_id}: {e}")
+            logger.error(f"Errore nel monitoraggio VRAM per GPU {gpu_id}: {e}")
             vram_used = 0
 
         return {

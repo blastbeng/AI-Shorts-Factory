@@ -1,6 +1,7 @@
 import subprocess
 import json
 import os
+from backend.services.logger import logger
 
 class QualityScorer:
     def score(self, video_path):
@@ -42,5 +43,5 @@ class QualityScorer:
             return min(score / 10.0 * 10.0, 10.0)
 
         except Exception as e:
-            print(f"Errore durante il quality scoring: {e}")
+            logger.error(f"Errore durante il quality scoring: {e}")
             return 0.0
