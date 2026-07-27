@@ -14,3 +14,5 @@ transformers
 diffusers
 huggingface_hub
 numpy<2.5
+sentencepiece
+tiktoken
