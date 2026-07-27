@@ -194,7 +194,7 @@ export default function Home() {
           </div>
 
           {/* Generazione Video */}
-          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-lg">
+          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-lg h-[500px] flex flex-col">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
               <span className="w-2 h-2 bg-blue-500 rounded-full"></span> Genera Video
             </h2>
@@ -266,12 +266,12 @@ export default function Home() {
           </div>
 
           {/* Stato Generazioni */}
-          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-lg h-full flex flex-col">
+          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-lg h-[500px] flex flex-col">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
               <span className="w-2 h-2 bg-yellow-500 rounded-full"></span> Stato Generazioni
             </h2>
             {loading ? <p className="text-gray-400">Caricamento...</p> : (
-              <ul className="space-y-3 flex-1 overflow-y-auto pr-2 max-h-[400px]">
+              <ul className="space-y-3 flex-1 overflow-y-auto pr-2">
                 {jobs.length === 0 ? <li className="text-gray-500 text-sm">Nessun job attivo.</li> : jobs.map((j) => {
                   const progressPercent = j.progress.total > 0 ? (j.progress.completed / j.progress.total) * 100 : 0;
                   return (
@@ -306,7 +306,7 @@ export default function Home() {
           </div>
 
           {/* Stato GPU */}
-          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-lg">
+          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-lg h-[500px] flex flex-col">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
               <span className="w-2 h-2 bg-green-500 rounded-full"></span> Monitor GPU
             </h2>
