@@ -123,7 +123,6 @@ class PipelineOrchestrator:
                     expanded_topic = llm.generate(prompt, max_length=100, is_interrupted=self._is_interrupted)
                     if self._is_interrupted():
                         return "interrupted"
-                    llm.cleanup()
                     self._update_stage(stage, "completed", expanded_topic)
 
                 elif stage == "script_generation":
@@ -133,7 +132,6 @@ class PipelineOrchestrator:
                     script = llm.generate(script_prompt, max_length=300, is_interrupted=self._is_interrupted)
                     if self._is_interrupted():
                         return "interrupted"
-                    llm.cleanup()
                     self._update_stage(stage, "completed", script)
 
                 elif stage == "voice_generation":
