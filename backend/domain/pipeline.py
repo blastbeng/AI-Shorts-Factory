@@ -104,6 +104,7 @@ class PipelineOrchestrator:
                 logger.info(f"[Job {self.job_id}] Job interrotto dall'utente. Arresto della pipeline.")
                 return "interrupted"
 
+            logger.info(f"[Job {self.job_id}] Inizio stage {stage}...")
             self._update_stage(stage, "running")
             try:
                 if stage == "topic_generation":
@@ -225,6 +226,6 @@ class PipelineOrchestrator:
 
             except Exception as e:
                 self._update_stage(stage, "failed", str(e))
-                logger.error(f"[Job {self.job_id}] Fallimento stage {stage}: {e}")
+                logger.exception(f"[Job {self.job_id}] Fallimento stage {stage}: {e}")
                 return False
         return "waiting_for_review"

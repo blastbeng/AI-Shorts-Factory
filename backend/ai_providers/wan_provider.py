@@ -47,7 +47,7 @@ class WanProvider(BaseAIProvider):
                 else:
                     self.pipeline.to(device)
             except Exception as e:
-                logger.warning(f"Errore nel caricamento del modello su GPU ({e}). Fallback con offload su RAM.")
+                logger.exception(f"Errore nel caricamento del modello su GPU. Fallback con offload su RAM.")
                 if self.pipeline is not None:
                     del self.pipeline
                     self.pipeline = None

@@ -48,7 +48,7 @@ class WhisperProvider(BaseAIProvider):
                 else:
                     self.model = WhisperForConditionalGeneration.from_pretrained(model_path, torch_dtype=torch.float16).to(device)
             except Exception as e:
-                logger.warning(f"Errore nel caricamento del modello su GPU ({e}). Fallback con offload su RAM.")
+                logger.exception(f"Errore nel caricamento del modello su GPU. Fallback con offload su RAM.")
                 if self.model is not None:
                     del self.model
                     self.model = None
