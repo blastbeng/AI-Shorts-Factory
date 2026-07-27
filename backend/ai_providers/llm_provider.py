@@ -1,4 +1,5 @@
 import os
+import re
 import yaml
 from openai import OpenAI
 from backend.ai_providers.base_provider import BaseAIProvider
@@ -136,6 +137,10 @@ class LLMProvider(BaseAIProvider):
                     stream=False
                 )
                 generated_text = response["choices"][0]["message"]["content"].strip()
+                
+                # Pulizia del processo di pensiero (se presente)
+                generated_text = re.sub(r'<think>.*?</think>', '', generated_text, flags=re.DOTALL).strip()
+                generated_text = re.sub(r'^(Here\'s a thinking process:|Thinking Process:).*?\n', '', generated_text, flags=re.IGNORECASE).strip()
                 
                 if is_interrupted and is_interrupted():
                     return ""

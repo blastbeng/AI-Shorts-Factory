@@ -126,7 +126,7 @@ class PipelineOrchestrator:
                                 genre = random.choice(self.templates.get("genres", ["generale"]))
                             
                             instruction = self.templates.get("random_prompt_instruction", "Genera un'idea per un video di genere {genre}.").replace("{genre}", genre)
-                            prompt = f"{instruction} Genera il testo in lingua: {self.profile.language}."
+                            prompt = f"{instruction} IMPORTANT: Do not output any thinking process, reasoning, or meta-text. Output ONLY the final idea directly. Genera il testo in lingua: {self.profile.language}."
                         
                         expanded_topic = llm.generate(prompt, max_length=100, is_interrupted=self._is_interrupted)
                         if self._is_interrupted():
@@ -139,7 +139,7 @@ class PipelineOrchestrator:
                     from backend.ai_providers.llm_provider import LLMProvider
                     llm = LLMProvider()
                     try:
-                        script_prompt = f"Scrivi uno script di {self.profile.duration_seconds} secondi per un video su: {expanded_topic or self.profile.custom_prompt or self.profile.topic}. Lo script deve essere scritto in lingua: {self.profile.language}."
+                        script_prompt = f"Scrivi uno script di {self.profile.duration_seconds} secondi per un video su: {expanded_topic or self.profile.custom_prompt or self.profile.topic}. IMPORTANT: Do not output any thinking process, reasoning, or meta-text. Output ONLY the final script directly. Lo script deve essere scritto interamente in lingua: {self.profile.language}."
                         script = llm.generate(script_prompt, max_length=300, is_interrupted=self._is_interrupted)
                         if self._is_interrupted():
                             return "interrupted"
@@ -151,7 +151,7 @@ class PipelineOrchestrator:
                     from backend.ai_providers.llm_provider import LLMProvider
                     llm = LLMProvider()
                     try:
-                        storyboard_prompt = f"Crea uno storyboard di 3 scene per questo script: {script}. Lo storyboard deve essere in lingua: {self.profile.language}."
+                        storyboard_prompt = f"Crea uno storyboard di 3 scene per questo script: {script}. IMPORTANT: Do not output any thinking process, reasoning, or meta-text. Output ONLY the final storyboard directly. Lo storyboard deve essere scritto interamente in lingua: {self.profile.language}."
                         storyboard = llm.generate(storyboard_prompt, max_length=200, is_interrupted=self._is_interrupted)
                         if self._is_interrupted():
                             return "interrupted"
