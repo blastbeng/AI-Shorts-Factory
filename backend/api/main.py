@@ -1,6 +1,12 @@
 import os
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
+import multiprocessing
+try:
+    multiprocessing.set_start_method("spawn", force=True)
+except RuntimeError:
+    pass
+
 from dotenv import load_dotenv
 load_dotenv() # Carica le variabili d'ambiente dal file .env
 
