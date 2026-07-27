@@ -24,6 +24,11 @@ fi
 
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
+# Forza PyTorch (ROCm) a vedere solo la GPU AMD (device_index 1 di sistema)
+# Verrà mappata internamente come cuda:0
+export HIP_VISIBLE_DEVICES=1
+export CUDA_VISIBLE_DEVICES=1
+
 # Imposta valori predefiniti se non presenti nel .env
 BACKEND_HOST=${BACKEND_HOST:-"0.0.0.0"}
 BACKEND_PORT=${BACKEND_PORT:-"8000"}
