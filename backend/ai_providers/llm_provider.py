@@ -127,7 +127,7 @@ class LLMProvider(BaseAIProvider):
                 if is_interrupted and is_interrupted():
                     return ""
                 
-                system_prompt = "You are a professional scriptwriter. Follow the user's instructions exactly. Do not repeat the prompt. Do not output any thinking process, reasoning, or meta-text. Output ONLY the final content directly in the requested language."
+                system_prompt = f"You are a professional scriptwriter. Follow the user's instructions exactly. Do not repeat the prompt. Do not output any thinking process, reasoning, or meta-text. Output ONLY the final content directly. The output MUST be in the language requested by the user. Do not include any introductory or concluding remarks."
                 response = self.llm.create_chat_completion(
                     messages=[
                         {"role": "system", "content": system_prompt},

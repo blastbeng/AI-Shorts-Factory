@@ -119,14 +119,14 @@ class PipelineOrchestrator:
                     llm = LLMProvider()
                     try:
                         if self.profile.custom_prompt:
-                            prompt = f"Expand this topic for a short video: {self.profile.custom_prompt}. IMPORTANT: Do not output any thinking process, reasoning, or meta-text. Output ONLY the final idea directly. The output must be in {self.profile.language}."
+                            prompt = f"Expand this topic for a short video: {self.profile.custom_prompt}. The output must be in {self.profile.language}."
                         else:
                             genre = self.profile.genre
                             if not genre or genre == "random":
                                 genre = random.choice(self.templates.get("genres", ["general"]))
                             
                             instruction = self.templates.get("random_prompt_instruction", "Generate an idea for a {genre} video.").replace("{genre}", genre)
-                            prompt = f"{instruction} IMPORTANT: Do not output any thinking process, reasoning, or meta-text. Output ONLY the final idea directly. The output must be in {self.profile.language}."
+                            prompt = f"{instruction} The output must be in {self.profile.language}."
                         
                         expanded_topic = llm.generate(prompt, max_length=100, is_interrupted=self._is_interrupted)
                         if self._is_interrupted():
@@ -139,7 +139,7 @@ class PipelineOrchestrator:
                     from backend.ai_providers.llm_provider import LLMProvider
                     llm = LLMProvider()
                     try:
-                        script_prompt = f"Write a {self.profile.duration_seconds}-second script for a video about: {expanded_topic or self.profile.custom_prompt or self.profile.topic}. IMPORTANT: Do not output any thinking process, reasoning, or meta-text. Output ONLY the final script directly. The script must be written entirely in {self.profile.language}. Do not use any markdown formatting like asterisks or hashtags."
+                        script_prompt = f"Write a {self.profile.duration_seconds}-second script for a video about: {expanded_topic or self.profile.custom_prompt or self.profile.topic}. The script must be written entirely in {self.profile.language}. Do not use any markdown formatting."
                         script = llm.generate(script_prompt, max_length=300, is_interrupted=self._is_interrupted)
                         if self._is_interrupted():
                             return "interrupted"
@@ -151,7 +151,7 @@ class PipelineOrchestrator:
                     from backend.ai_providers.llm_provider import LLMProvider
                     llm = LLMProvider()
                     try:
-                        storyboard_prompt = f"Create a 3-scene storyboard for this script: {script}. IMPORTANT: Do not output any thinking process, reasoning, or meta-text. Output ONLY the final storyboard directly. The storyboard must be written entirely in {self.profile.language}."
+                        storyboard_prompt = f"Create a 3-scene storyboard for this script: {script}. The storyboard must be written entirely in {self.profile.language}."
                         storyboard = llm.generate(storyboard_prompt, max_length=200, is_interrupted=self._is_interrupted)
                         if self._is_interrupted():
                             return "interrupted"
