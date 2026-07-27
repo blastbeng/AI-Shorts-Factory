@@ -17,7 +17,9 @@ fi
 
 # Carica le variabili d'ambiente dal file .env
 if [ -f ".env" ]; then
-    export $(grep -v '^#' .env | xargs)
+    set -a
+    source .env
+    set +a
 fi
 
 # Imposta valori predefiniti se non presenti nel .env

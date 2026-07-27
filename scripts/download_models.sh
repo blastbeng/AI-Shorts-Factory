@@ -3,7 +3,9 @@ set -e
 
 # Carica le variabili d'ambiente dal file .env se esiste
 if [ -f ".env" ]; then
-    export $(grep -v '^#' .env | xargs)
+    set -a
+    source .env
+    set +a
 fi
 
 # Uso: ./download_models.sh <nome_modello> <repo_id_huggingface> <directory_destinazione> <sezione_yaml> <chiave_yaml>
