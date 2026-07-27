@@ -26,9 +26,9 @@ class KokoroProvider(BaseAIProvider):
     def health_check(self):
         return self.install_status() == "installed"
 
-    def generate(self, text: str, output_path: str, *args, **kwargs):
-        if not self.health_check():
-            raise RuntimeError("Modello Kokoro TTS non installato.")
+    def load_model(self, lang_code="a"):
+        if self.model is not None:
+            return
             
         reqs = self.get_gpu_requirements()
         required_vram = reqs.get("vram_required_gb", 0)
@@ -49,6 +49,39 @@ class KokoroProvider(BaseAIProvider):
         logger.info(f"Kokoro device ricevuto: {device}")
         logger.info(f"Torch device: {torch.device(device)}")
         
+        logger.info("Caricamento modello Kokoro TTS...")
+        try:
+            logger.info("Kokoro: costruzione modello CPU")
+            logger.info("CUDA initialized: %s", torch.cuda.is_initialized())
+            logger.info("CUDA devices: %s", torch.cuda.device_count())
+            import threading
+            logger.info(f"Thread corrente: {threading.current_thread().name}")
+            logger.info("PRIMA KModel")
+            self.model = KModel()
+            logger.info("DOPO KModel")
+            logger.info("Kokoro: modello CPU pronto")
+            self.model.eval()
+            
+            logger.info("Kokoro: spostamento GPU...")
+            self.model = self.model.to(
+                device=torch.device(device),
+                dtype=torch.float32
+            )
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
+            logger.info("Kokoro: GPU transfer completato")
+            
+            logger.info("Kokoro: Inizializzazione KPipeline...")
+            self.pipeline = KPipeline(model=self.model, lang_code=lang_code)
+            logger.info("Kokoro: KPipeline inizializzata.")
+        except Exception as e:
+            logger.exception(f"Errore nel caricamento del modello Kokoro.")
+            raise
+
+    def generate(self, text: str, output_path: str, *args, **kwargs):
+        if not self.health_check():
+            raise RuntimeError("Modello Kokoro TTS non installato.")
+            
         # Mappa la lingua dell'app al codice lingua di Kokoro
         lang_map = {
             "english": "a", "en": "a",
@@ -62,36 +95,8 @@ class KokoroProvider(BaseAIProvider):
         if app_language not in lang_map:
             logger.warning(f"Lingua {app_language} non supportata nativamente da Kokoro. Uso fallback su inglese ('a').")
             
-        if self.model is None:
-            logger.info("Caricamento modello Kokoro TTS...")
-            try:
-                logger.info("Kokoro: costruzione modello CPU")
-                logger.info("CUDA initialized: %s", torch.cuda.is_initialized())
-                logger.info("CUDA devices: %s", torch.cuda.device_count())
-                import threading
-                logger.info(f"Thread corrente: {threading.current_thread().name}")
-                logger.info("PRIMA KModel")
-                self.model = KModel()
-                logger.info("DOPO KModel")
-                logger.info("Kokoro: modello CPU pronto")
-                self.model.eval()
-                
-                logger.info("Kokoro: spostamento GPU...")
-                self.model = self.model.to(
-                    device=torch.device(device),
-                    dtype=torch.float32
-                )
-                if torch.cuda.is_available():
-                    torch.cuda.synchronize()
-                logger.info("Kokoro: GPU transfer completato")
-                
-                logger.info("Kokoro: Inizializzazione KPipeline...")
-                self.pipeline = KPipeline(model=self.model, lang_code=kokoro_lang)
-                logger.info("Kokoro: KPipeline inizializzata.")
-            except Exception as e:
-                logger.exception(f"Errore nel caricamento del modello Kokoro.")
-                raise
-                
+        self.load_model(kokoro_lang)
+        
         import re
         # Pulizia del testo da markdown, asterischi e processi di pensiero residui
         text = re.sub(r'\<think\>.*?\<\/think\>', '', text, flags=re.DOTALL).strip()
