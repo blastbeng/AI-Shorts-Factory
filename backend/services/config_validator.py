@@ -16,15 +16,10 @@ class ConfigValidator:
         llm_provider = os.getenv("LLM_PROVIDER", "llama_cpp")
         if llm_provider == "llama_cpp":
             model_path = os.getenv("LLAMA_CPP_MODEL_PATH")
-            bin_path = os.getenv("LLAMA_CPP_BIN_PATH")
             if not model_path:
                 errors.append("LLAMA_CPP_MODEL_PATH non configurata")
             elif not os.path.exists(model_path):
                 warnings.append(f"Modello llama.cpp non trovato in: {model_path}. Esegui scripts/install_llama_cpp.sh")
-            if not bin_path:
-                errors.append("LLAMA_CPP_BIN_PATH non configurata")
-            elif not os.path.exists(bin_path):
-                warnings.append(f"Binario llama.cpp non trovato in: {bin_path}. Esegui scripts/install_llama_cpp.sh")
         elif llm_provider == "openai":
             if not os.getenv("OPENAI_API_KEY"):
                 errors.append("OPENAI_API_KEY non configurata")

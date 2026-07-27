@@ -39,6 +39,8 @@ class LLMProvider(BaseAIProvider):
             self.n_ubatch = 512
             self.tensor_split = None
             self.flash_attn = False
+            self.type_k = 0  # Default (F16)
+            self.type_v = 0  # Default (F16)
             self.temperature = 0.8
             self.top_p = 0.95
             self.top_k = 40
@@ -52,6 +54,16 @@ class LLMProvider(BaseAIProvider):
                 elif p == "-ub" and i+1 < len(params_list): self.n_ubatch = int(params_list[i+1])
                 elif p == "--tensor-split" and i+1 < len(params_list): self.tensor_split = [float(x) for x in params_list[i+1].split(",")]
                 elif p == "--flash-attn" and i+1 < len(params_list): self.flash_attn = params_list[i+1].lower() == "on"
+                elif p == "--cache-type-k" and i+1 < len(params_list):
+                    val = params_list[i+1].lower()
+                    if val == "q4_0": self.type_k = 2
+                    elif val == "q8_0": self.type_k = 8
+                    elif val == "f16": self.type_k = 1
+                elif p == "--cache-type-v" and i+1 < len(params_list):
+                    val = params_list[i+1].lower()
+                    if val == "q4_0": self.type_v = 2
+                    elif val == "q8_0": self.type_v = 8
+                    elif val == "f16": self.type_v = 1
                 elif p == "--temp" and i+1 < len(params_list): self.temperature = float(params_list[i+1])
                 elif p == "--top-p" and i+1 < len(params_list): self.top_p = float(params_list[i+1])
                 elif p == "--top-k" and i+1 < len(params_list): self.top_k = int(params_list[i+1])
@@ -76,6 +88,8 @@ class LLMProvider(BaseAIProvider):
                 n_ubatch=self.n_ubatch,
                 tensor_split=self.tensor_split,
                 flash_attn=self.flash_attn,
+                type_k=self.type_k,
+                type_v=self.type_v,
                 verbose=False
             )
             LLMProvider._llm_model_path = self.model_path
