@@ -36,3 +36,22 @@ class ModelInfo(Base):
     vram_required = Column(Integer, nullable=True)
     backend = Column(String, nullable=True)
     status = Column(String, default="not_installed")
+
+class GenerationProfile(Base):
+    __tablename__ = "generation_profiles"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    topic = Column(String, nullable=False)
+    style = Column(String, default="default")
+    duration_seconds = Column(Integer, default=30)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class PipelineStage(Base):
+    __tablename__ = "pipeline_stages"
+    id = Column(Integer, primary_key=True, index=True)
+    job_id = Column(Integer, ForeignKey("jobs.id"))
+    stage_name = Column(String, nullable=False)
+    status = Column(String, default="pending") # pending, running, completed, failed
+    result = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
