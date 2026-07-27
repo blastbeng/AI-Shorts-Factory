@@ -61,7 +61,10 @@ class WhisperProvider(BaseAIProvider):
         logger.info(f"Trascrizione audio da: {audio_path}")
         audio, sampling_rate = librosa.load(audio_path, sr=16000)
         
-        inputs = self.processor(audio, sampling_rate=sampling_rate, return_tensors="pt").to(device)
+        inputs = self.processor(audio, sampling_rate=sampling_rate, return_tensors="pt")
+        # Move inputs to the model's actual device (handles device_map="auto")
+        model_device = next(self.model.parameters()).device
+        inputs = {k: v.to(model_device) for k, v in inputs.items()}
         
         with torch.no_grad():
             predicted_ids = self.model.generate(**inputs)
@@ -109,7 +112,10 @@ class WhisperProvider(BaseAIProvider):
         logger.info(f"Trascrizione audio per sottotitoli da: {audio_path}")
         audio, sampling_rate = librosa.load(audio_path, sr=16000)
         
-        inputs = self.processor(audio, sampling_rate=sampling_rate, return_tensors="pt").to(device)
+        inputs = self.processor(audio, sampling_rate=sampling_rate, return_tensors="pt")
+        # Move inputs to the model's actual device (handles device_map="auto")
+        model_device = next(self.model.parameters()).device
+        inputs = {k: v.to(model_device) for k, v in inputs.items()}
         
         with torch.no_grad():
             predicted_ids = self.model.generate(**inputs, return_timestamps=True)
@@ -152,7 +158,8 @@ class WhisperProvider(BaseAIProvider):
         if self.processor is not None:
             del self.processor
             self.processor = None
-            import gc
-            import torch
-            gc.collect()
+        import gc
+        import torch
+        gc.collect()
+        if torch.cuda.is_available():
             torch.cuda.empty_cache()
