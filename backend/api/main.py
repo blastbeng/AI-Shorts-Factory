@@ -124,12 +124,11 @@ def delete_video(video_id: int, db: Session = Depends(get_db)):
     if video.file_path and os.path.exists(video.file_path):
         os.remove(video.file_path)
     
-    # Elimina gli stadi della pipeline associati al job
-    db.query(PipelineStage).filter(PipelineStage.job_id == video.job_id).delete()
-    
-    # Opzionale: elimina anche il job se non ha altri video associati
+    # Opzionale: elimina anche il job e i suoi stadi se non ha altri video associati
     job = db.query(Job).filter(Job.id == video.job_id).first()
     if job and len(job.videos) == 1:  # Se questo è l'unico video
+        # Elimina gli stadi della pipeline associati al job
+        db.query(PipelineStage).filter(PipelineStage.job_id == video.job_id).delete()
         db.delete(job)
     
     db.delete(video)
@@ -143,6 +142,8 @@ def publish_video(video_id: int, platform: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Video not found")
     if not video.approved:
         raise HTTPException(status_code=400, detail="Il video deve essere approvato prima della pubblicazione.")
+    if not video.file_path or not os.path.exists(video.file_path):
+        raise HTTPException(status_code=404, detail="File video non trovato sul filesystem.")
     
     metadata = {
         "title": f"AI Generated Video {video.id}",
