@@ -120,6 +120,7 @@ class LLMProvider(BaseAIProvider):
             raise RuntimeError("LLM non configurato. Controlla il file .env e LLM_PROVIDER.")
         
         logger.info(f"Generazione testo tramite LLM ({self.provider_type})")
+        logger.info(f"Prompt inviato a LLM: {prompt}")
         try:
             if self.provider_type == "llama_cpp":
                 if is_interrupted and is_interrupted():
