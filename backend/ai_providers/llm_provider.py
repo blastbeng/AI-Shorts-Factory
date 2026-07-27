@@ -51,6 +51,7 @@ class LLMProvider(BaseAIProvider):
             raise RuntimeError("LLM non configurato. Controlla il file .env e LLM_PROVIDER.")
         
         logger.info(f"Generazione testo tramite LLM ({self.provider_type})")
+        logger.info(f"Prompt inviato a llama.cpp:\n{prompt}")
         try:
             if self.provider_type == "llama_cpp":
                 import tempfile
@@ -64,8 +65,7 @@ class LLMProvider(BaseAIProvider):
                     self.bin_path,
                     "-m", self.model_path,
                     "-f", temp_file_path,
-                    "-n", str(max_length),
-                    "--no-display-prompt"
+                    "-n", str(max_length)
                 ] + self.params.split()
                 
                 try:
@@ -83,6 +83,7 @@ class LLMProvider(BaseAIProvider):
                                 if is_stderr:
                                     logger.info(f"[llama.cpp] {line.strip()}")
                                 else:
+                                    logger.info(f"[llama.cpp output] {line.strip()}")
                                     stdout_lines.append(line)
                     
                     stdout_thread = threading.Thread(target=read_stream, args=(process.stdout, False), daemon=True)
