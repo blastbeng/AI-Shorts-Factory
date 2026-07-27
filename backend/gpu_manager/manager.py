@@ -49,10 +49,15 @@ class GPUManager:
         return None
 
     def get_gpu_for_task_ignore_vram(self, task_name):
+        best_gpu = None
+        max_free_vram = -1
         for gpu in self.get_gpus():
             if task_name in gpu.get("assigned_tasks", []):
-                return gpu
-        return None
+                vram_info = self.monitor_vram(gpu["id"])
+                if vram_info and vram_info["vram_free_gb"] > max_free_vram:
+                    max_free_vram = vram_info["vram_free_gb"]
+                    best_gpu = gpu
+        return best_gpu
 
     def get_available_system_ram_gb(self):
         import psutil

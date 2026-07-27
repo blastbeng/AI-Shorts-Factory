@@ -1,4 +1,5 @@
 import os
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 import yaml
 import torch
 import numpy as np
@@ -44,7 +45,8 @@ class WanProvider(BaseAIProvider):
                 self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16)
                 self.pipeline.enable_attention_slicing()
                 if use_cpu_offload:
-                    self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
+                    logger.info("Uso sequential CPU offload per evitare OOM.")
+                    self.pipeline.enable_sequential_cpu_offload(gpu_id=gpu['device_index'])
                 else:
                     self.pipeline.to(device)
             except Exception as e:
