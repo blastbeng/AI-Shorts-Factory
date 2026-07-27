@@ -66,8 +66,8 @@ class FluxProvider(BaseAIProvider):
         image = self.pipeline(
             prompt, 
             num_inference_steps=30, 
-            height=1920, 
-            width=1080
+            height=960, 
+            width=540
         ).images[0]
         
         image.save(output_path)

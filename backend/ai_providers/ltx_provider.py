@@ -56,15 +56,21 @@ class LtxProvider(BaseAIProvider):
                     import torch
                     gc.collect()
                     torch.cuda.empty_cache()
+                
+                available_ram = self.gm.get_available_system_ram_gb()
+                if available_ram < 8.0:
+                    raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Operazione annullata per evitare il blocco del sistema.")
+                
+                logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso sequential CPU offload per evitare OOM.")
                 self.pipeline = LTXVideoPipeline.from_pretrained(model_path, torch_dtype=torch.float16)
-                self.pipeline.enable_model_cpu_offload(device=device)
+                self.pipeline.enable_sequential_cpu_offload(device=device)
             
         logger.info(f"Generazione video LTX per prompt: {prompt}")
         video = self.pipeline(
             prompt, 
             num_inference_steps=30, 
-            height=1920, 
-            width=1080,
+            height=960, 
+            width=540,
             num_frames=49
         ).frames[0]
 

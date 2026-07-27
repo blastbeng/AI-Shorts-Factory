@@ -67,8 +67,8 @@ class WanProvider(BaseAIProvider):
         video = self.pipeline(
             prompt, 
             num_inference_steps=50, 
-            height=1920, 
-            width=1080,
+            height=960, 
+            width=540,
             num_frames=49  # Aggiungi un numero di frame, es. 49 per ~2 secondi a 24fps
         ).frames[0]
 
