@@ -8,7 +8,7 @@ sudo mkdir -p /opt/models
 
 # Scarica il modello Qwen
 MODEL_URL="https://huggingface.co/DavidAU/Llama-3.2-8X4B-MOE-V2-Dark-Champion-Instruct-uncensored-abliterated-21B-GGUF/resolve/main/L3.2-8X4B-MOE-V2-Dark-Champion-Inst-21B-uncen-ablit-D_AU-Q4_k_m.gguf"
-MODEL_PATH="/opt/models/L3.2-8X4B-MOE-V2-Dark-Champion-Inst-21B-uncen-ablit-D_AU-Q4_k_m.gguf?download=true"
+MODEL_PATH="/opt/models/L3.2-8X4B-MOE-V2-Dark-Champion-Inst-21B-uncen-ablit-D_AU-Q4_k_m.gguf
 
 # Verifica se il file esiste e ha una dimensione maggiore di 0
 if [ -f "$MODEL_PATH" ] && [ -s "$MODEL_PATH" ]; then
