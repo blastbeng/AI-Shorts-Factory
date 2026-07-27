@@ -80,10 +80,13 @@ class LLMProvider(BaseAIProvider):
                             if line == '' and process.poll() is not None:
                                 break
                             if line:
+                                stripped_line = line.strip()
+                                if not stripped_line or stripped_line == ">":
+                                    continue
                                 if is_stderr:
-                                    logger.info(f"[llama.cpp] {line.strip()}")
+                                    logger.info(f"[llama.cpp] {stripped_line}")
                                 else:
-                                    logger.info(f"[llama.cpp output] {line.strip()}")
+                                    logger.info(f"[llama.cpp output] {stripped_line}")
                                     stdout_lines.append(line)
                     
                     stdout_thread = threading.Thread(target=read_stream, args=(process.stdout, False), daemon=True)
