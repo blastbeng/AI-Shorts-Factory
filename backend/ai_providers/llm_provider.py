@@ -148,3 +148,12 @@ class LLMProvider(BaseAIProvider):
         if self.provider_type == "llama_cpp":
             return {"vram_required_gb": 0, "backend": "vulkan"}
         return {"vram_required_gb": 0, "backend": "api"}
+
+    def cleanup(self):
+        if self.provider_type == "llama_cpp":
+            if LLMProvider._llm_instance is not None:
+                del LLMProvider._llm_instance
+                LLMProvider._llm_instance = None
+                LLMProvider._llm_model_path = None
+                import gc
+                gc.collect()

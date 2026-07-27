@@ -123,6 +123,7 @@ class PipelineOrchestrator:
                     expanded_topic = llm.generate(prompt, max_length=100, is_interrupted=self._is_interrupted)
                     if self._is_interrupted():
                         return "interrupted"
+                    llm.cleanup()
                     self._update_stage(stage, "completed", expanded_topic)
 
                 elif stage == "script_generation":
@@ -132,6 +133,7 @@ class PipelineOrchestrator:
                     script = llm.generate(script_prompt, max_length=300, is_interrupted=self._is_interrupted)
                     if self._is_interrupted():
                         return "interrupted"
+                    llm.cleanup()
                     self._update_stage(stage, "completed", script)
 
                 elif stage == "voice_generation":
@@ -143,6 +145,7 @@ class PipelineOrchestrator:
                         self._generate_dummy_media("audio", voice_path)
                     else:
                         kokoro.generate(script, voice_path)
+                    kokoro.cleanup()
                     self._update_stage(stage, "completed", voice_path)
 
                 elif stage == "storyboard_creation":
@@ -152,6 +155,7 @@ class PipelineOrchestrator:
                     storyboard = llm.generate(storyboard_prompt, max_length=200, is_interrupted=self._is_interrupted)
                     if self._is_interrupted():
                         return "interrupted"
+                    llm.cleanup()
                     self._update_stage(stage, "completed", storyboard)
 
                 elif stage == "image_generation":
@@ -164,6 +168,7 @@ class PipelineOrchestrator:
                         self._generate_dummy_media("image", image_path)
                     else:
                         flux.generate(image_prompt, image_path)
+                    flux.cleanup()
                     self._update_stage(stage, "completed", image_path)
 
                 elif stage == "video_generation":
@@ -176,6 +181,7 @@ class PipelineOrchestrator:
                         self._generate_dummy_media("video", video_path)
                     else:
                         wan.generate(video_prompt, video_path)
+                    wan.cleanup()
                     self._update_stage(stage, "completed", video_path)
 
                 elif stage == "audio_generation":
@@ -188,6 +194,7 @@ class PipelineOrchestrator:
                         self._generate_dummy_media("audio", audio_path)
                     else:
                         mmaudio.generate(audio_prompt, audio_path)
+                    mmaudio.cleanup()
                     self._update_stage(stage, "completed", audio_path)
 
                 elif stage == "video_assembly":

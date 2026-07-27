@@ -57,3 +57,15 @@ class MMAudioProvider(BaseAIProvider):
 
     def get_gpu_requirements(self):
         return {"vram_required_gb": self.model_info.get("vram_required_gb"), "backend": self.model_info.get("backend")}
+
+    def cleanup(self):
+        if self.model is not None:
+            del self.model
+            self.model = None
+        if self.processor is not None:
+            del self.processor
+            self.processor = None
+            import gc
+            import torch
+            gc.collect()
+            torch.cuda.empty_cache()

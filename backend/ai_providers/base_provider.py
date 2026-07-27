@@ -20,3 +20,6 @@ class BaseAIProvider(ABC):
     @abstractmethod
     def get_gpu_requirements(self):
         pass
+
+    def cleanup(self):
+        pass

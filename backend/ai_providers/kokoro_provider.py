@@ -58,3 +58,15 @@ class KokoroProvider(BaseAIProvider):
 
     def get_gpu_requirements(self):
         return {"vram_required_gb": self.model_info.get("vram_required_gb"), "backend": self.model_info.get("backend")}
+
+    def cleanup(self):
+        if self.model is not None:
+            del self.model
+            self.model = None
+        if self.tokenizer is not None:
+            del self.tokenizer
+            self.tokenizer = None
+            import gc
+            import torch
+            gc.collect()
+            torch.cuda.empty_cache()
