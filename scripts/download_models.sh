@@ -29,15 +29,17 @@ else
     
     mkdir -p "$DEST_DIR"
 
-    if command -v huggingface-cli &> /dev/null; then
-        echo "Utilizzo di huggingface-cli per il download..."
-        huggingface-cli download "$REPO_ID" --local-dir "$DEST_DIR" --local-dir-use-symlinks False
+    HUGGINGFACE_CLI="venv/bin/huggingface-cli"
+
+    if [ -f "$HUGGINGFACE_CLI" ]; then
+        echo "Utilizzo di huggingface-cli dall'ambiente virtuale..."
+        "$HUGGINGFACE_CLI" download "$REPO_ID" --local-dir "$DEST_DIR" --local-dir-use-symlinks False
         
         # Crea il marker di completamento
         touch "$DEST_DIR/.download_complete"
         echo "[OK] Download completato e verificato."
     else
-        echo "[ERRORE] huggingface-cli non trovato. Installa 'huggingface_hub'."
+        echo "[ERRORE] huggingface-cli non trovato in venv/bin/. Assicurati di aver eseguito scripts/install_python_environment.sh"
         exit 1
     fi
 fi
