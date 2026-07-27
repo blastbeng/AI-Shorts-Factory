@@ -10,9 +10,12 @@ fi
 
 FLUX_DIR="./models/image/flux"
 if [ ! -d "$FLUX_DIR" ] || [ ! -f "$FLUX_DIR/.download_complete" ]; then
-    ./scripts/download_models.sh "flux" "lllyasviel/flux1-dev-bnb-nf4" "$FLUX_DIR" "image" "flux"
+    echo "[INFO] Flux verrà scaricato e quantizzato automaticamente da HuggingFace al primo avvio."
+    # Crea un marker fittizio per evitare che lo script venga rieseguito inutilmente
+    mkdir -p "$FLUX_DIR"
+    touch "$FLUX_DIR/.download_complete"
 else
-    echo "[OK] Modello flux già installato."
+    echo "[OK] Modello flux già configurato."
 fi
 
 QWEN_DIR="./models/image/qwen_image"

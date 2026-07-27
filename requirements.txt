@@ -19,3 +19,4 @@ numpy<2.5
 sentencepiece
 tiktoken
 psutil
+bitsandbytes
