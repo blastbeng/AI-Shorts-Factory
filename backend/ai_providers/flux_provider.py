@@ -40,9 +40,7 @@ class FluxProvider(BaseAIProvider):
             logger.info("Caricamento pipeline Flux...")
             model_path = self.model_info.get("path")
             try:
-                from transformers import BitsAndBytesConfig
-                quantization_config = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_compute_dtype=torch.float16)
-                self.pipeline = FluxPipeline.from_pretrained(model_path, torch_dtype=torch.float16, quantization_config=quantization_config)
+                self.pipeline = FluxPipeline.from_pretrained(model_path, torch_dtype=torch.float16)
                 if use_cpu_offload:
                     self.pipeline.enable_model_cpu_offload(device=device)
                 else:

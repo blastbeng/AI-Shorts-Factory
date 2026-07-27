@@ -7,7 +7,7 @@ audio:
 image:
   flux:
     backend: rocm
-    path: black-forest-labs/FLUX.1-dev
+    path: black-forest-labs/FLUX.1-schnell
     status: installed
     vram_required_gb: 8
   qwen_image:

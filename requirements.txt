@@ -20,3 +20,4 @@ sentencepiece
 tiktoken
 psutil
 bitsandbytes
+accelerate
