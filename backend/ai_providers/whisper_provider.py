@@ -114,6 +114,7 @@ class WhisperProvider(BaseAIProvider):
             
         logger.info(f"Trascrizione audio per sottotitoli da: {audio_path}")
         audio, sampling_rate = librosa.load(audio_path, sr=16000)
+        audio_duration = len(audio) / sampling_rate
         
         inputs = self.processor(audio, sampling_rate=sampling_rate, return_tensors="pt")
         # Move inputs to the model's actual device and dtype (handles device_map="auto")
@@ -129,25 +130,31 @@ class WhisperProvider(BaseAIProvider):
         import re
         import datetime
         
-        pattern = r'<\|(\d+\.\d+)\|>([^<]*)'
+        # Regex aggiornata per supportare timestamp interi o decimali (es. <|0|> o <|0.00|>)
+        pattern = r'<\|(\d+(?:\.\d+)?)\|>([^<]*)'
         matches = re.findall(pattern, transcription)
+        
+        def format_time(t):
+            td = datetime.timedelta(seconds=float(t))
+            return f"{td.seconds//3600:02d}:{(td.seconds%3600)//60:02d}:{td.seconds%60:02d},{td.microseconds//1000:03d}"
         
         with open(output_srt_path, 'w') as f:
             if not matches:
                 # Fallback se i timestamp non vengono rilevati
                 logger.warning("Nessun timestamp rilevato nella trascrizione. Creazione SRT con testo unico.")
                 f.write("1\n")
-                f.write("00:00:00,000 --> 00:00:10,000\n")
-                f.write(f"{transcription.strip()}\n\n")
+                f.write(f"{format_time(0)} --> {format_time(audio_duration)}\n")
+                # Pulizia del testo da eventuali tag speciali residui
+                clean_text = re.sub(r'<\|[^|]+\|>', '', transcription).strip()
+                f.write(f"{clean_text}\n\n")
             else:
                 for i, (start, text) in enumerate(matches):
-                    end = matches[i+1][0] if i+1 < len(matches) else float(start) + 2.0
                     start_time = float(start)
-                    end_time = float(end)
-                    
-                    def format_time(t):
-                        td = datetime.timedelta(seconds=t)
-                        return f"{td.seconds//3600:02d}:{(td.seconds%3600)//60:02d}:{td.seconds%60:02d},{td.microseconds//1000:03d}"
+                    if i + 1 < len(matches):
+                        end_time = float(matches[i+1][0])
+                    else:
+                        # Per l'ultimo segmento, usa la durata totale dell'audio o start + 2.0 se più corto
+                        end_time = max(start_time + 2.0, audio_duration)
                     
                     f.write(f"{i+1}\n")
                     f.write(f"{format_time(start_time)} --> {format_time(end_time)}\n")
