@@ -45,7 +45,7 @@ class FluxProvider(BaseAIProvider):
                 self.pipeline.enable_vae_slicing()
                 self.pipeline.enable_attention_slicing()
                 if use_cpu_offload:
-                    self.pipeline.enable_model_cpu_offload(device=device)
+                    self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
                 else:
                     self.pipeline.to(device)
             except Exception as e:
@@ -67,7 +67,7 @@ class FluxProvider(BaseAIProvider):
                 self.pipeline.enable_vae_tiling()
                 self.pipeline.enable_vae_slicing()
                 self.pipeline.enable_attention_slicing()
-                self.pipeline.enable_sequential_cpu_offload(device=device)
+                self.pipeline.enable_sequential_cpu_offload(gpu_id=gpu['device_index'])
             
         logger.info(f"Generazione immagine per prompt: {prompt}")
         image = self.pipeline(
