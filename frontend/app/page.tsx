@@ -45,7 +45,7 @@ export default function Home() {
   const [health, setHealth] = useState<{status: string} | null>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || `http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8000`;
 
   const fetchData = async () => {
     try {
