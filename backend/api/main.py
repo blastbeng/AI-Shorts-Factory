@@ -130,6 +130,8 @@ def publish_video(video_id: int, platform: str, db: Session = Depends(get_db)):
     video = db.query(Video).filter(Video.id == video_id).first()
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
+    if not video.approved:
+        raise HTTPException(status_code=400, detail="Il video deve essere approvato prima della pubblicazione.")
     
     metadata = {
         "title": f"AI Generated Video {video.id}",

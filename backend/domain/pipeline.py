@@ -52,7 +52,7 @@ class PipelineOrchestrator:
         image_path = ""
         video_path = ""
         audio_path = ""
-        final_video_path = "output/final_video.mp4"
+        final_video_path = f"output/final_video_{self.job_id}.mp4"
 
         # Recupera gli stage già completati per supportare il resume
         completed_stages = self.db.query(PipelineStage).filter(

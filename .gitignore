@@ -1,1 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+env/
+.env
+*.db
+*.sqlite3
+
+# Node.js
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# Project specific
+output/
+models/video/*
+models/audio/*
+models/voice/*
+models/image/*
+models/speech/*
+!models/**/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Aider
 .aider*
