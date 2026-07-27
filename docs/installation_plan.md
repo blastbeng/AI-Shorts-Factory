@@ -8,7 +8,7 @@ Gli script risiedono in `scripts/` e devono essere eseguiti nell'ordine indicato
 |---|---|---|
 | 1 | `install_system_dependencies.sh` | Pacchetti di sistema (ffmpeg, build-essential, ecc.) |
 | 2 | `verify_gpu_stack.sh` | Verifica la presenza di driver GPU, ROCm, CUDA e Vulkan (non installa) |
-| 2.5 | `install_llama_cpp.sh` | Download del modello Qwen GGUF per LLM |
+| 2.5 | `download_llama_cpp.sh` | Download del modello Qwen GGUF per LLM |
 | 3 | `install_python_environment.sh` | Python venv, pip, dipendenze Python |
 | 4 | `install_video_models.sh` | Setup provider video (Wan 2.2, LTX Video) |
 | 5 | `install_audio_models.sh` | Setup provider audio (MMAudio) |

@@ -21,8 +21,8 @@ chmod +x scripts/*.sh
 echo "=== Fase 2: Stack GPU ==="
 ./scripts/verify_gpu_stack.sh
 
-echo "=== Fase 2.5: Installazione llama.cpp ==="
-./scripts/install_llama_cpp.sh
+echo "=== Fase 2.5: Download modello llama.cpp ==="
+./scripts/download_llama_cpp.sh
 
 # 4. Installa l'ambiente Python
 echo "=== Fase 3: Ambiente Python ==="
