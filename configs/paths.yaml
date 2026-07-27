@@ -1,0 +1,7 @@
+models_dir: "./models"
+video_models_dir: "./models/video"
+audio_models_dir: "./models/audio"
+voice_models_dir: "./models/voice"
+image_models_dir: "./models/image"
+speech_models_dir: "./models/speech"
+output_dir: "./output"

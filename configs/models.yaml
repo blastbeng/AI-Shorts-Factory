@@ -1,0 +1,30 @@
+video:
+  wan_2_2_5b:
+    path: "./models/video/wan_2_2_5b"
+    vram_required_gb: 14
+    backend: "rocm"
+    status: "not_installed"
+audio:
+  mmaudio:
+    path: "./models/audio/mmaudio"
+    vram_required_gb: 8
+    backend: "cuda"
+    status: "not_installed"
+voice:
+  kokoro_tts:
+    path: "./models/voice/kokoro_tts"
+    vram_required_gb: 4
+    backend: "cuda"
+    status: "not_installed"
+image:
+  flux:
+    path: "./models/image/flux"
+    vram_required_gb: 12
+    backend: "rocm"
+    status: "not_installed"
+speech:
+  whisper:
+    path: "./models/speech/whisper"
+    vram_required_gb: 4
+    backend: "cuda"
+    status: "not_installed"
