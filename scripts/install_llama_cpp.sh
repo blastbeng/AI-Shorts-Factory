@@ -29,6 +29,14 @@ case $OS in
         ;;
 esac
 
+# Verifica presenza di Vulkan prima di compilare
+if ! command -v vulkaninfo &> /dev/null; then
+    echo "[ERRORE] Vulkan non rilevato sul sistema."
+    echo "Impossibile compilare llama.cpp con backend Vulkan."
+    echo "Installare Vulkan SDK o i pacchetti di sistema (es. vulkan-tools, libvulkan-dev) manualmente."
+    exit 1
+fi
+
 # Clona llama.cpp
 if [ ! -d "/opt/llama.cpp" ]; then
     sudo git clone https://github.com/ggerganov/llama.cpp /opt/llama.cpp

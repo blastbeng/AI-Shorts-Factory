@@ -1,41 +1,41 @@
 #!/bin/bash
 set -e
 
-echo "Installazione dello stack GPU..."
+echo "=== Verifica Stack GPU ==="
 
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    OS=$ID
+ERRORS=0
+
+# Verifica CUDA (NVIDIA)
+if command -v nvidia-smi &> /dev/null; then
+    echo "[OK] CUDA (nvidia-smi) rilevato."
 else
-    echo "Impossibile rilevare il sistema operativo."
-    exit 1
+    echo "[AVVISO] nvidia-smi non trovato. CUDA non sembra installato."
+    echo "         Installa i driver NVIDIA e CUDA toolkit manualmente se intendi usare GPU NVIDIA."
+    ERRORS=$((ERRORS + 1))
 fi
 
-case $OS in
-    ubuntu|debian)
-        echo "Installazione dipendenze ROCm e CUDA (Ubuntu/Debian)..."
-        sudo apt-get update
-        sudo apt-get install -y rocm-core rocm-smi-lib nvidia-cuda-toolkit
-        ;;
-    fedora)
-        echo "Installazione dipendenze ROCm e CUDA (Fedora)..."
-        # Fedora richiede spesso l'uso di rpmfusion per i driver NVIDIA/CUDA
-        sudo dnf install -y rocm-smi nvidia-cuda-toolkit
-        ;;
-    arch)
-        echo "Installazione dipendenze ROCm e CUDA (Arch)..."
-        # Su Arch, rocm e cuda sono disponibili in AUR o extra
-        sudo pacman -Sy --noconfirm rocm cuda
-        ;;
-    *)
-        echo "Sistema operativo non supportato per l'installazione automatica dello stack GPU: $OS"
-        exit 1
-        ;;
-esac
-
-# Verifica driver
-if ! command -v nvidia-smi &> /dev/null && ! command -v rocm-smi &> /dev/null; then
-    echo "Attenzione: Nessun driver GPU rilevato. Assicurati di aver installato i driver corretti."
+# Verifica ROCm (AMD)
+if command -v rocm-smi &> /dev/null; then
+    echo "[OK] ROCm (rocm-smi) rilevato."
+else
+    echo "[AVVISO] rocm-smi non trovato. ROCm non sembra installato."
+    echo "         Installa i driver AMD e ROCm manualmente se intendi usare GPU AMD."
+    ERRORS=$((ERRORS + 1))
 fi
 
-echo "Stack GPU installato."
+# Verifica Vulkan
+if command -v vulkaninfo &> /dev/null; then
+    echo "[OK] Vulkan (vulkaninfo) rilevato."
+else
+    echo "[AVVISO] vulkaninfo non trovato. Vulkan non sembra installato."
+    echo "         Installa Vulkan SDK o i pacchetti vulkan-tools manualmente (necessario per llama.cpp)."
+    ERRORS=$((ERRORS + 1))
+fi
+
+echo "----------------------------------------"
+if [ "$ERRORS" -gt 0 ]; then
+    echo "Verifica completata con $ERRORS avvisi."
+    echo "NOTA: L'applicazione può ancora girare, ma alcune funzionalità AI potrebbero non essere disponibili."
+else
+    echo "Verifica completata: Tutti gli stack GPU sono presenti."
+fi
