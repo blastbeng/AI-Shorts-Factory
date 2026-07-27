@@ -26,10 +26,11 @@ class LtxProvider(BaseAIProvider):
         if not self.health_check():
             raise RuntimeError("Modello LTX Video non installato.")
             
-        gpu = self.gm.get_gpu_for_task("video_generation", self.get_gpu_requirements().get("vram_required_gb", 0))
+        preferred_backend = self.model_info.get("backend")
+        gpu = self.gm.get_gpu_for_task("video_generation", self.get_gpu_requirements().get("vram_required_gb", 0), preferred_backend=preferred_backend)
         if not gpu:
             logger.warning("Nessuna GPU con VRAM sufficiente per LTX Video. Uso GPU con offload su RAM.")
-            gpu = self.gm.get_gpu_for_task_ignore_vram("video_generation")
+            gpu = self.gm.get_gpu_for_task_ignore_vram("video_generation", preferred_backend=preferred_backend)
             if not gpu:
                 raise RuntimeError("Nessuna GPU assegnata per la video generation.")
             use_cpu_offload = True

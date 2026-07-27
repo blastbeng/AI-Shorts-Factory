@@ -26,10 +26,11 @@ class MMAudioProvider(BaseAIProvider):
         if not self.health_check():
             raise RuntimeError("Modello MMAudio non installato.")
             
-        gpu = self.gm.get_gpu_for_task("audio_generation", self.get_gpu_requirements().get("vram_required_gb", 0))
+        preferred_backend = self.model_info.get("backend")
+        gpu = self.gm.get_gpu_for_task("audio_generation", self.get_gpu_requirements().get("vram_required_gb", 0), preferred_backend=preferred_backend)
         if not gpu:
             logger.warning("Nessuna GPU con VRAM sufficiente per MMAudio. Uso GPU con offload su RAM.")
-            gpu = self.gm.get_gpu_for_task_ignore_vram("audio_generation")
+            gpu = self.gm.get_gpu_for_task_ignore_vram("audio_generation", preferred_backend=preferred_backend)
             if not gpu:
                 raise RuntimeError("Nessuna GPU assegnata per l'audio generation.")
             use_cpu_offload = True

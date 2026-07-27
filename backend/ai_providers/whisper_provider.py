@@ -26,10 +26,11 @@ class WhisperProvider(BaseAIProvider):
         if not self.health_check():
             raise RuntimeError("Modello Whisper non installato.")
             
-        gpu = self.gm.get_gpu_for_task("speech_recognition", self.get_gpu_requirements().get("vram_required_gb", 0))
+        preferred_backend = self.model_info.get("backend")
+        gpu = self.gm.get_gpu_for_task("speech_recognition", self.get_gpu_requirements().get("vram_required_gb", 0), preferred_backend=preferred_backend)
         if not gpu:
             logger.warning("Nessuna GPU con VRAM sufficiente per Whisper. Uso GPU con offload su RAM.")
-            gpu = self.gm.get_gpu_for_task_ignore_vram("speech_recognition")
+            gpu = self.gm.get_gpu_for_task_ignore_vram("speech_recognition", preferred_backend=preferred_backend)
             if not gpu:
                 raise RuntimeError("Nessuna GPU assegnata per lo speech recognition.")
             use_cpu_offload = True
@@ -78,10 +79,11 @@ class WhisperProvider(BaseAIProvider):
         if not self.health_check():
             raise RuntimeError("Modello Whisper non installato.")
             
-        gpu = self.gm.get_gpu_for_task("speech_recognition", self.get_gpu_requirements().get("vram_required_gb", 0))
+        preferred_backend = self.model_info.get("backend")
+        gpu = self.gm.get_gpu_for_task("speech_recognition", self.get_gpu_requirements().get("vram_required_gb", 0), preferred_backend=preferred_backend)
         if not gpu:
             logger.warning("Nessuna GPU con VRAM sufficiente per Whisper. Uso GPU con offload su RAM.")
-            gpu = self.gm.get_gpu_for_task_ignore_vram("speech_recognition")
+            gpu = self.gm.get_gpu_for_task_ignore_vram("speech_recognition", preferred_backend=preferred_backend)
             if not gpu:
                 raise RuntimeError("Nessuna GPU assegnata per lo speech recognition.")
             use_cpu_offload = True
