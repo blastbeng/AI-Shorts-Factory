@@ -1,6 +1,6 @@
 audio:
   mmaudio:
-    backend: cuda
+    backend: rocm
     path: ./models/audio/mmaudio
     status: installed
     vram_required_gb: 8
@@ -17,7 +17,7 @@ image:
     vram_required_gb: 10
 speech:
   whisper:
-    backend: cuda
+    backend: rocm
     path: openai/whisper-large-v3-turbo
     status: installed
     vram_required_gb: 4
@@ -40,7 +40,7 @@ video:
     vram_required_gb: 8
 voice:
   kokoro_tts:
-    backend: cuda
+    backend: rocm
     path: ./models/voice/kokoro_tts
     status: installed
     vram_required_gb: 4
