@@ -24,8 +24,8 @@ speech:
 text:
   llm_base:
     backend: vulkan
-    model_name: Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive
-    path: /opt/models/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q6_K_P.gguf
+    model_name: L3.2-8X4B-MOE-V2-Dark-Champion-Inst-21B-uncen-ablit-D_AU
+    path: /opt/models/L3.2-8X4B-MOE-V2-Dark-Champion-Inst-21B-uncen-ablit-D_AU-Q4_k_m.gguf
     status: installed
 video:
   ltx_video:
