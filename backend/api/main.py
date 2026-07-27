@@ -69,7 +69,19 @@ def health():
 @app.get("/gpus")
 def gpus():
     gm = GPUManager()
-    return gm.get_gpus()
+    gpus_info = []
+    for gpu in gm.get_gpus():
+        vram_info = gm.monitor_vram(gpu["id"])
+        gpus_info.append({
+            "id": gpu["id"],
+            "name": gpu["name"],
+            "vram_total_gb": vram_info["vram_total_gb"] if vram_info else gpu["vram_gb"],
+            "vram_used_gb": vram_info["vram_used_gb"] if vram_info else 0,
+            "vram_free_gb": vram_info["vram_free_gb"] if vram_info else gpu["vram_gb"],
+            "backends": gpu.get("backends", []),
+            "assigned_tasks": gpu.get("assigned_tasks", [])
+        })
+    return gpus_info
 
 @app.get("/monitor")
 def monitor():

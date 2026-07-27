@@ -1,6 +1,8 @@
 import os
 import yaml
 import subprocess
+import threading
+import time
 from openai import OpenAI
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.services.logger import logger
@@ -71,6 +73,17 @@ class LLMProvider(BaseAIProvider):
                     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                     SubprocessManager.add(process)
                     
+                    def monitor_interruption(proc, check_func):
+                        while proc.poll() is None:
+                            if check_func and check_func():
+                                logger.warning("Job interrotto, uccisione processo llama.cpp...")
+                                proc.kill()
+                                break
+                            time.sleep(0.5)
+                    
+                    interrupt_thread = threading.Thread(target=monitor_interruption, args=(process, is_interrupted), daemon=True)
+                    interrupt_thread.start()
+                    
                     # Leggi e logga stderr in tempo reale (log di llama.cpp)
                     while True:
                         output = process.stderr.readline()
@@ -78,17 +91,14 @@ class LLMProvider(BaseAIProvider):
                             break
                         if output:
                             logger.info(f"[llama.cpp] {output.strip()}")
-                        
-                        if is_interrupted and is_interrupted():
-                            logger.warning("Job interrotto, uccisione processo llama.cpp...")
-                            process.kill()
-                            return ""
                     
                     # Leggi l'output generato (stdout)
                     stdout = process.stdout.read()
                     process.wait()
                     
                     if process.returncode != 0:
+                        if is_interrupted and is_interrupted():
+                            return ""
                         raise RuntimeError("llama.cpp exited with non-zero status")
                     
                     generated_text = stdout.strip()

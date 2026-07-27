@@ -24,8 +24,10 @@ type Job = {
 type Gpu = {
   id: number;
   name: string;
-  vram_gb: number;
-  backend: string;
+  vram_total_gb: number;
+  vram_used_gb: number;
+  vram_free_gb: number;
+  backends: string[];
   assigned_tasks: string[];
 };
 
@@ -265,17 +267,32 @@ export default function Home() {
               <span className="w-2 h-2 bg-green-500 rounded-full"></span> Monitor GPU
             </h2>
             {loading ? <p className="text-gray-400">Caricamento...</p> : (
-              <ul className="space-y-3">
-                {gpus.map((g) => (
-                  <li key={g.id} className="bg-gray-700/50 p-3 rounded-lg">
-                    <div className="flex justify-between items-center mb-1">
-                      <strong className="text-sm">{g.name}</strong>
-                      <span className="text-xs text-gray-400 bg-gray-600 px-2 py-0.5 rounded">{g.backend}</span>
-                    </div>
-                    <div className="text-xs text-gray-400">VRAM: {g.vram_gb}GB</div>
-                    <div className="text-xs text-gray-500 mt-1 truncate">Task: {g.assigned_tasks.join(", ")}</div>
-                  </li>
-                ))}
+              <ul className="space-y-4">
+                {gpus.map((g) => {
+                  const vramPercent = g.vram_total_gb > 0 ? (g.vram_used_gb / g.vram_total_gb) * 100 : 0;
+                  return (
+                    <li key={g.id} className="bg-gray-700/50 p-4 rounded-lg">
+                      <div className="flex justify-between items-center mb-2">
+                        <strong className="text-sm">{g.name}</strong>
+                        <div className="flex gap-1">
+                          {g.backends.map(b => (
+                            <span key={b} className="text-xs text-gray-300 bg-gray-600 px-2 py-0.5 rounded">{b}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="mb-1">
+                        <div className="flex justify-between text-xs text-gray-400 mb-1">
+                          <span>VRAM</span>
+                          <span>{g.vram_used_gb.toFixed(1)} / {g.vram_total_gb.toFixed(1)} GB</span>
+                        </div>
+                        <div className="w-full bg-gray-600 rounded-full h-2">
+                          <div className="bg-gradient-to-r from-green-500 to-yellow-500 h-2 rounded-full transition-all duration-500" style={{ width: `${vramPercent}%` }}></div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-2 truncate">Task: {g.assigned_tasks.join(", ")}</div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
