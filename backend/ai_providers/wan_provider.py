@@ -44,7 +44,7 @@ class WanProvider(BaseAIProvider):
                 self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16)
                 self.pipeline.enable_attention_slicing()
                 if use_cpu_offload:
-                    self.pipeline.enable_model_cpu_offload(device=device)
+                    self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
                 else:
                     self.pipeline.to(device)
             except Exception as e:
@@ -63,7 +63,7 @@ class WanProvider(BaseAIProvider):
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso sequential CPU offload per evitare OOM.")
                 self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16)
                 self.pipeline.enable_attention_slicing()
-                self.pipeline.enable_sequential_cpu_offload(device=device)
+                self.pipeline.enable_sequential_cpu_offload(gpu_id=gpu['device_index'])
 
         logger.info(f"Generazione video per prompt: {prompt}")
         # Aggiungi parametri per video verticale (Shorts)

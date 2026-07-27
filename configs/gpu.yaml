@@ -15,7 +15,7 @@ gpus:
   - id: 1
     name: "NVIDIA RTX 3060"
     vram_gb: 12
-    device_index: 0
+    device_index: 1
     backends:
       - "vulkan"
       - "cuda"
