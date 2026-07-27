@@ -3,8 +3,31 @@ set -e
 
 echo "=== Installazione llama.cpp con backend Vulkan ==="
 
-# Installa dipendenze per la compilazione
-sudo apt-get install -y build-essential git cmake libcurl4-openssl-dev
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS=$ID
+else
+    echo "Impossibile rilevare il sistema operativo."
+    exit 1
+fi
+
+echo "Installazione dipendenze per la compilazione su $OS..."
+case $OS in
+    ubuntu|debian)
+        sudo apt-get update
+        sudo apt-get install -y build-essential git cmake libcurl4-openssl-dev
+        ;;
+    fedora)
+        sudo dnf install -y gcc gcc-c++ make git cmake libcurl-devel
+        ;;
+    arch)
+        sudo pacman -Sy --noconfirm base-devel git cmake curl
+        ;;
+    *)
+        echo "Sistema operativo non supportato: $OS"
+        exit 1
+        ;;
+esac
 
 # Clona llama.cpp
 if [ ! -d "/opt/llama.cpp" ]; then
