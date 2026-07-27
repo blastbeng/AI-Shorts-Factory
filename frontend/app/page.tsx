@@ -16,6 +16,7 @@ type Video = {
   file_path: string;
   quality_score: number;
   approved: boolean;
+  published: boolean;
 };
 
 type Job = {
@@ -195,7 +196,7 @@ export default function Home() {
                     <p className="text-sm mb-2">Video ID: {v.id} (Job: {v.job_id})</p>
                     <video src={videoUrl} controls className="w-full rounded mb-2 bg-black" />
                     <p className="text-sm mb-2">Score: {v.quality_score.toFixed(1)}/10</p>
-                    <p className="text-sm mb-2">Stato: {v.approved ? "Approvato" : "In Attesa"}</p>
+                    <p className="text-sm mb-2">Stato: {v.approved ? "Approvato" : "In Attesa"} {v.published && "(Pubblicato)"}</p>
                     <div className="flex gap-2 mt-2">
                       {!v.approved ? (
                         <button onClick={() => handleApprove(v.id)} className="flex-1 bg-green-600 hover:bg-green-700 px-2 py-1 rounded text-xs">

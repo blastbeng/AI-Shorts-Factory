@@ -125,11 +125,13 @@ def delete_video(video_id: int, db: Session = Depends(get_db)):
         os.remove(video.file_path)
     
     # Opzionale: elimina anche il job e i suoi stadi se non ha altri video associati
-    job = db.query(Job).filter(Job.id == video.job_id).first()
-    if job and len(job.videos) == 1:  # Se questo è l'unico video
+    video_count = db.query(Video).filter(Video.job_id == video.job_id).count()
+    if video_count == 1:  # Se questo è l'unico video
         # Elimina gli stadi della pipeline associati al job
         db.query(PipelineStage).filter(PipelineStage.job_id == video.job_id).delete()
-        db.delete(job)
+        job = db.query(Job).filter(Job.id == video.job_id).first()
+        if job:
+            db.delete(job)
     
     db.delete(video)
     db.commit()
@@ -165,6 +167,9 @@ def publish_video(video_id: int, platform: str, db: Session = Depends(get_db)):
     try:
         provider.authenticate()
         result = provider.upload_video(video.file_path, metadata)
+        video.published = True
+        db.commit()
+        db.refresh(video)
         return {"status": "publish_started", "platform": platform, "result": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -174,7 +179,7 @@ def get_job_details(job_id: int, db: Session = Depends(get_db)):
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
-    stages = db.query(PipelineStage).filter(PipelineStage.job_id == job_id).all()
+    stages = db.query(PipelineStage).filter(PipelineStage.job_id == job_id).order_by(PipelineStage.id).all()
     return {
         "job_id": job.id,
         "status": job.status,

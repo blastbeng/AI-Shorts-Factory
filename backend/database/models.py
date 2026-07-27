@@ -25,6 +25,7 @@ class Video(Base):
     file_path = Column(String, nullable=False)
     quality_score = Column(Float, nullable=True)
     approved = Column(Boolean, default=False)
+    published = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class ModelInfo(Base):
