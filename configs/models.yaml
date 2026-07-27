@@ -25,7 +25,7 @@ text:
   llm_base:
     backend: vulkan
     model_name: L3.2-8X4B-MOE-V2-Dark-Champion-Inst-21B-uncen-ablit-D_AU
-    path: /opt/models/NeuralDaredevil-8B-abliterated.Q8_0.gguf
+    path: /opt/models/Huihui-Qwen3-Omni-30B-A3B-Instruct-abliterated.i1-Q6_K.gguf
     status: installed
 video:
   ltx_video:

@@ -29,7 +29,7 @@ class LLMProvider(BaseAIProvider):
             self.model_name = os.getenv("OLLAMA_MODEL_NAME", "llama3")
             self.client = OpenAI(base_url=self.api_base, api_key=self.api_key)
         elif self.provider_type == "llama_cpp":
-            self.model_path = os.getenv("LLAMA_CPP_MODEL_PATH", self.model_info.get("path", "/opt/models/NeuralDaredevil-8B-abliterated.Q8_0.gguf"))
+            self.model_path = os.getenv("LLAMA_CPP_MODEL_PATH", self.model_info.get("path", "/opt/models/Huihui-Qwen3-Omni-30B-A3B-Instruct-abliterated.i1-Q6_K.gguf"))
             self.params = os.getenv("LLAMA_CPP_PARAMS", "")
             
             # Parse params
