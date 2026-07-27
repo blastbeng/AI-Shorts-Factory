@@ -170,11 +170,12 @@ class LLMProvider(BaseAIProvider):
                 del LLMProvider._llm_instance
                 LLMProvider._llm_instance = None
                 LLMProvider._llm_model_path = None
-                import gc
-                gc.collect()
-                try:
-                    import torch
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
-                except ImportError:
-                    pass
+            self.llm = None
+            import gc
+            gc.collect()
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            except ImportError:
+                pass

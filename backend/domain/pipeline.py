@@ -110,43 +110,47 @@ class PipelineOrchestrator:
                 if stage == "topic_generation":
                     from backend.ai_providers.llm_provider import LLMProvider
                     llm = LLMProvider()
-                    
-                    if self.profile.custom_prompt:
-                        prompt = f"Espandi questo topic per un video short: {self.profile.custom_prompt}. Genera il testo in lingua: {self.profile.language}."
-                    else:
-                        genre = self.profile.genre
-                        if not genre or genre == "random":
-                            genre = random.choice(self.templates.get("genres", ["generale"]))
+                    try:
+                        if self.profile.custom_prompt:
+                            prompt = f"Espandi questo topic per un video short: {self.profile.custom_prompt}. Genera il testo in lingua: {self.profile.language}."
+                        else:
+                            genre = self.profile.genre
+                            if not genre or genre == "random":
+                                genre = random.choice(self.templates.get("genres", ["generale"]))
+                            
+                            instruction = self.templates.get("random_prompt_instruction", "Genera un'idea per un video di genere {genre}.").replace("{genre}", genre)
+                            prompt = f"{instruction} Genera il testo in lingua: {self.profile.language}."
                         
-                        instruction = self.templates.get("random_prompt_instruction", "Genera un'idea per un video di genere {genre}.").replace("{genre}", genre)
-                        prompt = f"{instruction} Genera il testo in lingua: {self.profile.language}."
-                    
-                    expanded_topic = llm.generate(prompt, max_length=100, is_interrupted=self._is_interrupted)
-                    if self._is_interrupted():
+                        expanded_topic = llm.generate(prompt, max_length=100, is_interrupted=self._is_interrupted)
+                        if self._is_interrupted():
+                            return "interrupted"
+                        self._update_stage(stage, "completed", expanded_topic)
+                    finally:
                         llm.cleanup()
-                        return "interrupted"
-                    self._update_stage(stage, "completed", expanded_topic)
 
                 elif stage == "script_generation":
                     from backend.ai_providers.llm_provider import LLMProvider
                     llm = LLMProvider()
-                    script_prompt = f"Scrivi uno script di {self.profile.duration_seconds} secondi per un video su: {expanded_topic or self.profile.custom_prompt or self.profile.topic}. Lo script deve essere scritto in lingua: {self.profile.language}."
-                    script = llm.generate(script_prompt, max_length=300, is_interrupted=self._is_interrupted)
-                    if self._is_interrupted():
+                    try:
+                        script_prompt = f"Scrivi uno script di {self.profile.duration_seconds} secondi per un video su: {expanded_topic or self.profile.custom_prompt or self.profile.topic}. Lo script deve essere scritto in lingua: {self.profile.language}."
+                        script = llm.generate(script_prompt, max_length=300, is_interrupted=self._is_interrupted)
+                        if self._is_interrupted():
+                            return "interrupted"
+                        self._update_stage(stage, "completed", script)
+                    finally:
                         llm.cleanup()
-                        return "interrupted"
-                    self._update_stage(stage, "completed", script)
 
                 elif stage == "storyboard_creation":
                     from backend.ai_providers.llm_provider import LLMProvider
                     llm = LLMProvider()
-                    storyboard_prompt = f"Crea uno storyboard di 3 scene per questo script: {script}. Lo storyboard deve essere in lingua: {self.profile.language}."
-                    storyboard = llm.generate(storyboard_prompt, max_length=200, is_interrupted=self._is_interrupted)
-                    if self._is_interrupted():
+                    try:
+                        storyboard_prompt = f"Crea uno storyboard di 3 scene per questo script: {script}. Lo storyboard deve essere in lingua: {self.profile.language}."
+                        storyboard = llm.generate(storyboard_prompt, max_length=200, is_interrupted=self._is_interrupted)
+                        if self._is_interrupted():
+                            return "interrupted"
+                        self._update_stage(stage, "completed", storyboard)
+                    finally:
                         llm.cleanup()
-                        return "interrupted"
-                    llm.cleanup()
-                    self._update_stage(stage, "completed", storyboard)
 
                 elif stage == "voice_generation":
                     from backend.ai_providers.kokoro_provider import KokoroProvider
@@ -236,9 +240,6 @@ class PipelineOrchestrator:
                     self._update_stage(stage, "waiting_for_review", "In attesa di revisione manuale")
 
             except Exception as e:
-                if stage in ["topic_generation", "script_generation", "storyboard_creation"]:
-                    from backend.ai_providers.llm_provider import LLMProvider
-                    LLMProvider().cleanup()
                 self._update_stage(stage, "failed", str(e))
                 logger.exception(f"[Job {self.job_id}] Fallimento stage {stage}: {e}")
                 return False
