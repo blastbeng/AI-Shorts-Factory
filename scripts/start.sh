@@ -15,6 +15,17 @@ if [ ! -d "frontend/node_modules" ]; then
     exit 1
 fi
 
+# Carica le variabili d'ambiente dal file .env
+if [ -f ".env" ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+
+# Imposta valori predefiniti se non presenti nel .env
+BACKEND_HOST=${BACKEND_HOST:-"0.0.0.0"}
+BACKEND_PORT=${BACKEND_PORT:-"8000"}
+FRONTEND_HOST=${FRONTEND_HOST:-"0.0.0.0"}
+FRONTEND_PORT=${FRONTEND_PORT:-"3000"}
+
 # Funzione di cleanup per arrestare i processi
 cleanup() {
     echo ""
@@ -31,21 +42,21 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 # Avvia il backend
-echo "Avvio del backend (FastAPI) sulla porta 8000..."
+echo "Avvio del backend (FastAPI) su ${BACKEND_HOST}:${BACKEND_PORT}..."
 source venv/bin/activate
-uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 &
+uvicorn backend.api.main:app --host $BACKEND_HOST --port $BACKEND_PORT &
 BACKEND_PID=$!
 
 # Avvia il frontend
-echo "Avvio del frontend (Next.js) sulla porta 3000..."
+echo "Avvio del frontend (Next.js) su ${FRONTEND_HOST}:${FRONTEND_PORT}..."
 cd frontend
-npm run dev &
+npm run dev -- -H $FRONTEND_HOST -p $FRONTEND_PORT &
 FRONTEND_PID=$!
 cd ..
 
 echo "=================================================="
-echo "Backend avviato (PID: $BACKEND_PID) -> http://localhost:8000"
-echo "Frontend avviato (PID: $FRONTEND_PID) -> http://localhost:3000"
+echo "Backend avviato (PID: $BACKEND_PID) -> http://${BACKEND_HOST}:${BACKEND_PORT}"
+echo "Frontend avviato (PID: $FRONTEND_PID) -> http://${FRONTEND_HOST}:${FRONTEND_PORT}"
 echo "Premi Ctrl+C per fermare entrambi i servizi."
 echo "=================================================="
 
