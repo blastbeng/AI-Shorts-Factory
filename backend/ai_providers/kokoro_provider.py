@@ -42,13 +42,26 @@ class KokoroProvider(BaseAIProvider):
             
         device = self.gm.get_device_string(gpu['id'], preferred_backend=self.model_info.get("backend"))
         
+        # Mappa la lingua dell'app al codice lingua di Kokoro
+        lang_map = {
+            "english": "a",
+            "italian": "i",
+            "spanish": "e",
+            "french": "f",
+            # "german": "d", # Kokoro non supporta il tedesco nativamente
+        }
+        app_language = kwargs.get("language", "english").lower()
+        kokoro_lang = lang_map.get(app_language, "a") # Fallback a inglese
+        
+        if app_language not in lang_map:
+            logger.warning(f"Lingua {app_language} non supportata nativamente da Kokoro. Uso fallback su inglese ('a').")
+            
         if self.model is None:
             logger.info("Caricamento modello Kokoro TTS...")
             model_path = self.model_info.get("path")
             try:
                 self.model = KModel.from_pretrained(model_path).to(device)
-                # Default to American English ('a')
-                self.pipeline = KPipeline(model=self.model, language_code='a')
+                self.pipeline = KPipeline(model=self.model, language_code=kokoro_lang)
             except Exception as e:
                 logger.exception(f"Errore nel caricamento del modello Kokoro.")
                 raise

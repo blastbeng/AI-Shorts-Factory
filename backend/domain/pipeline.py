@@ -153,7 +153,7 @@ class PipelineOrchestrator:
                         logger.warning("Kokoro TTS non installato. Uso file audio dummy.")
                         self._generate_dummy_media("audio", voice_path)
                     else:
-                        kokoro.generate(script, voice_path)
+                        kokoro.generate(script, voice_path, language=self.profile.language)
                     kokoro.cleanup()
                     self._update_stage(stage, "completed", voice_path)
 
