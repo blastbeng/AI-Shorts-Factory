@@ -44,7 +44,7 @@ class LLMProvider(BaseAIProvider):
             return os.path.exists(self.model_path) and os.path.exists(self.bin_path)
         return self.install_status() == "installed"
 
-    def generate(self, prompt: str, max_length: int = 500, *args, **kwargs):
+    def generate(self, prompt: str, max_length: int = 500, *args, is_interrupted=None, **kwargs):
         if not self.health_check():
             raise RuntimeError("LLM non configurato. Controlla il file .env e LLM_PROVIDER.")
         
@@ -77,6 +77,11 @@ class LLMProvider(BaseAIProvider):
                             break
                         if output:
                             logger.info(f"[llama.cpp] {output.strip()}")
+                        
+                        if is_interrupted and is_interrupted():
+                            logger.warning("Job interrotto, uccisione processo llama.cpp...")
+                            process.kill()
+                            return ""
                     
                     # Leggi l'output generato (stdout)
                     stdout = process.stdout.read()

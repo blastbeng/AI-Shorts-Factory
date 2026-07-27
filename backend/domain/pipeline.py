@@ -1,4 +1,4 @@
-from backend.database.models import PipelineStage, Video
+from backend.database.models import PipelineStage, Video, Job
 from backend.services.logger import logger
 from backend.services.quality_scorer import QualityScorer
 from backend.media.ffmpeg_utils import FFmpegUtils
@@ -39,6 +39,10 @@ class PipelineOrchestrator:
         self.db.add(stage)
         self.db.commit()
         logger.info(f"[Job {self.job_id}] Stage {stage_name}: {status}")
+
+    def _is_interrupted(self):
+        job = self.db.query(Job).filter(Job.id == self.job_id).first()
+        return job.status == "interrupted"
 
     def _generate_dummy_media(self, media_type, output_path):
         import subprocess
@@ -90,6 +94,11 @@ class PipelineOrchestrator:
             if stage in completed_names:
                 logger.info(f"[Job {self.job_id}] Stage {stage} già completato, salto.")
                 continue
+            
+            if self._is_interrupted():
+                logger.info(f"[Job {self.job_id}] Job interrotto dall'utente. Arresto della pipeline.")
+                return "interrupted"
+
             self._update_stage(stage, "running")
             try:
                 if stage == "topic_generation":
@@ -106,14 +115,18 @@ class PipelineOrchestrator:
                         instruction = self.templates.get("random_prompt_instruction", "Genera un'idea per un video di genere {genre}.").replace("{genre}", genre)
                         prompt = f"{instruction} Genera il testo in lingua: {self.profile.language}."
                     
-                    expanded_topic = llm.generate(prompt, max_length=100)
+                    expanded_topic = llm.generate(prompt, max_length=100, is_interrupted=self._is_interrupted)
+                    if self._is_interrupted():
+                        return "interrupted"
                     self._update_stage(stage, "completed", expanded_topic)
 
                 elif stage == "script_generation":
                     from backend.ai_providers.llm_provider import LLMProvider
                     llm = LLMProvider()
                     script_prompt = f"Scrivi uno script di {self.profile.duration_seconds} secondi per un video su: {expanded_topic or self.profile.custom_prompt or self.profile.topic}. Lo script deve essere scritto in lingua: {self.profile.language}."
-                    script = llm.generate(script_prompt, max_length=300)
+                    script = llm.generate(script_prompt, max_length=300, is_interrupted=self._is_interrupted)
+                    if self._is_interrupted():
+                        return "interrupted"
                     self._update_stage(stage, "completed", script)
 
                 elif stage == "voice_generation":
@@ -131,7 +144,9 @@ class PipelineOrchestrator:
                     from backend.ai_providers.llm_provider import LLMProvider
                     llm = LLMProvider()
                     storyboard_prompt = f"Crea uno storyboard di 3 scene per questo script: {script}. Lo storyboard deve essere in lingua: {self.profile.language}."
-                    storyboard = llm.generate(storyboard_prompt, max_length=200)
+                    storyboard = llm.generate(storyboard_prompt, max_length=200, is_interrupted=self._is_interrupted)
+                    if self._is_interrupted():
+                        return "interrupted"
                     self._update_stage(stage, "completed", storyboard)
 
                 elif stage == "image_generation":

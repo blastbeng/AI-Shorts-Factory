@@ -53,7 +53,10 @@ class JobWorker:
                     try:
                         orchestrator = PipelineOrchestrator(job.id, profile, db)
                         result = orchestrator.run()
-                        if result == "waiting_for_review":
+                        if result == "interrupted":
+                            # Non sovrascrivere lo stato, è già "interrupted"
+                            pass
+                        elif result == "waiting_for_review":
                             job.status = "waiting_for_review"
                         elif result:
                             job.status = "completed"
