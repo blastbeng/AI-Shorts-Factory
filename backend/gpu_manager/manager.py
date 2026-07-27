@@ -19,22 +19,31 @@ class GPUManager:
             
         logger.info(f"Ricerca GPU per task '{task_name}' con requisito VRAM: {required_vram_gb}GB")
         
-        for gpu in self.get_gpus():
-            if task_name in gpu.get("assigned_tasks", []):
-                vram_info = self.monitor_vram(gpu["id"])
-                if vram_info:
-                    logger.info(f"GPU {gpu['id']} ({gpu['name']}) ha {vram_info['vram_free_gb']}GB liberi. Richiesti: {required_vram_gb}GB.")
-                    if vram_info["vram_free_gb"] >= required_vram_gb:
-                        logger.info(f"GPU {gpu['id']} assegnata per '{task_name}'.")
-                        return gpu
+        import time
+        max_retries = 3
+        retry_delay = 3  # seconds
+        
+        for attempt in range(max_retries):
+            for gpu in self.get_gpus():
+                if task_name in gpu.get("assigned_tasks", []):
+                    vram_info = self.monitor_vram(gpu["id"])
+                    if vram_info:
+                        logger.info(f"GPU {gpu['id']} ({gpu['name']}) ha {vram_info['vram_free_gb']}GB liberi. Richiesti: {required_vram_gb}GB.")
+                        if vram_info["vram_free_gb"] >= required_vram_gb:
+                            logger.info(f"GPU {gpu['id']} assegnata per '{task_name}'.")
+                            return gpu
+                        else:
+                            logger.warning(f"GPU {gpu['id']} scartata per VRAM insufficiente.")
                     else:
-                        logger.warning(f"GPU {gpu['id']} scartata per VRAM insufficiente.")
+                        logger.warning(f"Impossibile ottenere info VRAM per GPU {gpu['id']}.")
                 else:
-                    logger.warning(f"Impossibile ottenere info VRAM per GPU {gpu['id']}.")
-            else:
-                logger.debug(f"GPU {gpu['id']} non assegnata al task '{task_name}'.")
+                    logger.debug(f"GPU {gpu['id']} non assegnata al task '{task_name}'.")
+            
+            if attempt < max_retries - 1:
+                logger.warning(f"Tentativo {attempt + 1}/{max_retries}: Nessuna GPU disponibile con VRAM sufficiente. Attesa di {retry_delay} secondi per il rilascio della VRAM...")
+                time.sleep(retry_delay)
                 
-        logger.error(f"Nessuna GPU disponibile per il task '{task_name}' con {required_vram_gb}GB richiesti.")
+        logger.error(f"Nessuna GPU disponibile per il task '{task_name}' con {required_vram_gb}GB richiesti dopo {max_retries} tentativi.")
         return None
 
     def get_gpu_for_task_ignore_vram(self, task_name):
