@@ -1,31 +1,25 @@
 #!/bin/bash
 set -e
 
-# Uso: ./download_models.sh <nome_modello> <url> <directory_destinazione>
+# Uso: ./download_models.sh <nome_modello> <repo_id_huggingface> <directory_destinazione>
 MODEL_NAME=$1
-URL=$2
+REPO_ID=$2
 DEST_DIR=$3
 
-if [ -z "$MODEL_NAME" ] || [ -z "$URL" ] || [ -z "$DEST_DIR" ]; then
-    echo "Uso: $0 <nome_modello> <url> <directory_destinazione>"
+if [ -z "$MODEL_NAME" ] || [ -z "$REPO_ID" ] || [ -z "$DEST_DIR" ]; then
+    echo "Uso: $0 <nome_modello> <repo_id_huggingface> <directory_destinazione>"
     exit 1
 fi
 
-echo "Download del modello: $MODEL_NAME"
-echo "URL: $URL"
-echo "Directory di destinazione: $DEST_DIR"
-
+echo "Download del modello: $MODEL_NAME da $REPO_ID"
 mkdir -p "$DEST_DIR"
 
-# Verifica se huggingface-cli è disponibile, altrimenti usa wget
 if command -v huggingface-cli &> /dev/null; then
     echo "Utilizzo di huggingface-cli per il download..."
-    # huggingface-cli download <repo_id> --local-dir "$DEST_DIR"
-    echo "TODO: Implementa il comando huggingface-cli specifico per $MODEL_NAME"
+    huggingface-cli download "$REPO_ID" --local-dir "$DEST_DIR" --local-dir-use-symlinks False
 else
-    echo "huggingface-cli non trovato, utilizzo di wget..."
-    # wget -P "$DEST_DIR" "$URL"
-    echo "TODO: Implementa il comando wget specifico per $MODEL_NAME"
+    echo "huggingface-cli non trovato. Installa 'huggingface_hub'."
+    exit 1
 fi
 
-echo "Download completato per $MODEL_NAME."
+echo "Download completato per $MODEL_NAME in $DEST_DIR."

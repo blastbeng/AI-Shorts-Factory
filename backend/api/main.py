@@ -1,7 +1,7 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from backend.database.session import Base, engine, get_db
+from backend.database.session import Base, engine, get_db, SessionLocal
 from backend.database.models import GenerationProfile, Job
 from backend.gpu_manager.manager import GPUManager
 from backend.domain.pipeline import PipelineOrchestrator
@@ -48,22 +48,37 @@ def create_profile(profile: ProfileCreate, db: Session = Depends(get_db)):
 def get_profiles(db: Session = Depends(get_db)):
     return db.query(GenerationProfile).all()
 
+def run_pipeline_job(job_id: int, profile_id: int):
+    db = SessionLocal()
+    try:
+        profile = db.query(GenerationProfile).filter(GenerationProfile.id == profile_id).first()
+        orchestrator = PipelineOrchestrator(job_id, profile, db)
+        orchestrator.run()
+
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if job:
+            job.status = "completed"
+            db.commit()
+    except Exception as e:
+        logger.error(f"Errore nel job {job_id}: {e}")
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if job:
+            job.status = "failed"
+            db.commit()
+    finally:
+        db.close()
+
 @app.post("/jobs/{profile_id}")
-def start_job(profile_id: int, db: Session = Depends(get_db)):
+def start_job(profile_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     profile = db.query(GenerationProfile).filter(GenerationProfile.id == profile_id).first()
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
-    
+
     job = Job(status="running", profile_id=profile_id)
     db.add(job)
     db.commit()
     db.refresh(job)
-    
-    # In un'app reale questo sarebbe un task asincrono (es. Celery o thread)
-    orchestrator = PipelineOrchestrator(job.id, profile)
-    orchestrator.run()
-    
-    job.status = "completed"
-    db.commit()
-    
-    return {"job_id": job.id, "status": job.status}
+
+    background_tasks.add_task(run_pipeline_job, job.id, profile.id)
+
+    return {"job_id": job.id, "status": "running", "message": "Job avviato in background"}
