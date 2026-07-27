@@ -19,7 +19,7 @@ class ConfigValidator:
             if not model_path:
                 errors.append("LLAMA_CPP_MODEL_PATH non configurata")
             elif not os.path.exists(model_path):
-                warnings.append(f"Modello llama.cpp non trovato in: {model_path}. Esegui scripts/install_llama_cpp.sh")
+                warnings.append(f"Modello llama.cpp non trovato in: {model_path}. Esegui scripts/download_llama_cpp.sh")
         elif llm_provider == "openai":
             if not os.getenv("OPENAI_API_KEY"):
                 errors.append("OPENAI_API_KEY non configurata")
