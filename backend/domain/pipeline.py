@@ -17,6 +17,7 @@ class PipelineOrchestrator:
             "script_generation",
             "storyboard_creation",
             "voice_generation",
+            "subtitle_generation",
             "image_generation",
             "video_generation",
             "video_upscaling",
@@ -67,6 +68,7 @@ class PipelineOrchestrator:
         image_path = ""
         video_path = ""
         audio_path = ""
+        srt_path = ""
         storyboard = ""
         expanded_topic = ""
         final_video_path = f"output/final_video_{self.job_id}.mp4"
@@ -97,6 +99,8 @@ class PipelineOrchestrator:
                 video_path = s.result or ""
             elif s.stage_name == "audio_generation":
                 audio_path = s.result or ""
+            elif s.stage_name == "subtitle_generation":
+                srt_path = s.result or ""
 
         for stage in self.stages:
             if stage in completed_names:
@@ -169,12 +173,25 @@ class PipelineOrchestrator:
                         kokoro.cleanup()
                     self._update_stage(stage, "completed", voice_path)
 
+                elif stage == "subtitle_generation":
+                    from backend.ai_providers.whisper_provider import WhisperProvider
+                    whisper = WhisperProvider()
+                    try:
+                        srt_path = f"output/subtitles_{self.job_id}.srt"
+                        if not whisper.health_check():
+                            logger.warning("Whisper non installato. Salto la generazione dei sottotitoli.")
+                        else:
+                            whisper.generate_srt(voice_path, srt_path)
+                    finally:
+                        whisper.cleanup()
+                    self._update_stage(stage, "completed", srt_path)
+
                 elif stage == "image_generation":
                     from backend.ai_providers.flux_provider import FluxProvider
                     flux = FluxProvider()
                     try:
                         image_path = f"output/image_{self.job_id}.png"
-                        image_prompt = f"Immagine di alta qualità per un video su: {expanded_topic or self.profile.custom_prompt or self.profile.topic}. Scene: {storyboard}. Eventuale testo nell'immagine deve essere in lingua: {self.profile.language}."
+                        image_prompt = f"Immagine di alta qualità per un video su: {expanded_topic or self.profile.custom_prompt or self.profile.topic}. Scene: {storyboard}. IMPORTANT: The image must NOT contain any text, letters, or words."
                         if not flux.health_check():
                             logger.warning("Flux non installato. Uso immagine dummy.")
                             self._generate_dummy_media("image", image_path)
@@ -189,7 +206,7 @@ class PipelineOrchestrator:
                     wan = WanProvider()
                     try:
                         video_path = f"output/video_{self.job_id}.mp4"
-                        video_prompt = f"Video short verticale basato su questo script: {script}. Il video deve essere coerente con la lingua: {self.profile.language}."
+                        video_prompt = f"Video short verticale basato su questo script: {script}. Il video deve essere coerente con la lingua: {self.profile.language}. IMPORTANT: The video must NOT contain any text, letters, or words."
                         if not wan.health_check():
                             logger.warning("Wan 2.2 non installato. Uso video dummy.")
                             self._generate_dummy_media("video", video_path)
@@ -233,9 +250,20 @@ class PipelineOrchestrator:
                 elif stage == "video_assembly":
                     if not os.path.exists(video_path) or not os.path.exists(voice_path) or not os.path.exists(audio_path):
                         raise RuntimeError("File di input mancanti per l'assemblaggio video.")
-                    success = FFmpegUtils.assemble_video(video_path, voice_path, audio_path, final_video_path)
+                    temp_video_path = f"output/temp_assembled_{self.job_id}.mp4"
+                    success = FFmpegUtils.assemble_video(video_path, voice_path, audio_path, temp_video_path)
                     if not success:
                         raise RuntimeError("Assemblaggio video fallito.")
+                    
+                    if srt_path and os.path.exists(srt_path):
+                        success = FFmpegUtils.burn_subtitles(temp_video_path, srt_path, final_video_path)
+                        if not success:
+                            import shutil
+                            shutil.copy(temp_video_path, final_video_path)
+                    else:
+                        import shutil
+                        shutil.copy(temp_video_path, final_video_path)
+                        
                     self._update_stage(stage, "completed", final_video_path)
 
                 elif stage == "quality_scoring":

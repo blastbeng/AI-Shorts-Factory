@@ -29,3 +29,24 @@ class FFmpegUtils:
         except subprocess.CalledProcessError as e:
             logger.error(f"Errore durante l'assemblaggio ffmpeg: {e.stderr}")
             return False
+
+    @staticmethod
+    def burn_subtitles(video_path: str, srt_path: str, output_path: str):
+        """
+        Aggiunge i sottotitoli al video.
+        """
+        logger.info(f"Aggiunta sottotitoli a {video_path} -> {output_path}")
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", video_path,
+            "-vf", f"subtitles={srt_path}",
+            "-c:a", "copy",
+            output_path
+        ]
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
+            logger.info("Sottotitoli aggiunti con successo.")
+            return True
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Errore durante l'aggiunta dei sottotitoli: {e.stderr}")
+            return False
