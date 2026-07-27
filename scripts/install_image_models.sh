@@ -10,7 +10,7 @@ fi
 
 FLUX_STATUS=$("$PYTHON_BIN" -c "import yaml; print(yaml.safe_load(open('configs/models.yaml')).get('image', {}).get('flux', {}).get('status', 'not_installed'))")
 if [ "$FLUX_STATUS" != "installed" ]; then
-    ./scripts/download_models.sh "flux" "black-forest-labs/FLUX.1-dev" "./models/image/flux" "image" "flux"
+    ./scripts/download_models.sh "flux" "lllyasviel/flux1-dev-bnb-nf4" "./models/image/flux" "image" "flux"
 else
     echo "[OK] Modello flux già installato."
 fi

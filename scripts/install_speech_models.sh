@@ -10,7 +10,7 @@ fi
 
 WHISPER_STATUS=$("$PYTHON_BIN" -c "import yaml; print(yaml.safe_load(open('configs/models.yaml')).get('speech', {}).get('whisper', {}).get('status', 'not_installed'))")
 if [ "$WHISPER_STATUS" != "installed" ]; then
-    ./scripts/download_models.sh "whisper" "openai/whisper-large-v3" "./models/speech/whisper" "speech" "whisper"
+    ./scripts/download_models.sh "whisper" "openai/whisper-large-v3-turbo" "./models/speech/whisper" "speech" "whisper"
 else
     echo "[OK] Modello whisper già installato."
 fi

@@ -7,9 +7,9 @@ audio:
 image:
   flux:
     backend: rocm
-    path: ./models/image/flux
+    path: lllyasviel/flux1-dev-bnb-nf4
     status: installed
-    vram_required_gb: 12
+    vram_required_gb: 8
   qwen_image:
     backend: rocm
     path: ./models/image/qwen_image
@@ -18,7 +18,7 @@ image:
 speech:
   whisper:
     backend: cuda
-    path: ./models/speech/whisper
+    path: openai/whisper-large-v3-turbo
     status: installed
     vram_required_gb: 4
 text:
@@ -30,14 +30,14 @@ text:
 video:
   ltx_video:
     backend: rocm
-    path: ./models/video/ltx_video
+    path: Lightricks/LTX-Video
     status: installed
     vram_required_gb: 10
   wan_2_2_5b:
     backend: rocm
-    path: ./models/video/wan_2_2_5b
+    path: Wan-AI/Wan2.1-T2V-1.3B-Diffusers
     status: installed
-    vram_required_gb: 14
+    vram_required_gb: 8
 voice:
   kokoro_tts:
     backend: cuda
