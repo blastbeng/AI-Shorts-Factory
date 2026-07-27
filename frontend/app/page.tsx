@@ -100,7 +100,12 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center p-8 bg-gray-900 text-white">
-      <h1 className="text-4xl font-bold mb-8">AI Shorts Factory</h1>
+      <h1 className="text-4xl font-bold mb-8">
+        AI Shorts Factory{" "}
+        <a href="/jobs" className="text-blue-400 hover:text-blue-300 text-2xl underline">
+          Vai a Jobs
+        </a>
+      </h1>
       
       <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Creazione Profilo */}

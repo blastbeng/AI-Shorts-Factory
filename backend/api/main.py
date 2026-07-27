@@ -1,14 +1,13 @@
 from dotenv import load_dotenv
 load_dotenv() # Carica le variabili d'ambiente dal file .env
 
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from backend.database.session import Base, engine, get_db, SessionLocal
+from backend.database.session import Base, engine, get_db
 from backend.database.models import GenerationProfile, Job, Video, PipelineStage
 from backend.gpu_manager.manager import GPUManager
-from backend.domain.pipeline import PipelineOrchestrator
 from backend.services.logger import logger
 from backend.services.social.tiktok_provider import TikTokProvider
 from backend.services.social.youtube_provider import YouTubeProvider
@@ -71,40 +70,18 @@ def create_profile(profile: ProfileCreate, db: Session = Depends(get_db)):
 def get_profiles(db: Session = Depends(get_db)):
     return db.query(GenerationProfile).all()
 
-def run_pipeline_job(job_id: int, profile_id: int):
-    db = SessionLocal()
-    try:
-        profile = db.query(GenerationProfile).filter(GenerationProfile.id == profile_id).first()
-        orchestrator = PipelineOrchestrator(job_id, profile, db)
-        orchestrator.run()
-
-        job = db.query(Job).filter(Job.id == job_id).first()
-        if job:
-            job.status = "completed"
-            db.commit()
-    except Exception as e:
-        logger.error(f"Errore nel job {job_id}: {e}")
-        job = db.query(Job).filter(Job.id == job_id).first()
-        if job:
-            job.status = "failed"
-            db.commit()
-    finally:
-        db.close()
-
 @app.post("/jobs/{profile_id}")
-def start_job(profile_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def start_job(profile_id: int, db: Session = Depends(get_db)):
     profile = db.query(GenerationProfile).filter(GenerationProfile.id == profile_id).first()
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
 
-    job = Job(status="running", profile_id=profile_id)
+    job = Job(status="pending", profile_id=profile_id)
     db.add(job)
     db.commit()
     db.refresh(job)
 
-    background_tasks.add_task(run_pipeline_job, job.id, profile.id)
-
-    return {"job_id": job.id, "status": "running", "message": "Job avviato in background"}
+    return {"job_id": job.id, "status": "pending", "message": "Job aggiunto alla coda. Il worker lo processerà a breve."}
 
 @app.get("/videos/")
 def get_videos(db: Session = Depends(get_db)):
