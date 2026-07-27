@@ -127,7 +127,7 @@ class LLMProvider(BaseAIProvider):
                 if is_interrupted and is_interrupted():
                     return ""
                 
-                system_prompt = f"You are a professional scriptwriter. Follow the user's instructions exactly. Do not repeat the prompt. Do not output any thinking process, reasoning, or meta-text. Output ONLY the final content directly. The output MUST be in the language requested by the user. Do not include any introductory or concluding remarks."
+                system_prompt = f"You are a professional scriptwriter. Follow the user's instructions exactly. Do not repeat the prompt. Do not output any thinking process, reasoning, or meta-text. Output ONLY the final content directly. The output MUST be in the language requested by the user. Do not include any introductory or concluding remarks. Do not output the prompt or any part of it. Start directly with the script content."
                 response = self.llm.create_chat_completion(
                     messages=[
                         {"role": "system", "content": system_prompt},
@@ -145,6 +145,11 @@ class LLMProvider(BaseAIProvider):
                 # Rimozione del prompt se il modello lo ha ecoato
                 if prompt in generated_text:
                     generated_text = generated_text.replace(prompt, "").strip()
+
+                # Rimozione di frammenti del prompt (se il modello lo ha mangled)
+                prompt_fragments = ["Write a", "second script for a video about", "The script must be written entirely in", "Do not use any markdown formatting", "Topic:", "Language:", "Duration:", "Write the script now:"]
+                for frag in prompt_fragments:
+                    generated_text = generated_text.replace(frag, "").strip()
                 
                 # Pulizia del processo di pensiero (se presente)
                 generated_text = re.sub(r'<think>.*?</think>', '', generated_text, flags=re.DOTALL).strip()

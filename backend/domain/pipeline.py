@@ -139,7 +139,7 @@ class PipelineOrchestrator:
                     from backend.ai_providers.llm_provider import LLMProvider
                     llm = LLMProvider()
                     try:
-                        script_prompt = f"Write a {self.profile.duration_seconds}-second script for a video about: {expanded_topic or self.profile.custom_prompt or self.profile.topic}. The script must be written entirely in {self.profile.language}. Do not use any markdown formatting."
+                        script_prompt = f"Topic: {expanded_topic or self.profile.custom_prompt or self.profile.topic}\nLanguage: {self.profile.language}\nDuration: {self.profile.duration_seconds} seconds\n\nWrite the script now:"
                         script = llm.generate(script_prompt, max_length=300, is_interrupted=self._is_interrupted)
                         if self._is_interrupted():
                             return "interrupted"
