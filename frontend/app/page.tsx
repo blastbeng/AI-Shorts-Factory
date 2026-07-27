@@ -36,6 +36,7 @@ export default function Home() {
   const [logs, setLogs] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [genParams, setGenParams] = useState({ genre: "random", custom_prompt: "", language: "italian", duration_seconds: 30 });
+  const [schedulerRunning, setSchedulerRunning] = useState(false);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -61,7 +62,11 @@ export default function Home() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 3000);
+    fetchSchedulerStatus();
+    const interval = setInterval(() => {
+      fetchData();
+      fetchSchedulerStatus();
+    }, 3000);
     return () => clearInterval(interval);
   }, []);
 
@@ -100,6 +105,33 @@ export default function Home() {
   const handlePublish = async (videoId: number, platform: string) => {
     await fetch(`${apiUrl}/videos/${videoId}/publish/${platform}`, { method: "POST" });
     alert(`Pubblicazione su ${platform} avviata (simulata).`);
+  };
+
+  const handleDelete = async (videoId: number) => {
+    if (confirm("Sei sicuro di voler eliminare questo video?")) {
+      await fetch(`${apiUrl}/videos/${videoId}`, { method: "DELETE" });
+      fetchData();
+    }
+  };
+
+  const fetchSchedulerStatus = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/scheduler/status`);
+      const data = await res.json();
+      setSchedulerRunning(data.scheduler_running);
+    } catch (error) {
+      console.error("Errore stato scheduler:", error);
+    }
+  };
+
+  const handleStartScheduler = async () => {
+    await fetch(`${apiUrl}/scheduler/start?interval=60`, { method: "POST" });
+    fetchSchedulerStatus();
+  };
+
+  const handleStopScheduler = async () => {
+    await fetch(`${apiUrl}/scheduler/stop`, { method: "POST" });
+    fetchSchedulerStatus();
   };
 
   return (
@@ -248,6 +280,28 @@ export default function Home() {
             )}
           </div>
 
+          {/* Controllo Scheduler */}
+          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-lg">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 bg-indigo-500 rounded-full"></span> Auto Scheduler
+            </h2>
+            <div className="flex items-center justify-between">
+              <span className={`text-sm ${schedulerRunning ? 'text-green-400' : 'text-gray-400'}`}>
+                {schedulerRunning ? "In Esecuzione" : "Fermo"}
+              </span>
+              {schedulerRunning ? (
+                <button onClick={handleStopScheduler} className="bg-red-600/80 hover:bg-red-600 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                  Ferma
+                </button>
+              ) : (
+                <button onClick={handleStartScheduler} className="bg-green-600/80 hover:bg-green-600 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                  Avvia
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-2">Genera automaticamente nuovi video ogni 60 minuti per i profili esistenti.</p>
+          </div>
+
           {/* Log Console */}
           <div className="bg-gray-800/50 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-lg md:col-span-2 lg:col-span-3">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
@@ -291,6 +345,9 @@ export default function Home() {
                             Rifiuta
                           </button>
                         )}
+                        <button onClick={() => handleDelete(v.id)} className="bg-gray-600/80 hover:bg-gray-600 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
+                          Elimina
+                        </button>
                       </div>
                       {v.approved && (
                         <div className="grid grid-cols-2 gap-2">
