@@ -139,6 +139,8 @@ class LLMProvider(BaseAIProvider):
                 
                 if is_interrupted and is_interrupted():
                     return ""
+                
+                logger.info(f"Risposta ricevuta da LLM: {generated_text}")
                 return generated_text
             else:
                 response = self.client.chat.completions.create(
@@ -147,6 +149,8 @@ class LLMProvider(BaseAIProvider):
                     max_tokens=max_length
                 )
                 generated_text = response.choices[0].message.content
+                
+                logger.info(f"Risposta ricevuta da LLM: {generated_text}")
                 return generated_text
         except Exception as e:
             logger.error(f"Errore nella generazione LLM: {e}")
