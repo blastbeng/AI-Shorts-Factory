@@ -61,12 +61,13 @@ class KokoroProvider(BaseAIProvider):
         if self.model is None:
             logger.info("Caricamento modello Kokoro TTS...")
             try:
-                logger.debug("Kokoro: Inizializzazione KModel...")
-                self.model = KModel().to(device)
-                logger.debug(f"Kokoro: KModel caricato su {device}.")
-                logger.debug("Kokoro: Inizializzazione KPipeline...")
+                logger.info("Kokoro: Inizializzazione KModel...")
+                # Forza float32 per evitare problemi di stabilità con ROCm/FP16
+                self.model = KModel().to(device).float()
+                logger.info(f"Kokoro: KModel caricato su {device} con dtype float32.")
+                logger.info("Kokoro: Inizializzazione KPipeline...")
                 self.pipeline = KPipeline(model=self.model, lang_code=kokoro_lang)
-                logger.debug("Kokoro: KPipeline inizializzata.")
+                logger.info("Kokoro: KPipeline inizializzata.")
             except Exception as e:
                 logger.exception(f"Errore nel caricamento del modello Kokoro.")
                 raise
@@ -100,11 +101,11 @@ class KokoroProvider(BaseAIProvider):
         
         with torch.no_grad():
             audio_chunks = []
-            logger.debug("Kokoro: Avvio generazione audio (pipeline)...")
+            logger.info("Kokoro: Avvio generazione audio (pipeline)...")
             for i, (graphemes, phonemes, audio) in enumerate(self.pipeline(text, voice=voice_name, speed=speed)):
-                logger.debug(f"Kokoro: Chunk {i} generato.")
+                logger.info(f"Kokoro: Chunk {i} generato.")
                 audio_chunks.append(audio.cpu().numpy().squeeze())
-            logger.debug("Kokoro: Generazione audio completata.")
+            logger.info("Kokoro: Generazione audio completata.")
                 
         if not audio_chunks:
             raise RuntimeError("Kokoro non ha generato alcun audio.")
