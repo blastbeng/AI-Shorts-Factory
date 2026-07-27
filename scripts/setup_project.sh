@@ -19,7 +19,7 @@ chmod +x scripts/*.sh
 
 # 3. Installa lo stack GPU
 echo "=== Fase 2: Stack GPU ==="
-./scripts/install_gpu_stack.sh
+./scripts/verify_gpu_stack.sh
 
 echo "=== Fase 2.5: Installazione llama.cpp ==="
 ./scripts/install_llama_cpp.sh

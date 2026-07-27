@@ -30,10 +30,9 @@ class GPUManager:
             # In PyTorch, ROCm è accessibile tramite il device name 'cuda'
             return f"cuda:{gpu['id']}"
         elif backend == "vulkan":
-            # PyTorch Vulkan è sperimentale e non usa un device string come cuda.
-            # Per ora restituiamo 'cpu' come fallback o per gestirlo in modo specifico nei provider.
-            logger.warning("Backend Vulkan selezionato. Assicurati che il provider supporti l'inferenza Vulkan.")
-            return "cpu"
+            # PyTorch ha un supporto sperimentale a Vulkan, ma lo restituiamo come richiesto.
+            # Nota: i provider PyTorch potrebbero non supportare nativamente questo device string.
+            return "vulkan"
         return "cpu"
 
     def monitor_vram(self, gpu_id):
