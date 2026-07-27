@@ -60,7 +60,7 @@ class KokoroProvider(BaseAIProvider):
             logger.info("Caricamento modello Kokoro TTS...")
             try:
                 self.model = KModel().to(device)
-                self.pipeline = KPipeline(model=self.model)
+                self.pipeline = KPipeline(model=self.model, lang_code=kokoro_lang)
             except Exception as e:
                 logger.exception(f"Errore nel caricamento del modello Kokoro.")
                 raise
