@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 load_dotenv() # Carica le variabili d'ambiente dal file .env
 
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -19,6 +20,16 @@ from backend.services.config_validator import ConfigValidator
 import os
 
 app = FastAPI(title="AI Shorts Factory")
+
+# Configurazione CORS per permettere al frontend di comunicare con il backend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Permette tutte le origini per lo sviluppo locale
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 Base.metadata.create_all(bind=engine)
 logger.info("Avvio dell'applicazione AI Shorts Factory")
 
