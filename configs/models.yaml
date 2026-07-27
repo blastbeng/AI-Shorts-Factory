@@ -25,7 +25,7 @@ text:
   llm_base:
     backend: vulkan
     model_name: L3.2-8X4B-MOE-V2-Dark-Champion-Inst-21B-uncen-ablit-D_AU
-    path: /opt/models/.gguf
+    path: /opt/models/L3.2-8X3B-MOE-Dark-Champion-Inst-18.4B-uncen-ablit_D_AU-Q6_k.gguf
     status: installed
 video:
   ltx_video:
