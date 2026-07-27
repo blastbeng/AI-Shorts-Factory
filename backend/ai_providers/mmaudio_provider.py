@@ -85,7 +85,8 @@ class MMAudioProvider(BaseAIProvider):
         if self.processor is not None:
             del self.processor
             self.processor = None
-            import gc
-            import torch
-            gc.collect()
+        import gc
+        import torch
+        gc.collect()
+        if torch.cuda.is_available():
             torch.cuda.empty_cache()
