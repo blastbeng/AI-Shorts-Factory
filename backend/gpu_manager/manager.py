@@ -15,7 +15,7 @@ class GPUManager:
         # Ordina per VRAM decrescente per prioritizzare la GPU più potente
         return sorted(gpus, key=lambda g: g.get("vram_gb", 0), reverse=True)
 
-    def get_gpu_for_task(self, task_name, required_vram_gb=0):
+    def get_gpu_for_task(self, task_name, required_vram_gb=0, preferred_backend=None):
         if required_vram_gb is None:
             required_vram_gb = 0
             
@@ -28,6 +28,10 @@ class GPUManager:
         for attempt in range(max_retries):
             for gpu in self.get_gpus():
                 if task_name in gpu.get("assigned_tasks", []):
+                    if preferred_backend and preferred_backend not in gpu.get("backends", []):
+                        logger.debug(f"GPU {gpu['id']} scartata: backend '{preferred_backend}' non supportato.")
+                        continue
+                        
                     vram_info = self.monitor_vram(gpu["id"])
                     if vram_info:
                         logger.info(f"GPU {gpu['id']} ({gpu['name']}) ha {vram_info['vram_free_gb']}GB liberi. Richiesti: {required_vram_gb}GB.")
@@ -48,11 +52,14 @@ class GPUManager:
         logger.error(f"Nessuna GPU disponibile per il task '{task_name}' con {required_vram_gb}GB richiesti dopo {max_retries} tentativi.")
         return None
 
-    def get_gpu_for_task_ignore_vram(self, task_name):
+    def get_gpu_for_task_ignore_vram(self, task_name, preferred_backend=None):
         best_gpu = None
         max_free_vram = -1
         for gpu in self.get_gpus():
             if task_name in gpu.get("assigned_tasks", []):
+                if preferred_backend and preferred_backend not in gpu.get("backends", []):
+                    continue
+                    
                 vram_info = self.monitor_vram(gpu["id"])
                 if vram_info and vram_info["vram_free_gb"] > max_free_vram:
                     max_free_vram = vram_info["vram_free_gb"]
