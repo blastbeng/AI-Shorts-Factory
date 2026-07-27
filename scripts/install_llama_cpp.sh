@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "=== Installazione llama.cpp con backend Vulkan ==="
+echo "=== Installazione/Aggiornamento llama.cpp con backend Vulkan ==="
 
 if [ -f /etc/os-release ]; then
     . /etc/os-release
@@ -37,12 +37,26 @@ if ! command -v vulkaninfo &> /dev/null; then
     exit 1
 fi
 
-# Clona llama.cpp
-if [ ! -d "/opt/llama.cpp" ]; then
-    sudo git clone https://github.com/ggerganov/llama.cpp /opt/llama.cpp
+REPO_DIR="/opt/services/llama.cpp"
+
+# Gestione del repository: clona se non esiste, aggiorna se esiste
+if [ ! -d "$REPO_DIR/.git" ]; then
+    echo "Clonazione di llama.cpp in $REPO_DIR..."
+    sudo mkdir -p /opt/services
+    sudo git clone https://github.com/ggerganov/llama.cpp "$REPO_DIR"
+else
+    echo "Repository llama.cpp trovato in $REPO_DIR. Aggiornamento..."
+    cd "$REPO_DIR"
+    sudo git pull
 fi
 
-cd /opt/llama.cpp
+cd "$REPO_DIR"
+
+# Verifica la presenza di CMakeLists.txt
+if [ ! -f "CMakeLists.txt" ]; then
+    echo "[ERRORE] CMakeLists.txt non trovato in $REPO_DIR. Il repository potrebbe essere corrotto."
+    exit 1
+fi
 
 # Compila con backend Vulkan
 echo "Compilazione di llama.cpp con GGML_VULKAN=1..."
