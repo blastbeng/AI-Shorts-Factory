@@ -16,6 +16,7 @@ Gli script risiedono in `scripts/` e devono essere eseguiti nell'ordine indicato
 | 8 | `install_speech_models.sh` | Setup provider speech (Whisper) |
 | 9 | `download_models.sh` | Download di tutti i pesi dei modelli |
 | 10 | `verify_ai_environment.sh` | Verifica completa dell'ambiente AI |
+| 11 | `start.sh` | Avvia e monitora backend e frontend contemporaneamente (Ctrl+C per fermare) |
 
 ## Struttura Cartella `models/`
 
