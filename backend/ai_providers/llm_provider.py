@@ -65,7 +65,8 @@ class LLMProvider(BaseAIProvider):
                     self.bin_path,
                     "-m", self.model_path,
                     "-f", temp_file_path,
-                    "-n", str(max_length)
+                    "-n", str(max_length),
+                    "-no-cnv"
                 ] + self.params.split()
                 
                 try:
