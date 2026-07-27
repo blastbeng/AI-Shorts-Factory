@@ -2,7 +2,5 @@
 set -e
 
 echo "Inizio installazione dei modelli audio (MMAudio)..."
-
-# TODO: Aggiungi la logica di download per MMAudio
-
-echo "Installazione dei modelli audio completata (placeholder)."
+./scripts/download_models.sh "mmaudio" "hkchengrex/MMAudio" "./models/audio/mmaudio"
+echo "Installazione dei modelli audio completata."
