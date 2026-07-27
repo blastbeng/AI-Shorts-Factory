@@ -1,14 +1,13 @@
 import os
 import yaml
-import subprocess
-import threading
-import time
 from openai import OpenAI
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.services.logger import logger
-from backend.services.subprocess_manager import SubprocessManager
 
 class LLMProvider(BaseAIProvider):
+    _llm_instance = None
+    _llm_model_path = None
+
     def __init__(self):
         with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
             self.models_config = yaml.safe_load(f)
@@ -28,13 +27,59 @@ class LLMProvider(BaseAIProvider):
             self.model_name = os.getenv("OLLAMA_MODEL_NAME", "llama3")
             self.client = OpenAI(base_url=self.api_base, api_key=self.api_key)
         elif self.provider_type == "llama_cpp":
-            self.bin_path = os.getenv("LLAMA_CPP_BIN_PATH", "/opt/llama.cpp/build/bin/llama-cli")
             self.model_path = os.getenv("LLAMA_CPP_MODEL_PATH", "/opt/models/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q6_K_P.gguf")
             self.params = os.getenv("LLAMA_CPP_PARAMS", "")
+            
+            # Parse params
+            params_list = self.params.split()
+            self.n_gpu_layers = 0
+            self.n_ctx = 4096
+            self.n_threads = 8
+            self.n_batch = 512
+            self.n_ubatch = 512
+            self.tensor_split = None
+            self.flash_attn = False
+            self.temperature = 0.8
+            self.top_p = 0.95
+            self.top_k = 40
+            self.repeat_penalty = 1.1
+            
+            for i, p in enumerate(params_list):
+                if p == "-ngl" and i+1 < len(params_list): self.n_gpu_layers = int(params_list[i+1])
+                elif p == "-c" and i+1 < len(params_list): self.n_ctx = int(params_list[i+1])
+                elif p == "-t" and i+1 < len(params_list): self.n_threads = int(params_list[i+1])
+                elif p == "-b" and i+1 < len(params_list): self.n_batch = int(params_list[i+1])
+                elif p == "-ub" and i+1 < len(params_list): self.n_ubatch = int(params_list[i+1])
+                elif p == "--tensor-split" and i+1 < len(params_list): self.tensor_split = [float(x) for x in params_list[i+1].split(",")]
+                elif p == "--flash-attn" and i+1 < len(params_list): self.flash_attn = params_list[i+1].lower() == "on"
+                elif p == "--temp" and i+1 < len(params_list): self.temperature = float(params_list[i+1])
+                elif p == "--top-p" and i+1 < len(params_list): self.top_p = float(params_list[i+1])
+                elif p == "--top-k" and i+1 < len(params_list): self.top_k = int(params_list[i+1])
+                elif p == "--repeat-penalty" and i+1 < len(params_list): self.repeat_penalty = float(params_list[i+1])
+            
+            self._load_model()
         else:
             self.api_base = None
             self.api_key = None
             self.model_name = None
+
+    def _load_model(self):
+        if LLMProvider._llm_instance is None or LLMProvider._llm_model_path != self.model_path:
+            logger.info(f"Caricamento modello llama.cpp: {self.model_path}")
+            from llama_cpp import Llama
+            LLMProvider._llm_instance = Llama(
+                model_path=self.model_path,
+                n_gpu_layers=self.n_gpu_layers,
+                n_ctx=self.n_ctx,
+                n_threads=self.n_threads,
+                n_batch=self.n_batch,
+                n_ubatch=self.n_ubatch,
+                tensor_split=self.tensor_split,
+                flash_attn=self.flash_attn,
+                verbose=False
+            )
+            LLMProvider._llm_model_path = self.model_path
+        self.llm = LLMProvider._llm_instance
 
     def install_status(self):
         if self.provider_type == "llama_cpp":
@@ -43,7 +88,7 @@ class LLMProvider(BaseAIProvider):
 
     def health_check(self):
         if self.provider_type == "llama_cpp":
-            return os.path.exists(self.model_path) and os.path.exists(self.bin_path)
+            return os.path.exists(self.model_path)
         return self.install_status() == "installed"
 
     def generate(self, prompt: str, max_length: int = 500, *args, is_interrupted=None, **kwargs):
@@ -51,76 +96,25 @@ class LLMProvider(BaseAIProvider):
             raise RuntimeError("LLM non configurato. Controlla il file .env e LLM_PROVIDER.")
         
         logger.info(f"Generazione testo tramite LLM ({self.provider_type})")
-        logger.info(f"Prompt inviato a llama.cpp:\n{prompt}")
         try:
             if self.provider_type == "llama_cpp":
-                import tempfile
-                # Scrive il prompt in un file temporaneo per evitare problemi di escaping
-                with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as temp_file:
-                    temp_file.write(prompt)
-                    temp_file_path = temp_file.name
+                if is_interrupted and is_interrupted():
+                    return ""
                 
-                cmd = [
-                    "stdbuf", "-eL", "-oL",
-                    self.bin_path,
-                    "-m", self.model_path,
-                    "-f", temp_file_path,
-                    "-n", str(max_length),
-                    "-no-cnv"
-                ] + self.params.split()
+                response = self.llm.create_chat_completion(
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=max_length,
+                    temperature=self.temperature,
+                    top_p=self.top_p,
+                    top_k=self.top_k,
+                    repeat_penalty=self.repeat_penalty,
+                    stream=False
+                )
+                generated_text = response["choices"][0]["message"]["content"].strip()
                 
-                try:
-                    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL, text=True)
-                    SubprocessManager.add(process)
-                    
-                    stdout_lines = []
-                    
-                    def read_stream(stream, is_stderr):
-                        while True:
-                            line = stream.readline()
-                            if line == '' and process.poll() is not None:
-                                break
-                            if line:
-                                stripped_line = line.strip()
-                                if not stripped_line or stripped_line == ">":
-                                    continue
-                                if is_stderr:
-                                    logger.info(f"[llama.cpp] {stripped_line}")
-                                else:
-                                    logger.info(f"[llama.cpp output] {stripped_line}")
-                                    stdout_lines.append(line)
-                    
-                    stdout_thread = threading.Thread(target=read_stream, args=(process.stdout, False), daemon=True)
-                    stderr_thread = threading.Thread(target=read_stream, args=(process.stderr, True), daemon=True)
-                    stdout_thread.start()
-                    stderr_thread.start()
-                    
-                    def monitor_interruption(proc, check_func):
-                        while proc.poll() is None:
-                            if check_func and check_func():
-                                logger.warning("Job interrotto, uccisione processo llama.cpp...")
-                                proc.kill()
-                                break
-                            time.sleep(0.5)
-                    
-                    interrupt_thread = threading.Thread(target=monitor_interruption, args=(process, is_interrupted), daemon=True)
-                    interrupt_thread.start()
-                    
-                    process.wait()
-                    stdout_thread.join()
-                    stderr_thread.join()
-                    interrupt_thread.join(timeout=1)
-                    
-                    if process.returncode != 0:
-                        if is_interrupted and is_interrupted():
-                            return ""
-                        raise RuntimeError("llama.cpp exited with non-zero status")
-                    
-                    generated_text = "".join(stdout_lines).strip()
-                    SubprocessManager.remove(process)
-                    return generated_text
-                finally:
-                    os.remove(temp_file_path)
+                if is_interrupted and is_interrupted():
+                    return ""
+                return generated_text
             else:
                 response = self.client.chat.completions.create(
                     model=self.model_name,
