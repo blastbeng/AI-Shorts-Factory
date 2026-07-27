@@ -53,7 +53,6 @@ class WhisperProvider(BaseAIProvider):
                     del self.model
                     self.model = None
                     import gc
-                    import torch
                     gc.collect()
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()
@@ -105,7 +104,6 @@ class WhisperProvider(BaseAIProvider):
                     del self.model
                     self.model = None
                     import gc
-                    import torch
                     gc.collect()
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()
