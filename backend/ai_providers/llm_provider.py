@@ -140,8 +140,7 @@ class LLMProvider(BaseAIProvider):
                     top_k=self.top_k,
                     repeat_penalty=self.repeat_penalty,
                     stream=False,
-                    response_format={"type": "json_object"},
-                    chat_template_kwargs={"enable_thinking": False}
+                    response_format={"type": "json_object"}
                 )
                 generated_text = response["choices"][0]["message"]["content"].strip()
                 
