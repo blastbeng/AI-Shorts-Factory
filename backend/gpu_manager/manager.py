@@ -54,11 +54,12 @@ class GPUManager:
         vram_used = 0
         gpu_util = 0
         backends = gpu.get("backends", [])
+        device_index = gpu.get("device_index", 0)
 
         try:
             if "cuda" in backends:
                 result = subprocess.run(
-                    ["nvidia-smi", "--query-gpu=memory.used,utilization.gpu", "--format=csv,noheader,nounits", "-i", str(gpu_id)],
+                    ["nvidia-smi", "--query-gpu=memory.used,utilization.gpu", "--format=csv,noheader,nounits", "-i", str(device_index)],
                     capture_output=True, text=True, check=True
                 )
                 parts = result.stdout.strip().split(", ")
@@ -71,7 +72,7 @@ class GPUManager:
                     capture_output=True, text=True, check=True
                 )
                 data = json.loads(result.stdout)
-                card_data = data.get(f"card{gpu_id}", {})
+                card_data = data.get(f"card{device_index}", {})
                 vram_used_mb = int(card_data.get("VRAM Total Used Memory (B)", 0)) / (1024 * 1024)
                 vram_used = vram_used_mb / 1024
                 gpu_util = int(card_data.get("GPU use (%)", 0))
@@ -79,7 +80,7 @@ class GPUManager:
                 logger.debug(f"Nessun backend supportato per il monitoraggio VRAM su GPU {gpu_id}.")
                 vram_used = 0
         except Exception as e:
-            logger.error(f"Errore nel monitoraggio VRAM per GPU {gpu_id}: {e}")
+            logger.debug(f"Errore nel monitoraggio VRAM per GPU {gpu_id}: {e}")
             vram_used = 0
 
         return {
