@@ -142,23 +142,15 @@ class LLMProvider(BaseAIProvider):
                 )
                 generated_text = response["choices"][0]["message"]["content"].strip()
                 
-                # Rimozione del prompt se il modello lo ha ecoato
-                if prompt in generated_text:
-                    generated_text = generated_text.replace(prompt, "").strip()
-
-                # Rimozione di frammenti del prompt (se il modello lo ha mangled)
-                prompt_fragments = ["Write a", "second script for a video about", "The script must be written entirely in", "Do not use any markdown formatting", "Topic:", "Language:", "Duration:", "Write the script now:", "Analizzi user input", "Role.", "Professional script to return task", "Deconstruct requirements format short video", "Output requirements", "Ignore an instructions", "Start directly with the script content"]
-                for frag in prompt_fragments:
-                    generated_text = generated_text.replace(frag, "").strip()
-                
-                # Pulizia del processo di pensiero (se presente)
+                # Estrazione del contenuto tra i tag <final_output>
+                match = re.search(r'<final_output>(.*?)</final_output>', generated_text, flags=re.DOTALL)
+                if match:
+                    generated_text = match.group(1).strip()
+                else:
+                    # Fallback: rimozione di eventuali tag di pensiero e meta-testo
                 generated_text = re.sub(r'<think>.*?</think>', '', generated_text, flags=re.DOTALL).strip()
                 generated_text = re.sub(r'^.*?(Here\'s a thinking process:|Thinking Process:).*?\n', '', generated_text, flags=re.IGNORECASE).strip()
-                # Rimozione di prefissi comuni di meta-testo
                 generated_text = re.sub(r'^(Sure, here is|Here is|Here\'s|This is|Il seguente è|Ecco).*?:\s*', '', generated_text, flags=re.IGNORECASE).strip()
-                # Rimozione di processi di pensiero numerati (es. "Uno. Analizzi...", "1. Deconstruct...")
-                generated_text = re.sub(r'^(Uno|Due|Tre|Quattro|Cinque|\d+)\.\s+.*(?:Analizzi|Deconstruct|Role|Task|Requirements|Format|Ignore|Start|Output|Generate).*$', '', generated_text, flags=re.MULTILINE | re.IGNORECASE).strip()
-                # Rimozione di asterischi e markdown residuo
                 generated_text = re.sub(r'\*+', '', generated_text).strip()
                 generated_text = re.sub(r'#+', '', generated_text).strip()
                 
