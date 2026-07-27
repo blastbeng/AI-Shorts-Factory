@@ -54,6 +54,14 @@ class GPUManager:
                 return gpu
         return None
 
+    def get_available_system_ram_gb(self):
+        import psutil
+        try:
+            return psutil.virtual_memory().available / (1024 * 1024 * 1024)
+        except ImportError:
+            logger.warning("psutil non installato. Impossibile verificare la RAM di sistema.")
+            return 8.0  # Assume 8GB if we can't check
+
     def get_device_string(self, gpu_id, preferred_backend=None):
         """Restituisce la stringa del dispositivo PyTorch corretta."""
         gpu = next((g for g in self.get_gpus() if g["id"] == gpu_id), None)

@@ -49,13 +49,18 @@ class WanProvider(BaseAIProvider):
             except Exception as e:
                 logger.exception(f"Errore nel caricamento del modello su GPU. Fallback con offload su RAM.")
                 if self.pipeline is not None:
-                    del self.pipeline
-                    self.pipeline = None
+                    self.pipeline.to("cpu")
                     import gc
                     gc.collect()
                     torch.cuda.empty_cache()
+                
+                available_ram = self.gm.get_available_system_ram_gb()
+                if available_ram < 8.0:
+                    raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Operazione annullata per evitare il blocco del sistema.")
+                
+                logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso sequential CPU offload per evitare OOM.")
                 self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.float16)
-                self.pipeline.enable_model_cpu_offload(device=device)
+                self.pipeline.enable_sequential_cpu_offload(device=device)
 
         logger.info(f"Generazione video per prompt: {prompt}")
         # Aggiungi parametri per video verticale (Shorts)

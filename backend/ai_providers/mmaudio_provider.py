@@ -55,6 +55,12 @@ class MMAudioProvider(BaseAIProvider):
                     import gc
                     gc.collect()
                     torch.cuda.empty_cache()
+                
+                available_ram = self.gm.get_available_system_ram_gb()
+                if available_ram < 4.0:  # MMAudio might need less RAM than video models
+                    raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Operazione annullata per evitare il blocco del sistema.")
+                
+                logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso offload su RAM.")
                 self.model = AutoModel.from_pretrained(model_path, torch_dtype=torch.float16, device_map="auto")
             
         logger.info(f"Generazione audio per prompt: {prompt}")
