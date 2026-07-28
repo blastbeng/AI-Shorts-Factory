@@ -280,7 +280,7 @@ export default function Home() {
                     type="number"
                     className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                     value={genParams.duration_seconds}
-                    onChange={(e) => setGenParams({ ...genParams, duration_seconds: parseInt(e.target.value) || 30 })}
+                    onChange={(e) => setGenParams({ ...genParams, duration_seconds: parseInt(e.target.value) || 16 })}
                   />
                 </div>
               </div>
