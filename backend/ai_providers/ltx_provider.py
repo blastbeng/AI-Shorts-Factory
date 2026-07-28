@@ -72,7 +72,7 @@ class LtxProvider(BaseAIProvider):
                     original_config_file=config_path,
                     low_cpu_mem_usage=False
                 )
-                self.pipeline.enable_attention_slicing()
+                self.pipeline.vae.to(dtype=dtype)
                 if hasattr(self.pipeline.vae, "enable_slicing"):
                     self.pipeline.vae.enable_slicing()
                 if hasattr(self.pipeline.vae, "enable_tiling"):
@@ -118,7 +118,7 @@ class LtxProvider(BaseAIProvider):
                     original_config_file=config_path,
                     low_cpu_mem_usage=False
                 )
-                self.pipeline.enable_attention_slicing()
+                self.pipeline.vae.to(dtype=dtype)
                 if hasattr(self.pipeline.vae, "enable_slicing"):
                     self.pipeline.vae.enable_slicing()
                 if hasattr(self.pipeline.vae, "enable_tiling"):
