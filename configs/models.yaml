@@ -32,7 +32,7 @@ text:
 video:
   ltx_video:
     backend: rocm
-    path: ./models/video/ltx_video
+    path: Lightricks/LTX-Video-2b-v0.9.1-diffusers
     status: installed
     vram_required_gb: 16
   wan_2_1_1_3b:
