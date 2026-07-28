@@ -256,7 +256,7 @@ class PipelineOrchestrator:
                             first_scene = re.sub(r'^\d+[\.\)]\s*', '', raw_scenes[0]).strip()
                             
                         image_path = f"output/image_{self.job_id}.png"
-                        image_prompt = f"High quality dynamic image capturing a moment of action for a video about: {expanded_topic or self.profile.custom_prompt or self.profile.topic}. Scene: {first_scene}. Dynamic pose, motion blur, cinematic lighting. IMPORTANT: The image must NOT contain any text, letters, or words."
+                        image_prompt = f"High quality dynamic image capturing a moment of action. Scene: {first_scene}. Dynamic pose, motion blur, cinematic lighting. IMPORTANT: The image must NOT contain any text, letters, or words."
                         if not flux.health_check():
                             logger.warning("Flux non installato. Uso immagine dummy.")
                             self._generate_dummy_media("image", image_path)
