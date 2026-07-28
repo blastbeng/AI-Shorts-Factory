@@ -44,6 +44,7 @@ export default function Home() {
   const [stats, setStats] = useState({total_videos: 0, approved_videos: 0, published_videos: 0, total_jobs: 0});
   const [health, setHealth] = useState<{status: string} | null>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
+  const [progress, setProgress] = useState<{ [key: string]: any }>({});
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || `http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8000`;
 
@@ -59,7 +60,25 @@ export default function Home() {
         fetch(`${apiUrl}/health`)
       ]);
       setVideos(await videosRes.json());
-      setJobs(await jobsRes.json());
+     
+      const jobsData = await jobsRes.json();
+      setJobs(jobsData);
+      
+      const runningJobs = jobsData.filter((j: Job) => j.status === 'running');
+      if (runningJobs.length > 0) {
+        const progressPromises = runningJobs.map((j: Job) =>
+          fetch(`${apiUrl}/jobs/${j.id}/progress`).then(res => res.json())
+        );
+        const progressResults = await Promise.all(progressPromises);
+        const newProgress: { [key: string]: any } = {};
+        runningJobs.forEach((j: Job, i: number) => {
+          newProgress[j.id] = progressResults[i];
+        });
+        setProgress(newProgress);
+      } else {
+        setProgress({});
+      }
+     
       setGpus(await gpusRes.json());
       const logsData = await logsRes.json();
       setLogs(logsData.logs || []);
