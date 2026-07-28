@@ -56,12 +56,12 @@ class FluxProvider(BaseAIProvider):
                 transformer = FluxTransformer2DModel.from_single_file(
                     self.flux_gguf_path,
                     quantization_config=GGUFQuantizationConfig(),
-                    torch_dtype=torch.float16
+                    torch_dtype=torch.bfloat16
                 )
                 
                 pipeline_kwargs = {
                     "transformer": transformer,
-                    "torch_dtype": torch.float16
+                    "torch_dtype": torch.bfloat16
                 }
 
                 if self.t5_gguf_path:
@@ -69,12 +69,12 @@ class FluxProvider(BaseAIProvider):
                         text_encoder_2 = T5EncoderModel.from_pretrained(
                             os.path.dirname(self.t5_gguf_path),
                             gguf_file=os.path.basename(self.t5_gguf_path),
-                            torch_dtype=torch.float16
+                            torch_dtype=torch.bfloat16
                         )
                     else:
                         text_encoder_2 = T5EncoderModel.from_pretrained(
                             self.t5_gguf_path,
-                            torch_dtype=torch.float16,
+                            torch_dtype=torch.bfloat16,
                             local_files_only=True
                         )
                     pipeline_kwargs["text_encoder_2"] = text_encoder_2
@@ -85,6 +85,7 @@ class FluxProvider(BaseAIProvider):
                 )
                 self.pipeline.enable_vae_tiling()
                 self.pipeline.vae.enable_slicing()
+                self.pipeline.vae.to(torch.bfloat16)
 
                 if hasattr(self.pipeline, "text_encoder_2") and self.pipeline.text_encoder_2:
                     self.pipeline.text_encoder_2.to("cpu")
@@ -96,6 +97,8 @@ class FluxProvider(BaseAIProvider):
                     self.pipeline.enable_model_cpu_offload(
                         gpu_id=int(device.split(":")[-1])
                     )
+                else:
+                    self.pipeline.to(device)
             except Exception as e:
                 logger.exception("Errore nel caricamento del modello Flux.")
                 raise e
