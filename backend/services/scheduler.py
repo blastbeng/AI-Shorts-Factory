@@ -60,16 +60,11 @@ class AutoScheduler:
                             should_create = False
                     
                     if should_create:
-                        pending_count = db.query(Job).filter(
-                            Job.profile_id == profile.id,
-                            Job.status == "pending"
-                        ).count()
-                        
-                        if pending_count == 0:
-                            new_job = Job(status="pending", profile_id=profile.id)
-                            db.add(new_job)
-                            db.commit()
-                            logger.info(f"[Scheduler] Nuovo job creato per profilo '{profile.name}' (ID: {new_job.id})")
+                        new_job = Job(status="pending", profile_id=profile.id)
+                        db.add(new_job)
+                        db.commit()
+                        logger.info(f"[Scheduler] Nuovo job creato per profilo '{profile.name}' (ID: {new_job.id})")
+                        break  # Crea un solo job per ciclo per non saturare la coda
                 
                 db.close()
                 time.sleep(60)
