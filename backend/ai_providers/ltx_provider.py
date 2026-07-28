@@ -127,22 +127,8 @@ class LtxProvider(BaseAIProvider):
                     ProgressTracker().update(job_id, "video_generation", step + 1, 10, f"Generazione clip {i+1}/{len(prompts)}: step {step + 1}/10")
                 return callback_kwargs
 
-            # Calculate exact frames needed for the last clip to save resources
+            # Always generate 49 frames per clip to ensure consistent motion and audio sync
             num_frames = 49
-            if i == len(prompts) - 1 and target_duration:
-                elapsed_duration = i * (49 / 24.0)
-                remaining_duration = max(0, target_duration - elapsed_duration)
-                needed_frames = int(np.ceil(remaining_duration * 24))
-                if needed_frames <= 0:
-                    logger.info("Durata target già raggiunta, salto l'ultimo clip.")
-                    break
-                # LTX requires num_frames to be 8k + 1
-                valid_frames = [9, 17, 25, 33, 41, 49]
-                for vf in valid_frames:
-                    if needed_frames <= vf:
-                        num_frames = vf
-                        break
-                logger.info(f"Ultimo clip: generazione di {num_frames} frames invece di 49 per risparmiare risorse.")
 
             video = self.pipeline(
                 image=current_image,
