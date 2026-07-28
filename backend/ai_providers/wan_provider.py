@@ -94,6 +94,7 @@ class WanProvider(BaseAIProvider):
                 self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
 
         import gc
+        logger.info("Pulizia VRAM prima della generazione (incluso VAE decode)...")
         gc.collect()
         torch.cuda.empty_cache()
         torch.cuda.ipc_collect()
