@@ -40,69 +40,28 @@ class LtxProvider(BaseAIProvider):
         
         if self.pipeline is None:
             logger.info("Caricamento pipeline LTX Video (Img2Video)...")
-            model_path = self.model_info.get("path")
-            try:
-                model_path = os.path.abspath(self.model_info.get("path"))
-                dtype = torch.float16
-                
-                text_encoder = T5EncoderModel.from_pretrained(
-                    "google/t5-v1_1-xxl",
-                    torch_dtype=torch.float16,
-                    low_cpu_mem_usage=True
-                )
-                text_encoder.eval()
-                
-                self.pipeline = LTXImageToVideoPipeline.from_single_file(
-                    model_path,
-                    text_encoder=text_encoder,
-                    torch_dtype=torch.float16,
-                    low_cpu_mem_usage=True
-                )
-                del text_encoder
-                import gc
-                gc.collect()
-                self.pipeline.vae.enable_slicing()
-                self.pipeline.vae.enable_tiling()
-                self.pipeline.enable_attention_slicing("max")
-                self.pipeline.enable_sequential_cpu_offload()
-            except Exception as e:
-                logger.exception(f"Errore nel caricamento del modello su GPU. Fallback con offload su RAM.")
-                if self.pipeline is not None:
-                    del self.pipeline
-                    self.pipeline = None
-                    import gc
-                    gc.collect()
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
-                
-                available_ram = self.gm.get_available_system_ram_gb()
-                if available_ram < 8.0:
-                    raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Operazione annullata per evitare il blocco del sistema.")
-                
-                logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso sequential CPU offload per evitare OOM.")
-                model_path = os.path.abspath(self.model_info.get("path"))
-                dtype = torch.float16
-                
-                text_encoder = T5EncoderModel.from_pretrained(
-                    "google/t5-v1_1-xxl",
-                    torch_dtype=torch.float16,
-                    low_cpu_mem_usage=True
-                )
-                text_encoder.eval()
-                
-                self.pipeline = LTXImageToVideoPipeline.from_single_file(
-                    model_path,
-                    text_encoder=text_encoder,
-                    torch_dtype=torch.float16,
-                    low_cpu_mem_usage=True
-                )
-                del text_encoder
-                import gc
-                gc.collect()
-                self.pipeline.vae.enable_slicing()
-                self.pipeline.vae.enable_tiling()
-                self.pipeline.enable_attention_slicing("max")
-                self.pipeline.enable_sequential_cpu_offload()
+            model_path = os.path.abspath(self.model_info.get("path"))
+            
+            text_encoder = T5EncoderModel.from_pretrained(
+                "google/t5-v1_1-xxl",
+                torch_dtype=torch.float16,
+                low_cpu_mem_usage=True
+            )
+            text_encoder.eval()
+            
+            self.pipeline = LTXImageToVideoPipeline.from_single_file(
+                model_path,
+                text_encoder=text_encoder,
+                torch_dtype=torch.float16,
+                low_cpu_mem_usage=True
+            )
+            del text_encoder
+            import gc
+            gc.collect()
+            self.pipeline.vae.enable_slicing()
+            self.pipeline.vae.enable_tiling()
+            self.pipeline.enable_attention_slicing("max")
+            self.pipeline.enable_sequential_cpu_offload()
 
         import gc
         
