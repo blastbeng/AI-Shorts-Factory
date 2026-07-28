@@ -43,8 +43,7 @@ class FluxProvider(BaseAIProvider):
             logger.info("Caricamento pipeline Flux...")
             model_path = self.model_info.get("path")
             try:
-                self.pipeline = FluxPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16)
-                self.pipeline.transformer.to(torch.bfloat16)
+                self.pipeline = FluxPipeline.from_pretrained(model_path, torch_dtype=torch.float16)
                 self.pipeline.enable_vae_tiling()
                 self.pipeline.vae.enable_slicing()
                 self.pipeline.enable_attention_slicing()
