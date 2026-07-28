@@ -2,6 +2,7 @@ import os
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 import yaml
 import torch
+torch.backends.cuda.matmul.allow_tf32 = False
 import numpy as np
 from diffusers import DiffusionPipeline
 from backend.ai_providers.base_provider import BaseAIProvider
@@ -107,9 +108,10 @@ class WanProvider(BaseAIProvider):
         video = self.pipeline(
             prompt, 
             num_inference_steps=20, 
-            height=832, 
-            width=480,
-            num_frames=16,
+            height=480, 
+            width=832,
+            num_frames=49,
+            guidance_scale=5,
             callback_on_step_end=progress_callback,
             callback_on_step_end_tensor_inputs=[]
         ).frames[0]

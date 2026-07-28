@@ -6,6 +6,15 @@ import os
 import random
 import yaml
 
+def clear_vram():
+    import gc
+    import torch
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
+        torch.cuda.reset_peak_memory_stats()
+
 class PipelineOrchestrator:
     def __init__(self, job_id, profile, db):
         self.job_id = job_id
@@ -158,13 +167,6 @@ class PipelineOrchestrator:
                         self._update_stage(stage, "completed", storyboard)
                     finally:
                         llm.cleanup()
-                        # Pulizia esplicita della VRAM dopo le fasi LLM
-                        import gc
-                        import torch
-                        gc.collect()
-                        if torch.cuda.is_available():
-                            torch.cuda.empty_cache()
-                        logger.info("VRAM pulita dopo la generazione dello storyboard.")
 
                 elif stage == "voice_generation":
                     logger.info("PRIMA import KokoroProvider")
@@ -298,4 +300,6 @@ class PipelineOrchestrator:
                 self._update_stage(stage, "failed", str(e))
                 logger.exception(f"[Job {self.job_id}] Fallimento stage {stage}: {e}")
                 return False
+            
+            clear_vram()
         return "waiting_for_review"
