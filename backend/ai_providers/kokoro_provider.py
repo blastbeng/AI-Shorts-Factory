@@ -12,13 +12,24 @@ from backend.services.logger import logger
 torch.set_num_threads(1)
 
 class KokoroProvider(BaseAIProvider):
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+
     def __init__(self):
+        if self._initialized:
+            return
         with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
             self.models_config = yaml.safe_load(f)
         self.model_info = self.models_config.get("voice", {}).get("kokoro_tts", {})
         self.gm = GPUManager()
         self.model = None
         self.pipeline = None
+        self._initialized = True
 
     def install_status(self):
         return self.model_info.get("status", "not_installed")
