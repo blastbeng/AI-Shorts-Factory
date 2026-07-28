@@ -45,13 +45,13 @@ class PipelineOrchestrator:
             "topic_generation",
             "script_generation",
             "storyboard_creation",
+            "narration_generation",
+            "voice_generation",
+            "subtitle_generation",
             "image_generation",
             "video_generation",
             "video_upscaling",
             "video_analysis",
-            "narration_generation",
-            "voice_generation",
-            "subtitle_generation",
             "audio_generation",
             "video_assembly",
             "quality_scoring",
@@ -213,6 +213,27 @@ class PipelineOrchestrator:
                     finally:
                         llm.cleanup()
 
+                elif stage == "narration_generation":
+                    from backend.ai_providers.llm_provider import LLMProvider
+                    llm = LLMProvider()
+                    try:
+                        word_count = int(self.profile.duration_seconds * 2.5)  # ~150 words per minute
+                        narration_prompt = (
+                            f"Based on the following script, write an engaging narration for a short video. "
+                            f"The narration should match what's happening in the video and be suitable for YouTube/Instagram Reels. "
+                            f"Duration: {self.profile.duration_seconds} seconds (approximately {word_count} words). "
+                            f"Language: {self.profile.language}. "
+                            f"Script: {script}. "
+                            f"Original topic for context: {expanded_topic}. "
+                            f"Output ONLY the narration text, without any meta-text, instructions, or formatting."
+                        )
+                        narration = llm.generate(narration_prompt, max_length=word_count + 50, is_interrupted=self._is_interrupted)
+                        if self._is_interrupted():
+                            return "interrupted"
+                    finally:
+                        llm.cleanup()
+                    self._update_stage(stage, "completed", narration)
+
                 elif stage == "voice_generation":
                     logger.info("PRIMA import KokoroProvider")
                     from backend.ai_providers.kokoro_provider import KokoroProvider
@@ -283,8 +304,10 @@ class PipelineOrchestrator:
                     try:
                         video_path = f"output/video_{self.job_id}.mp4"
                         
-                        # Use target duration since voice is generated after video
-                        voice_duration = float(self.profile.duration_seconds)
+                        # Use actual voice duration if available, otherwise fallback to target duration
+                        voice_duration = get_media_duration(voice_path)
+                        if voice_duration == 0.0:
+                            voice_duration = float(self.profile.duration_seconds)
                             
                         # Parse storyboard into individual scenes and strip numbering
                         import re
@@ -362,26 +385,6 @@ class PipelineOrchestrator:
                     finally:
                         analyzer.cleanup()
                     self._update_stage(stage, "completed", video_description)
-
-                elif stage == "narration_generation":
-                    from backend.ai_providers.llm_provider import LLMProvider
-                    llm = LLMProvider()
-                    try:
-                        narration_prompt = (
-                            f"Based on the following video description, write an engaging narration for a short video. "
-                            f"The narration should match what's happening in the video and be suitable for YouTube/Instagram Reels. "
-                            f"Duration: {self.profile.duration_seconds} seconds. "
-                            f"Language: {self.profile.language}. "
-                            f"Video description: {video_description}. "
-                            f"Original topic for context: {expanded_topic}. "
-                            f"Output ONLY the narration text, without any meta-text, instructions, or formatting."
-                        )
-                        narration = llm.generate(narration_prompt, max_length=600, is_interrupted=self._is_interrupted)
-                        if self._is_interrupted():
-                            return "interrupted"
-                    finally:
-                        llm.cleanup()
-                    self._update_stage(stage, "completed", narration)
 
                 elif stage == "audio_generation":
                     from backend.ai_providers.mmaudio_provider import MMAudioProvider
