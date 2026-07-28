@@ -162,6 +162,14 @@ def create_profile(profile: ProfileCreate, db: Session = Depends(get_db)):
 def get_profiles(db: Session = Depends(get_db)):
     return db.query(GenerationProfile).all()
 
+@app.post("/jobs/interrupt_all")
+def interrupt_all_jobs(db: Session = Depends(get_db)):
+    jobs = db.query(Job).filter(Job.status.in_(["running", "pending"])).all()
+    for job in jobs:
+        job.status = "interrupted"
+    db.commit()
+    return {"status": "interrupted", "count": len(jobs)}
+
 @app.post("/jobs/{profile_id}")
 def start_job(profile_id: int, db: Session = Depends(get_db)):
     profile = db.query(GenerationProfile).filter(GenerationProfile.id == profile_id).first()
@@ -186,14 +194,6 @@ def interrupt_job(job_id: str, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(job)
     return {"status": "interrupted", "job_id": job_id}
-
-@app.post("/jobs/interrupt_all")
-def interrupt_all_jobs(db: Session = Depends(get_db)):
-    jobs = db.query(Job).filter(Job.status.in_(["running", "pending"])).all()
-    for job in jobs:
-        job.status = "interrupted"
-    db.commit()
-    return {"status": "interrupted", "count": len(jobs)}
 
 @app.get("/videos/")
 def get_videos(db: Session = Depends(get_db)):
