@@ -33,6 +33,7 @@ type JobDetails = {
 export default function JobsPage() {
   const [jobs, setJobs] = useState<{ id: string; status: string; progress: { completed: number; total: number } }[]>([]);
   const [selectedJob, setSelectedJob] = useState<JobDetails | null>(null);
+  const [progress, setProgress] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || `http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8000`;
@@ -50,8 +51,12 @@ export default function JobsPage() {
 
   const fetchJobDetails = async (jobId: string) => {
     try {
-      const res = await fetch(`${apiUrl}/jobs/${jobId}`);
-      setSelectedJob(await res.json());
+      const [detailsRes, progressRes] = await Promise.all([
+        fetch(`${apiUrl}/jobs/${jobId}`),
+        fetch(`${apiUrl}/jobs/${jobId}/progress`)
+      ]);
+      setSelectedJob(await detailsRes.json());
+      setProgress(await progressRes.json());
     } catch (error) {
       console.error("Errore:", error);
     }
@@ -64,9 +69,14 @@ export default function JobsPage() {
     if (jobId) {
       fetchJobDetails(jobId);
     }
-    const interval = setInterval(fetchJobs, 5000);
+    const interval = setInterval(() => {
+      fetchJobs();
+      if (selectedJob && (selectedJob.status === 'running' || selectedJob.status === 'pending')) {
+        fetchJobDetails(selectedJob.job_id);
+      }
+    }, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedJob]);
 
   return (
     <main className="min-h-screen bg-gray-900 text-white p-4 sm:p-6 lg:p-8">
@@ -113,6 +123,35 @@ export default function JobsPage() {
               <div>
                 <p className="mb-4 text-sm">Stato generale: <strong>{selectedJob.status}</strong></p>
                 
+                {progress && progress.stage && (() => {
+                  let etaInfo = null;
+                  if (progress.start_time && progress.updated_time && progress.total_steps > 0 && progress.current_step > 0) {
+                    const elapsed = progress.updated_time - progress.start_time;
+                    const stepsRemaining = progress.total_steps - progress.current_step;
+                    const timePerStep = elapsed / progress.current_step;
+                    const etaSeconds = Math.round(timePerStep * stepsRemaining);
+                    const endTimeMs = (progress.updated_time + etaSeconds) * 1000;
+                    
+                    const mins = Math.floor(etaSeconds / 60);
+                    const secs = etaSeconds % 60;
+                    const etaStr = `${mins}m ${secs}s`;
+                    const endStr = new Date(endTimeMs).toLocaleTimeString();
+                    
+                    etaInfo = (
+                      <p className="text-xs text-gray-400 mt-1 mb-4">
+                        {progress.message} ({progress.current_step}/{progress.total_steps}) - ETA: {etaStr} (Fine: {endStr})
+                      </p>
+                    );
+                  } else if (progress.message) {
+                    etaInfo = (
+                      <p className="text-xs text-gray-400 mt-1 mb-4">
+                        {progress.message} ({progress.current_step}/{progress.total_steps})
+                      </p>
+                    );
+                  }
+                  return etaInfo;
+                })()}
+
                 <div className="mt-4 mb-4 bg-gray-700/30 p-3 rounded-lg">
                   <h3 className="text-sm font-semibold text-gray-300 mb-2">Parametri Job</h3>
                   <ul className="text-xs text-gray-400 space-y-1">
