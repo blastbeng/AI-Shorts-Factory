@@ -151,7 +151,7 @@ Professional movie cinematography, high quality.
             prompt = motion_prefix + prompt
 
             import random
-            steps = 30
+            steps = 40
             generator = torch.Generator(device="cuda").manual_seed(random.randint(0, 2**32 - 1))
 
             def progress_callback(pipe, step, timestep, callback_kwargs):
@@ -171,7 +171,7 @@ Professional movie cinematography, high quality.
                 num_frames=49,
                 height=target_height,
                 width=target_width,
-                guidance_scale=1.0,
+                guidance_scale=3.0,
                 generator=generator,
                 callback_on_step_end=progress_callback,
                 callback_on_step_end_tensor_inputs=[]
