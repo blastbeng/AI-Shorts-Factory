@@ -167,8 +167,12 @@ class PipelineOrchestrator:
                         logger.info("VRAM pulita dopo la generazione dello storyboard.")
 
                 elif stage == "voice_generation":
+                    logger.info("PRIMA import KokoroProvider")
                     from backend.ai_providers.kokoro_provider import KokoroProvider
+                    logger.info("DOPO import KokoroProvider")
+                    logger.info("PRIMA istanza KokoroProvider")
                     kokoro = KokoroProvider()
+                    logger.info("DOPO istanza KokoroProvider")
                     voice_path = f"output/voice_{self.job_id}.wav"
                     if not kokoro.health_check():
                         logger.warning("Kokoro TTS non installato. Uso file audio dummy.")

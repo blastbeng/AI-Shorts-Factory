@@ -21,6 +21,7 @@ class KokoroProvider(BaseAIProvider):
         return cls._instance
 
     def __init__(self):
+        logger.info("KokoroProvider __init__ chiamato.")
         if self._initialized:
             return
         with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
