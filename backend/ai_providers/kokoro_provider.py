@@ -1,10 +1,10 @@
 import os
+os.environ["TORCH_BLAS_PREFER_HIPBLASLT"] = "0"
 import yaml
 import torch
 torch.backends.cudnn.enabled = True
 torch.backends.cudnn.benchmark = False
 torch.backends.cudnn.deterministic = True
-torch.backends.cuda.preferred_blas_library("ck")
 import random
 import scipy.io.wavfile as wavfile
 from scipy.signal import butter, lfilter
@@ -76,10 +76,13 @@ class KokoroProvider(BaseAIProvider):
             import threading
             logger.info(f"Thread corrente: {threading.current_thread().name}")
             logger.info("PRIMA KModel")
-            self.model = KModel()
+            self.model = KModel(disable_complex=True)
             logger.info("DOPO KModel")
             logger.info("Kokoro: modello CPU pronto")
             self.model.eval()
+            
+            self.model.bert = self.model.bert.cpu()
+            self.model.bert_encoder = self.model.bert_encoder.cpu()
             
             logger.info("Kokoro: spostamento GPU...")
             self.model = self.model.to(
