@@ -17,6 +17,7 @@ fi
 
 LTX_DIR="./models/video/ltx_video"
 LTX_MODEL="$LTX_DIR/ltxv-13b-0.9.8-distilled-fp8.safetensors"
+LTX_CONFIG="$LTX_DIR/ltxv-13b-0.9.8-distilled-fp8.yaml"
 
 if [ ! -f "$LTX_MODEL" ]; then
     mkdir -p "$LTX_DIR"
@@ -25,6 +26,14 @@ if [ ! -f "$LTX_MODEL" ]; then
     touch "$LTX_DIR/.download_complete"
 else
     echo "[OK] Modello ltx_video già installato."
+fi
+
+if [ ! -f "$LTX_CONFIG" ]; then
+    mkdir -p "$LTX_DIR"
+    echo "Downloading ltxv-13b-0.9.8-distilled-fp8.yaml..."
+    wget -q --show-progress -O "$LTX_CONFIG" "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltxv-13b-0.9.8-distilled-fp8.yaml"
+else
+    echo "[OK] Config ltx_video già installato."
 fi
 
 echo "Installazione dei modelli video completata."

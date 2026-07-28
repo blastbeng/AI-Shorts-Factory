@@ -59,7 +59,7 @@ class LtxProvider(BaseAIProvider):
                 )
                 text_encoder.eval()
                 text_encoder.to("cpu")
-                config_path = "/opt/models/LTX-Video/ltxv-13b-0.9.8-distilled-fp8.yaml"
+                config_path = os.path.abspath(self.model_info.get("config_path"))
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
                     text_encoder=text_encoder,
@@ -99,7 +99,7 @@ class LtxProvider(BaseAIProvider):
                 )
                 text_encoder.eval()
                 text_encoder.to("cpu")
-                config_path = "/opt/models/LTX-Video/ltxv-13b-0.9.8-distilled-fp8.yaml"
+                config_path = os.path.abspath(self.model_info.get("config_path"))
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
                     text_encoder=text_encoder,
