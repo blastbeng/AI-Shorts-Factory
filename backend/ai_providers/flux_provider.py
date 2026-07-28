@@ -50,13 +50,11 @@ class FluxProvider(BaseAIProvider):
             try:
                 transformer = FluxTransformer2DModel.from_single_file(
                     self.flux_gguf_path,
-                    quantization_config=GGUFQuantizationConfig(),
-                    torch_dtype=torch.float16
+                    quantization_config=GGUFQuantizationConfig()
                 )
                 
                 pipeline_kwargs = {
-                    "transformer": transformer,
-                    "torch_dtype": torch.float16
+                    "transformer": transformer
                 }
 
                 if self.t5_gguf_path:
@@ -78,6 +76,7 @@ class FluxProvider(BaseAIProvider):
                     "black-forest-labs/FLUX.1-schnell",
                     **pipeline_kwargs
                 )
+                self.pipeline.transformer.to(dtype=torch.float16)
                 self.pipeline.enable_vae_tiling()
                 self.pipeline.vae.enable_slicing()
                 
