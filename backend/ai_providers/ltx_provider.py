@@ -161,7 +161,7 @@ Professional movie cinematography.
             prompt = motion_prefix + prompt
 
             steps = 12
-            generator = torch.Generator(device="cpu").manual_seed(42)
+            generator = torch.Generator(device="cuda").manual_seed(42)
 
             def progress_callback(pipe, step, timestep, callback_kwargs):
                 logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/{steps}")
