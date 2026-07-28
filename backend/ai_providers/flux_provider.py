@@ -2,7 +2,7 @@ import os
 import yaml
 import torch
 from diffusers import FluxPipeline, FluxTransformer2DModel
-from diffusers.quantizers.gguf import GGUFQuantizationConfig
+from diffusers import GGUFQuantizationConfig
 from transformers import T5EncoderModel
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
