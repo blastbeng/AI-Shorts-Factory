@@ -33,7 +33,7 @@ done
 echo "Verifica di llama-cpp-python con backend Vulkan..."
 if ! python -c "import llama_cpp" 2>/dev/null; then
     echo "Installazione di llama-cpp-python con backend Vulkan..."
-    CMAKE_ARGS="-DGGML_VULKAN=on" CMAKE_BUILD_PARALLEL_LEVEL=$(nproc) pip install llama-cpp-python "numpy<2.5" --upgrade --force-reinstall --no-cache-dir -v
+    CMAKE_ARGS="-DGGML_VULKAN=on" CMAKE_BUILD_PARALLEL_LEVEL=$(nproc) pip install llama-cpp-python "numpy<2.1,>=1.21" --upgrade --force-reinstall --no-cache-dir -v
 else
     echo "[OK] llama-cpp-python già installato."
 fi
