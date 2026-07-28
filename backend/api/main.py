@@ -96,7 +96,15 @@ except Exception as e:
 
 # Avvia il worker in background per processare i job avviati manualmente
 job_worker.start()
-logger.info("AutoScheduler non avviato automaticamente. Generazione manuale abilitata.")
+
+# Avvia lo scheduler in background se abilitato nel .env
+enable_scheduler_on_boot = os.getenv("ENABLE_SCHEDULER_ON_BOOT", "false").lower() in ("true", "1", "yes")
+if enable_scheduler_on_boot:
+    scheduler_interval = int(os.getenv("SCHEDULER_INTERVAL_MINUTES", 60))
+    auto_scheduler.start(interval_minutes=scheduler_interval)
+    logger.info(f"AutoScheduler avviato automaticamente con intervallo di {scheduler_interval} minuti.")
+else:
+    logger.info("AutoScheduler non avviato automaticamente. Generazione manuale abilitata.")
 
 # Monta la directory output per servire i video generati
 os.makedirs("output", exist_ok=True)
