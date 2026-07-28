@@ -29,4 +29,4 @@ opencv-python
 gguf
 imageio[ffmpeg]
 imageio-ffmpeg
-mmaudio
+mmaudio @ git+https://github.com/hkchengrex/MMAudio.git
