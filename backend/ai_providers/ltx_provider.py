@@ -52,13 +52,18 @@ class LtxProvider(BaseAIProvider):
             try:
                 model_path = os.path.abspath(self.model_info.get("path"))
                 dtype = torch.float16
-                text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=dtype)
+                text_encoder = T5EncoderModel.from_pretrained(
+                    "google/t5-v1_1-xxl",
+                    torch_dtype=torch.float16
+                )
+                text_encoder.eval()
                 text_encoder.to("cpu")
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
                     text_encoder=text_encoder,
                     torch_dtype=torch.float16,
-                    config="Lightricks/LTX-Video"
+                    config="Lightricks/LTX-Video",
+                    local_files_only=False
                 )
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):
@@ -86,13 +91,18 @@ class LtxProvider(BaseAIProvider):
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso sequential CPU offload per evitare OOM.")
                 model_path = os.path.abspath(self.model_info.get("path"))
                 dtype = torch.float16
-                text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=dtype)
+                text_encoder = T5EncoderModel.from_pretrained(
+                    "google/t5-v1_1-xxl",
+                    torch_dtype=torch.float16
+                )
+                text_encoder.eval()
                 text_encoder.to("cpu")
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
                     text_encoder=text_encoder,
                     torch_dtype=torch.float16,
-                    config="Lightricks/LTX-Video"
+                    config="Lightricks/LTX-Video",
+                    local_files_only=False
                 )
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):
@@ -114,8 +124,8 @@ class LtxProvider(BaseAIProvider):
             logger.info(f"Generazione clip {i+1}/{len(prompts)} per prompt: {prompt}")
             
             # Determine the conditioning image for this clip
-            target_width = 432
-            target_height = 768
+            target_width = 320
+            target_height = 576
             if i == 0 and image_path and os.path.exists(image_path):
                 # Load and resize the initial Flux image to match video dimensions
                 init_image = Image.open(image_path).convert("RGB")
@@ -175,14 +185,12 @@ Professional movie cinematography.
             video = self.pipeline(
                 image=current_image,
                 prompt=prompt,
-                num_inference_steps=steps,
+                num_inference_steps=12,
                 num_frames=49,
-                height=target_height,
-                width=target_width,
+                height=576,
+                width=320,
                 guidance_scale=2.0,
-                generator=generator,
-                callback_on_step_end=progress_callback,
-                callback_on_step_end_tensor_inputs=[]
+                generator=generator
             ).frames[0]
 
             if isinstance(video, torch.Tensor):
