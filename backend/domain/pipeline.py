@@ -352,7 +352,11 @@ class PipelineOrchestrator:
                             logger.warning("VideoAnalysisProvider non installato. Uso storyboard come fallback.")
                             video_description = storyboard
                         else:
-                            video_description = analyzer.generate(video_path)
+                            try:
+                                video_description = analyzer.generate(video_path)
+                            except Exception as e:
+                                logger.warning(f"Errore durante l'analisi video: {e}. Uso storyboard come fallback.")
+                                video_description = storyboard
                     finally:
                         analyzer.cleanup()
                     self._update_stage(stage, "completed", video_description)
