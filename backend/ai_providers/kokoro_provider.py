@@ -58,7 +58,7 @@ class KokoroProvider(BaseAIProvider):
             import threading
             logger.info(f"Thread corrente: {threading.current_thread().name}")
             logger.info("PRIMA KModel")
-            self.model = KModel()
+            self.model = KModel(disable_complex=True)
             logger.info("DOPO KModel")
             logger.info("Kokoro: modello CPU pronto")
             self.model.eval()
@@ -96,7 +96,11 @@ class KokoroProvider(BaseAIProvider):
         if app_language not in lang_map:
             logger.warning(f"Lingua {app_language} non supportata nativamente da Kokoro. Uso fallback su inglese ('a').")
             
-        self.load_model(kokoro_lang)
+        logger.info(
+            f"Kokoro stato: model={self.model is not None}, pipeline={self.pipeline is not None}"
+        )
+        if self.pipeline is None:
+            self.load_model(kokoro_lang)
         
         import re
         # Pulizia del testo da markdown, asterischi e processi di pensiero residui
