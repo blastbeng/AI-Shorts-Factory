@@ -45,6 +45,11 @@ class FluxProvider(BaseAIProvider):
         if available_ram < 20.0:
             raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Flux richiede circa 20GB di RAM. Operazione annullata per evitare il blocco del sistema.")
         
+        device = self.gm.get_device_string(
+            gpu['id'],
+            preferred_backend=preferred_backend
+        )
+
         if self.pipeline is None:
             logger.info("Caricamento pipeline Flux GGUF...")
             try:
@@ -80,18 +85,17 @@ class FluxProvider(BaseAIProvider):
                 )
                 self.pipeline.enable_vae_tiling()
                 self.pipeline.vae.enable_slicing()
-                
+
+                if hasattr(self.pipeline, "text_encoder_2") and self.pipeline.text_encoder_2:
+                    self.pipeline.text_encoder_2.to("cpu")
+
                 # Determine if we need CPU offload based on VRAM
                 use_offload = gpu['vram_gb'] < 20
                 if use_offload:
-                    logger.info(f"VRAM {gpu['vram_gb']}GB < 20GB, abilitazione model CPU offload.")
-                    self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
-                else:
-                    logger.info(f"VRAM {gpu['vram_gb']}GB >= 20GB, caricamento su GPU.")
-                    self.pipeline.to(f"cuda:{gpu['device_index']}")
-                    # Ensure T5 stays on CPU even if pipeline is moved to GPU
-                    if hasattr(self.pipeline, "text_encoder_2") and self.pipeline.text_encoder_2:
-                        self.pipeline.text_encoder_2.to("cpu")
+                    logger.info(f"VRAM {gpu['vram_gb']}GB < 20GB, uso model CPU offload.")
+                    self.pipeline.enable_model_cpu_offload(
+                        gpu_id=int(device.split(":")[-1])
+                    )
             except Exception as e:
                 logger.exception("Errore nel caricamento del modello Flux.")
                 raise e
