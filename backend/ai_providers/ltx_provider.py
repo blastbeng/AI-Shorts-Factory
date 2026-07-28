@@ -144,20 +144,18 @@ class LtxProvider(BaseAIProvider):
             # Add continuity prompt for subsequent clips
             if i > 0:
                 prompt = f"""
-Continue the previous scene.
+Continue the previous scene seamlessly.
 Keep the same character and environment.
-Smooth camera continuity.
+Maintain dynamic camera continuity and motion.
 
 {prompt}
 """
             motion_prefix = """
-Cinematic video shot.
-Dynamic camera movement.
-The camera follows the main subject.
-Natural realistic motion.
-Objects move with realistic physics.
-Smooth continuous action.
-Professional movie cinematography.
+Cinematic video shot with dynamic camera movement.
+The camera actively follows the main subject.
+Natural realistic motion with objects moving realistically.
+Smooth continuous action, no static frames.
+Professional movie cinematography, high quality.
 """
 
             prompt = motion_prefix + prompt
