@@ -351,11 +351,9 @@ class PipelineOrchestrator:
                         clean_storyboard = re.sub(r'\s+', ' ', clean_storyboard).strip()
                         
                         audio_prompt = (
-                            f"Generate a realistic and immersive audio track synchronized with the video. "
-                            f"Include ambient sounds, sound effects, and background music. "
-                            f"Crucially, if there are characters speaking or moving their lips in the video, generate clear lipsync dialogue and voices matching their movements. "
-                            f"The audio should feel like a real scene, without any meta-text, scene numbers, or descriptions of what is happening. "
-                            f"Any voice or dialogue should be in the language: {self.profile.language}. "
+                            f"Generate ambient sounds, sound effects, and background music that match the visual content of the video. "
+                            f"Do NOT generate any dialogue, speech, or voices. "
+                            f"The audio should feel like a real scene with environmental sounds. "
                             f"Scene context: {clean_storyboard}"
                         )
                         
