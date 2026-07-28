@@ -14,6 +14,13 @@ def clear_vram():
         torch.cuda.empty_cache()
         torch.cuda.ipc_collect()
         torch.cuda.reset_peak_memory_stats()
+    
+    # Force glibc to release unused memory back to the OS
+    try:
+        import ctypes
+        ctypes.CDLL("libc.so.6").malloc_trim(0)
+    except Exception:
+        pass
 
 class PipelineOrchestrator:
     def __init__(self, job_id, profile, db):

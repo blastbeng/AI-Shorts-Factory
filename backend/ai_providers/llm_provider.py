@@ -209,3 +209,10 @@ class LLMProvider(BaseAIProvider):
                     torch.cuda.empty_cache()
             except ImportError:
                 pass
+            
+            # Force glibc to release unused memory back to the OS
+            try:
+                import ctypes
+                ctypes.CDLL("libc.so.6").malloc_trim(0)
+            except Exception:
+                pass

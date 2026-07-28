@@ -184,6 +184,14 @@ class WanProvider(BaseAIProvider):
             del self.pipeline
             self.pipeline = None
         import gc
+        import torch
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+        
+        # Force glibc to release unused memory back to the OS
+        try:
+            import ctypes
+            ctypes.CDLL("libc.so.6").malloc_trim(0)
+        except Exception:
+            pass
