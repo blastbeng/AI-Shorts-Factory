@@ -60,7 +60,8 @@ class LtxProvider(BaseAIProvider):
                 text_encoder = T5EncoderModel.from_pretrained(
                     "Lightricks/LTX-Video",
                     subfolder="text_encoder",
-                    torch_dtype=torch.float16
+                    revision="main",
+                    torch_dtype=dtype
                 )
                 text_encoder.eval()
                 text_encoder.to("cpu")
@@ -68,16 +69,17 @@ class LtxProvider(BaseAIProvider):
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
                     text_encoder=text_encoder,
-                    torch_dtype=torch.float16,
+                    torch_dtype=dtype,
                     original_config_file=config_path,
-                    low_cpu_mem_usage=False
+                    low_cpu_mem_usage=False,
+                    load_safety_checker=False
                 )
-                if hasattr(self.pipeline.vae, "enable_slicing"):
-                    self.pipeline.vae.enable_slicing()
-                if hasattr(self.pipeline.vae, "enable_tiling"):
-                    self.pipeline.vae.enable_tiling()
+                self.pipeline.transformer.to(dtype=dtype)
+                self.pipeline.enable_attention_slicing("max")
+                self.pipeline.vae.enable_slicing()
+                self.pipeline.vae.enable_tiling()
                 if use_cpu_offload:
-                    self.pipeline.enable_model_cpu_offload()
+                    self.pipeline.enable_sequential_cpu_offload()
                 else:
                     self.pipeline.to(device)
             except Exception as e:
@@ -105,7 +107,8 @@ class LtxProvider(BaseAIProvider):
                 text_encoder = T5EncoderModel.from_pretrained(
                     "Lightricks/LTX-Video",
                     subfolder="text_encoder",
-                    torch_dtype=torch.float16
+                    revision="main",
+                    torch_dtype=dtype
                 )
                 text_encoder.eval()
                 text_encoder.to("cpu")
@@ -113,15 +116,16 @@ class LtxProvider(BaseAIProvider):
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
                     text_encoder=text_encoder,
-                    torch_dtype=torch.float16,
+                    torch_dtype=dtype,
                     original_config_file=config_path,
-                    low_cpu_mem_usage=False
+                    low_cpu_mem_usage=False,
+                    load_safety_checker=False
                 )
-                if hasattr(self.pipeline.vae, "enable_slicing"):
-                    self.pipeline.vae.enable_slicing()
-                if hasattr(self.pipeline.vae, "enable_tiling"):
-                    self.pipeline.vae.enable_tiling()
-                self.pipeline.enable_model_cpu_offload()
+                self.pipeline.transformer.to(dtype=dtype)
+                self.pipeline.enable_attention_slicing("max")
+                self.pipeline.vae.enable_slicing()
+                self.pipeline.vae.enable_tiling()
+                self.pipeline.enable_sequential_cpu_offload()
 
         import gc
         
