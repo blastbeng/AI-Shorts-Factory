@@ -169,15 +169,12 @@ class PipelineOrchestrator:
                 elif stage == "voice_generation":
                     from backend.ai_providers.kokoro_provider import KokoroProvider
                     kokoro = KokoroProvider()
-                    try:
-                        voice_path = f"output/voice_{self.job_id}.wav"
-                        if not kokoro.health_check():
-                            logger.warning("Kokoro TTS non installato. Uso file audio dummy.")
-                            self._generate_dummy_media("audio", voice_path)
-                        else:
-                            kokoro.generate(script, voice_path, language=self.profile.language)
-                    finally:
-                        kokoro.cleanup()
+                    voice_path = f"output/voice_{self.job_id}.wav"
+                    if not kokoro.health_check():
+                        logger.warning("Kokoro TTS non installato. Uso file audio dummy.")
+                        self._generate_dummy_media("audio", voice_path)
+                    else:
+                        kokoro.generate(script, voice_path, language=self.profile.language)
                     self._update_stage(stage, "completed", voice_path)
 
                 elif stage == "subtitle_generation":
