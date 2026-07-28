@@ -15,7 +15,7 @@ class FFmpegUtils:
             "-i", voice_path,
             "-i", audio_path,
             "-map", "0:v:0",
-            "-filter_complex", "[1:a:0][2:a:0]amix=inputs=2:duration=longest[a]",
+            "-filter_complex", "[1:a:0]volume=1.0[voice];[2:a:0]volume=0.4[scene];[voice][scene]amix=inputs=2:duration=longest[a]",
             "-map", "[a]",
             "-c:v", "copy",
             "-c:a", "aac",
