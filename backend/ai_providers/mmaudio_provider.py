@@ -5,7 +5,8 @@ import cv2
 import gc
 import numpy as np
 import scipy.io.wavfile as wavfile
-from transformers import AutoProcessor, AutoModel
+from mmaudio.model import MMAudio
+from mmaudio.processor import MMAudioProcessor
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger
@@ -46,11 +47,11 @@ class MMAudioProvider(BaseAIProvider):
             logger.info("Caricamento modello MMAudio...")
             model_path = self.model_info.get("path")
             try:
-                self.processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
+                self.processor = MMAudioProcessor.from_pretrained(model_path)
                 if use_cpu_offload:
-                    self.model = AutoModel.from_pretrained(model_path, torch_dtype=torch.bfloat16, device_map="auto", trust_remote_code=True)
+                    self.model = MMAudio.from_pretrained(model_path, torch_dtype=torch.bfloat16, device_map="auto")
                 else:
-                    self.model = AutoModel.from_pretrained(model_path, torch_dtype=torch.bfloat16, trust_remote_code=True).to(device)
+                    self.model = MMAudio.from_pretrained(model_path, torch_dtype=torch.bfloat16).to(device)
             except Exception as e:
                 logger.exception(f"Errore nel caricamento del modello su GPU. Fallback con offload su RAM.")
                 if self.model is not None:
@@ -65,7 +66,7 @@ class MMAudioProvider(BaseAIProvider):
                     raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Operazione annullata per evitare il blocco del sistema.")
                 
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso offload su RAM.")
-                self.model = AutoModel.from_pretrained(model_path, torch_dtype=torch.bfloat16, device_map="auto", trust_remote_code=True)
+                self.model = MMAudio.from_pretrained(model_path, torch_dtype=torch.bfloat16, device_map="auto")
             
         logger.info(f"Generazione audio per prompt: {prompt}, video: {video_path}")
         if video_path and os.path.exists(video_path):
