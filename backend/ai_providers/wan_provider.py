@@ -65,18 +65,7 @@ class WanProvider(BaseAIProvider):
                 if hasattr(self.pipeline, "enable_vae_slicing"):
                     self.pipeline.enable_vae_slicing()
                 
-                # Usa torch.compile per ottimizzare il modello e il VAE (richiede PyTorch 2.0+)
-                try:
-                    logger.info("Compilazione del modello e VAE con torch.compile per migliorare le prestazioni...")
-                    if hasattr(self.pipeline, "transformer"):
-                        self.pipeline.transformer = torch.compile(self.pipeline.transformer, mode="reduce-overhead", fullgraph=False)
-                    elif hasattr(self.pipeline, "unet"):
-                        self.pipeline.unet = torch.compile(self.pipeline.unet, mode="reduce-overhead", fullgraph=False)
-                    
-                    if hasattr(self.pipeline, "vae"):
-                        self.pipeline.vae = torch.compile(self.pipeline.vae, mode="reduce-overhead", fullgraph=False)
-                except Exception as compile_e:
-                    logger.warning(f"torch.compile non riuscito, si procede senza ottimizzazione: {compile_e}")
+                logger.info("Torch compile disabilitato per VRAM limitata")
                 if use_cpu_offload:
                     logger.info("Uso model CPU offload per evitare OOM (più veloce del sequential).")
                     self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
