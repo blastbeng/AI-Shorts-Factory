@@ -129,6 +129,8 @@ class KokoroProvider(BaseAIProvider):
         if torch.cuda.is_available():
             torch.cuda.synchronize()
             
+        import threading
+        logger.info(f"Kokoro generate thread: {threading.current_thread().name}")
         with torch.no_grad():
             audio_chunks = []
             for i, (graphemes, phonemes, audio) in enumerate(self.pipeline(text, voice=voice_name, speed=speed)):
