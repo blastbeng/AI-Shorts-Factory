@@ -288,7 +288,7 @@ class PipelineOrchestrator:
                             while len(scenes) < required_clips:
                                 scenes.append(scenes[-1])
                                 
-                        video_prompts = [f"Vertical short video based on this scene: {scene}. IMPORTANT: The video must NOT contain any text, letters, or words." for scene in scenes]
+                        video_prompts = [f"Vertical short video based on this scene: {scene}. If the scene involves characters or people, show them speaking or moving their lips as if talking. IMPORTANT: The video must NOT contain any text, letters, or words." for scene in scenes]
                         
                         if not ltx.health_check():
                             logger.warning("LTX Video non installato. Uso video dummy.")
@@ -328,11 +328,11 @@ class PipelineOrchestrator:
                         clean_storyboard = re.sub(r'\s+', ' ', clean_storyboard).strip()
                         
                         audio_prompt = (
-                            f"Generate a realistic and immersive audio track for a video scene. "
-                            f"Include ambient sounds, sound effects, and background music that match the following visual descriptions: {clean_storyboard}. "
-                            f"The audio should feel like a real scene, potentially including subtle background voices or narrative elements, "
-                            f"without any meta-text, scene numbers, or descriptions of what is happening. "
-                            f"Any voice or audio should be in the language: {self.profile.language}."
+                            f"Generate a realistic and immersive audio track synchronized with the video. "
+                            f"Include ambient sounds, sound effects, and background music. "
+                            f"Crucially, if there are characters speaking or moving their lips in the video, generate clear lipsync dialogue and voices matching their movements. "
+                            f"The audio should feel like a real scene, without any meta-text, scene numbers, or descriptions of what is happening. "
+                            f"Any voice or dialogue should be in the language: {self.profile.language}."
                         )
                         
                         if not mmaudio.health_check():
