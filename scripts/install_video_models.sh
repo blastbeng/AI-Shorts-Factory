@@ -17,7 +17,7 @@ fi
 
 LTX_DIR="./models/video/ltx_video"
 if [ ! -d "$LTX_DIR" ] || [ ! -f "$LTX_DIR/.download_complete" ]; then
-    ./scripts/download_models.sh "ltx_video" "Lightricks/LTX-Video-0.9.8" "$LTX_DIR" "video" "ltx_video"
+    ./scripts/download_models.sh "ltx_video" "Lightricks/LTX-Video-2b-v0.9.1-diffusers" "$LTX_DIR" "video" "ltx_video"
 else
     echo "[OK] Modello ltx_video già installato."
 fi
