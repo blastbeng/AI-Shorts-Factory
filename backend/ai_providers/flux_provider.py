@@ -125,10 +125,10 @@ class FluxProvider(BaseAIProvider):
         logger.info(f"Generazione immagine per prompt: {prompt}")
         image = self.pipeline(
             prompt, 
-            num_inference_steps=4,
+            num_inference_steps=8,
             guidance_scale=0.0,
-            height=640, 
-            width=360,
+            height=672, 
+            width=384,
             callback_on_step_end=progress_callback,
             callback_on_step_end_tensor_inputs=[]
         ).images[0]

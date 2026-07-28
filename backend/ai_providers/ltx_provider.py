@@ -178,10 +178,10 @@ Professional movie cinematography.
             video = self.pipeline(
                 image=current_image,
                 prompt=prompt,
-                num_inference_steps=12,
+                num_inference_steps=20,
                 num_frames=49,
-                height=576,
-                width=320,
+                height=672,
+                width=384,
                 guidance_scale=2.0,
                 generator=generator
             ).frames[0]
