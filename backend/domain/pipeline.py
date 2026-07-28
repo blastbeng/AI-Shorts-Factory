@@ -320,7 +320,21 @@ class PipelineOrchestrator:
                     mmaudio = MMAudioProvider()
                     try:
                         audio_path = f"output/audio_{self.job_id}.wav"
-                        audio_prompt = f"Sound effects and background music for these scenes: {storyboard}. Any voice or audio should be in the language: {self.profile.language}."
+                        
+                        # Pulisci lo storyboard dai numeri di scena e dai prefissi per evitare che vengano letti
+                        import re
+                        clean_storyboard = re.sub(r'(?i)\bSCENA\s*\d+[\:\.\-]?\s*', '', storyboard)
+                        clean_storyboard = re.sub(r'^\d+[\.\)]\s*', '', clean_storyboard, flags=re.MULTILINE)
+                        clean_storyboard = re.sub(r'\s+', ' ', clean_storyboard).strip()
+                        
+                        audio_prompt = (
+                            f"Generate a realistic and immersive audio track for a video scene. "
+                            f"Include ambient sounds, sound effects, and background music that match the following visual descriptions: {clean_storyboard}. "
+                            f"The audio should feel like a real scene, potentially including subtle background voices or narrative elements, "
+                            f"without any meta-text, scene numbers, or descriptions of what is happening. "
+                            f"Any voice or audio should be in the language: {self.profile.language}."
+                        )
+                        
                         if not mmaudio.health_check():
                             logger.warning("MMAudio non installato. Uso file audio dummy.")
                             self._generate_dummy_media("audio", audio_path)
