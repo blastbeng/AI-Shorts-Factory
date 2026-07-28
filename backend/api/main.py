@@ -79,6 +79,19 @@ log_environment_info()
 # Validazione configurazione
 ConfigValidator.validate_and_exit()
 
+# Inizializzazione del contesto CUDA nel thread principale per evitare deadlock con ROCm/PyTorch nei thread secondari
+try:
+    import torch
+    if torch.cuda.is_available():
+        logger.info("Inizializzazione contesto CUDA nel thread principale...")
+        torch.cuda.init()
+        dummy = torch.tensor([1.0], device="cuda")
+        del dummy
+        torch.cuda.empty_cache()
+        logger.info("Contesto CUDA inizializzato correttamente.")
+except Exception as e:
+    logger.error(f"Errore nell'inizializzazione del contesto CUDA: {e}")
+
 # Avvia il worker in background per processare i job avviati manualmente
 job_worker.start()
 logger.info("AutoScheduler non avviato automaticamente. Generazione manuale abilitata.")
