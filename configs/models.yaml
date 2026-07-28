@@ -7,7 +7,8 @@ audio:
 image:
   flux:
     backend: rocm
-    path: black-forest-labs/FLUX.1-schnell
+    model_path: models/image/flux1-schnell-Q8_0.gguf
+    t5_encoder_path: models/text/t5-v1_1-xxl-encoder-Q8_0.gguf
     status: installed
     vram_required_gb: 8
   qwen_image:

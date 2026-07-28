@@ -8,14 +8,22 @@ if [ ! -f "$PYTHON_BIN" ]; then
     PYTHON_BIN="python3"
 fi
 
-FLUX_DIR="./models/image/flux"
-if [ ! -d "$FLUX_DIR" ] || [ ! -f "$FLUX_DIR/.download_complete" ]; then
-    echo "[INFO] Flux verrà scaricato e quantizzato automaticamente da HuggingFace al primo avvio."
-    # Crea un marker fittizio per evitare che lo script venga rieseguito inutilmente
-    mkdir -p "$FLUX_DIR"
-    touch "$FLUX_DIR/.download_complete"
+FLUX_GGUF="./models/image/flux1-schnell-Q8_0.gguf"
+if [ ! -f "$FLUX_GGUF" ]; then
+    echo "[INFO] Downloading Flux GGUF model..."
+    mkdir -p "./models/image"
+    wget -O "$FLUX_GGUF" "https://huggingface.co/city96/FLUX.1-schnell-gguf/resolve/main/flux1-schnell-Q8_0.gguf"
 else
-    echo "[OK] Modello flux già configurato."
+    echo "[OK] Flux GGUF model already installed."
+fi
+
+T5_GGUF="./models/text/t5-v1_1-xxl-encoder-Q8_0.gguf"
+if [ ! -f "$T5_GGUF" ]; then
+    echo "[INFO] Downloading T5 encoder GGUF model..."
+    mkdir -p "./models/text"
+    wget -O "$T5_GGUF" "https://huggingface.co/city96/t5-v1_1-xxl-encoder-gguf/resolve/main/t5-v1_1-xxl-encoder-Q8_0.gguf"
+else
+    echo "[OK] T5 encoder GGUF model already installed."
 fi
 
 QWEN_DIR="./models/image/qwen_image"

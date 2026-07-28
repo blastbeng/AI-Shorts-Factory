@@ -2,6 +2,8 @@ import os
 import yaml
 import torch
 from diffusers import FluxPipeline
+from diffusers.quantizers import GGUFQuantizationConfig
+from transformers import T5EncoderModel
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger
@@ -11,6 +13,8 @@ class FluxProvider(BaseAIProvider):
         with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
             self.models_config = yaml.safe_load(f)
         self.model_info = self.models_config.get("image", {}).get("flux", {})
+        self.flux_gguf_path = self.model_info.get("model_path")
+        self.t5_gguf_path = self.model_info.get("t5_encoder_path")
         self.gm = GPUManager()
         self.pipeline = None
 
@@ -40,10 +44,18 @@ class FluxProvider(BaseAIProvider):
         device = self.gm.get_device_string(gpu['id'], preferred_backend=self.model_info.get("backend"))
         
         if self.pipeline is None:
-            logger.info("Caricamento pipeline Flux...")
-            model_path = self.model_info.get("path")
+            logger.info("Caricamento pipeline Flux GGUF...")
             try:
-                self.pipeline = FluxPipeline.from_pretrained(model_path, torch_dtype=torch.float16)
+                text_encoder = T5EncoderModel.from_single_file(
+                    self.t5_gguf_path,
+                    quantization_config=GGUFQuantizationConfig()
+                )
+                self.pipeline = FluxPipeline.from_single_file(
+                    self.flux_gguf_path,
+                    text_encoder=text_encoder,
+                    quantization_config=GGUFQuantizationConfig(),
+                    torch_dtype=torch.bfloat16
+                )
                 self.pipeline.enable_vae_tiling()
                 self.pipeline.vae.enable_slicing()
                 self.pipeline.enable_attention_slicing()
@@ -64,7 +76,16 @@ class FluxProvider(BaseAIProvider):
                     raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Flux richiede circa 24GB di RAM. Operazione annullata per evitare il blocco del sistema.")
                 
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso model CPU offload per evitare OOM.")
-                self.pipeline = FluxPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16)
+                text_encoder = T5EncoderModel.from_single_file(
+                    self.t5_gguf_path,
+                    quantization_config=GGUFQuantizationConfig()
+                )
+                self.pipeline = FluxPipeline.from_single_file(
+                    self.flux_gguf_path,
+                    text_encoder=text_encoder,
+                    quantization_config=GGUFQuantizationConfig(),
+                    torch_dtype=torch.bfloat16
+                )
                 self.pipeline.enable_vae_tiling()
                 self.pipeline.enable_vae_slicing()
                 self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
@@ -109,8 +130,16 @@ class FluxProvider(BaseAIProvider):
                 
                 # 3. Re-inizializza la pipeline da zero con sequential CPU offload
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Re-inizializzazione pipeline con sequential CPU offload.")
-                model_path = self.model_info.get("path")
-                self.pipeline = FluxPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16)
+                text_encoder = T5EncoderModel.from_single_file(
+                    self.t5_gguf_path,
+                    quantization_config=GGUFQuantizationConfig()
+                )
+                self.pipeline = FluxPipeline.from_single_file(
+                    self.flux_gguf_path,
+                    text_encoder=text_encoder,
+                    quantization_config=GGUFQuantizationConfig(),
+                    torch_dtype=torch.bfloat16
+                )
                 self.pipeline.enable_vae_tiling()
                 self.pipeline.enable_vae_slicing()
                 self.pipeline.enable_sequential_cpu_offload(gpu_id=gpu['device_index'])
