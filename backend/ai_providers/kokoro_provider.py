@@ -27,7 +27,8 @@ class KokoroProvider(BaseAIProvider):
         return self.install_status() == "installed"
 
     def load_model(self, lang_code="a"):
-        if self.model is not None:
+        if self.model is not None and self.pipeline is not None:
+            logger.info("Kokoro già caricato, riuso modello esistente")
             return
             
         reqs = self.get_gpu_requirements()
