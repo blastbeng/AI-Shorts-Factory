@@ -138,8 +138,7 @@ class LtxProvider(BaseAIProvider):
 Continue the previous scene seamlessly.
 Keep the same character and environment.
 Maintain dynamic camera continuity and motion.
-
-{prompt}
+Focus on the specific action for this clip: {prompt}
 """
             motion_prefix = """
 Cinematic video shot with dynamic camera movement.
