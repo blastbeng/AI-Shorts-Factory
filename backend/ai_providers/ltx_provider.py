@@ -98,9 +98,9 @@ class LtxProvider(BaseAIProvider):
             
             # Determine the conditioning image for this clip
             if i == 0 and image_path and os.path.exists(image_path):
-                # Load and resize the initial Flux image to match video dimensions (288x512)
+                # Load and resize the initial Flux image to match video dimensions (320x576)
                 init_image = Image.open(image_path).convert("RGB")
-                init_image = init_image.resize((288, 512), Image.LANCZOS)
+                init_image = init_image.resize((320, 576), Image.LANCZOS)
                 current_image = init_image
             elif temp_clips:
                 # Extract last frame of the previous clip
@@ -114,10 +114,10 @@ class LtxProvider(BaseAIProvider):
                     current_image = Image.fromarray(frame_rgb)
                 else:
                     logger.warning("Impossibile estrarre l'ultimo frame. Uso immagine nera.")
-                    current_image = Image.new("RGB", (288, 512), color="black")
+                    current_image = Image.new("RGB", (320, 576), color="black")
             else:
                 logger.warning("Nessuna immagine iniziale fornita. Uso immagine nera.")
-                current_image = Image.new("RGB", (288, 512), color="black")
+                current_image = Image.new("RGB", (320, 576), color="black")
 
             def progress_callback(pipe, step, timestep, callback_kwargs):
                 logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/8")
@@ -130,9 +130,9 @@ class LtxProvider(BaseAIProvider):
                 image=current_image,
                 prompt=prompt,
                 num_inference_steps=8,
-                height=512,
-                width=288,
-                num_frames=25,
+                height=576,
+                width=320,
+                num_frames=49,
                 guidance_scale=1.0,
                 callback_on_step_end=progress_callback,
                 callback_on_step_end_tensor_inputs=[]
@@ -140,9 +140,20 @@ class LtxProvider(BaseAIProvider):
 
             if isinstance(video, torch.Tensor):
                 video = video.cpu().numpy()
+            elif isinstance(video, list):
+                video = np.stack([
+                    np.array(frame)
+                    for frame in video
+                ])
 
-            # Converti da [0, 1] float32 a [0, 255] uint8
-            video = (video * 255).round().astype("uint8")
+            logger.info(f"LTX output type={type(video)}, shape={getattr(video, 'shape', None)}, dtype={getattr(video, 'dtype', None)}")
+
+            # Se è float [0,1], converti
+            if video.dtype != np.uint8:
+                if video.max() <= 1.0:
+                    video = (video * 255).round()
+
+                video = video.astype("uint8")
 
             temp_clip_path = output_path.replace(".mp4", f"_clip_{i}.mp4")
             frame_height, frame_width = video.shape[1], video.shape[2]
@@ -162,7 +173,7 @@ class LtxProvider(BaseAIProvider):
         cap.release()
         
         target_duration = kwargs.get("target_duration")
-        total_frames = len(temp_clips) * 25  # 25 frames per clip
+        total_frames = len(temp_clips) * 49  # 49 frames per clip
         if target_duration and total_frames > 0:
             fps = total_frames / target_duration
             logger.info(f"Adattamento FPS a {fps:.2f} per matchare la durata audio di {target_duration:.2f}s.")
