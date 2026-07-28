@@ -16,6 +16,7 @@ class LtxProvider(BaseAIProvider):
         with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
             self.models_config = yaml.safe_load(f)
         self.model_info = self.models_config.get("video", {}).get("ltx_video", {})
+        self.vae_path = self.model_info.get("vae_path")
         self.gm = GPUManager()
         self.pipeline = None
 
@@ -52,7 +53,12 @@ class LtxProvider(BaseAIProvider):
             try:
                 text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=torch.float16)
                 text_encoder.to("cpu")
-                self.pipeline = LTXImageToVideoPipeline.from_pretrained(model_path, text_encoder=text_encoder, torch_dtype=torch.float16)
+                self.pipeline = LTXImageToVideoPipeline.from_single_file(
+                    model_path,
+                    vae=self.vae_path,
+                    text_encoder=text_encoder,
+                    torch_dtype=torch.float16
+                )
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):
                     self.pipeline.vae.enable_slicing()
@@ -76,7 +82,12 @@ class LtxProvider(BaseAIProvider):
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso sequential CPU offload per evitare OOM.")
                 text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=torch.float16)
                 text_encoder.to("cpu")
-                self.pipeline = LTXImageToVideoPipeline.from_pretrained(model_path, text_encoder=text_encoder, torch_dtype=torch.float16)
+                self.pipeline = LTXImageToVideoPipeline.from_single_file(
+                    model_path,
+                    vae=self.vae_path,
+                    text_encoder=text_encoder,
+                    torch_dtype=torch.float16
+                )
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):
                     self.pipeline.vae.enable_slicing()
