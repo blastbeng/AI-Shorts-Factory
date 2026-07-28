@@ -106,11 +106,13 @@ class FluxProvider(BaseAIProvider):
                 logger.exception("Errore nel caricamento del modello Flux.")
                 raise e
             
+        steps = 8
+        
         def progress_callback(pipe, step, timestep, callback_kwargs):
-            logger.info(f"Flux generation progress: step {step + 1}/4")
+            logger.info(f"Flux generation progress: step {step + 1}/{steps}")
             if job_id:
                 from backend.services.progress_tracker import ProgressTracker
-                ProgressTracker().update(job_id, "image_generation", step + 1, 4, f"Flux generation progress: step {step + 1}/4")
+                ProgressTracker().update(job_id, "image_generation", step + 1, steps, f"Flux generation progress: step {step + 1}/{steps}")
             return callback_kwargs
 
         print(
@@ -125,7 +127,7 @@ class FluxProvider(BaseAIProvider):
         logger.info(f"Generazione immagine per prompt: {prompt}")
         image = self.pipeline(
             prompt, 
-            num_inference_steps=8,
+            num_inference_steps=steps,
             guidance_scale=0.0,
             height=672, 
             width=384,
