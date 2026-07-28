@@ -48,6 +48,8 @@ class PipelineOrchestrator:
             "image_generation",
             "video_generation",
             "video_upscaling",
+            "video_analysis",
+            "narration_generation",
             "voice_generation",
             "subtitle_generation",
             "audio_generation",
@@ -100,6 +102,8 @@ class PipelineOrchestrator:
         srt_path = ""
         storyboard = ""
         expanded_topic = ""
+        video_description = ""
+        narration = ""
         final_video_path = f"output/final_video_{self.job_id}.mp4"
         quality_score = 0.0
 
@@ -128,6 +132,10 @@ class PipelineOrchestrator:
                 video_path = s.result or ""
             elif s.stage_name == "audio_generation":
                 audio_path = s.result or ""
+            elif s.stage_name == "video_analysis":
+                video_description = s.result or ""
+            elif s.stage_name == "narration_generation":
+                narration = s.result or ""
             elif s.stage_name == "subtitle_generation":
                 srt_path = s.result or ""
 
@@ -217,14 +225,16 @@ class PipelineOrchestrator:
                         logger.warning("Kokoro TTS non installato. Uso file audio dummy.")
                         self._generate_dummy_media("audio", voice_path)
                     else:
-                        # Extract only the DIALOGUE lines for TTS to avoid reading scene headings and visual descriptions
-                        import re
-                        dialogue_matches = re.findall(r'(?i)DIALOGUE:\s*(.*)', script)
-                        if dialogue_matches:
-                            tts_text = " ".join(dialogue_matches)
+                        # Use the narration generated from video analysis, fallback to script dialogue if narration is empty
+                        if narration:
+                            tts_text = narration
                         else:
-                            # Fallback to the whole script if the format is not followed
-                            tts_text = script
+                            import re
+                            dialogue_matches = re.findall(r'(?i)DIALOGUE:\s*(.*)', script)
+                            if dialogue_matches:
+                                tts_text = " ".join(dialogue_matches)
+                            else:
+                                tts_text = script
                         
                         kokoro.generate(tts_text, voice_path, language=self.profile.language)
                     self._update_stage(stage, "completed", voice_path)
