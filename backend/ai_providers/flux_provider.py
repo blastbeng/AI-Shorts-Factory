@@ -66,6 +66,10 @@ class FluxProvider(BaseAIProvider):
                 self.pipeline.enable_vae_slicing()
                 self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
             
+        def progress_callback(pipe, step, timestep, callback_kwargs):
+            logger.info(f"Flux generation progress: step {step + 1}/4")
+            return callback_kwargs
+
         logger.info(f"Generazione immagine per prompt: {prompt}")
         try:
             image = self.pipeline(
@@ -73,7 +77,9 @@ class FluxProvider(BaseAIProvider):
                 num_inference_steps=4,
                 guidance_scale=0.0,
                 height=768, 
-                width=432
+                width=432,
+                callback_on_step_end=progress_callback,
+                callback_on_step_end_tensor_inputs=[]
             ).images[0]
         except RuntimeError as e:
             if "out of memory" in str(e).lower():
@@ -94,7 +100,9 @@ class FluxProvider(BaseAIProvider):
                     num_inference_steps=4,
                     guidance_scale=0.0,
                     height=768, 
-                    width=432
+                    width=432,
+                    callback_on_step_end=progress_callback,
+                    callback_on_step_end_tensor_inputs=[]
                 ).images[0]
             else:
                 raise e
