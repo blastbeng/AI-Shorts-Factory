@@ -53,10 +53,13 @@ class FluxProvider(BaseAIProvider):
         if self.pipeline is None:
             logger.info("Caricamento pipeline Flux GGUF...")
             try:
+                quant_config = GGUFQuantizationConfig(
+                    compute_dtype=torch.bfloat16
+                )
+
                 transformer = FluxTransformer2DModel.from_single_file(
                     self.flux_gguf_path,
-                    quantization_config=GGUFQuantizationConfig(),
-                    torch_dtype=torch.bfloat16
+                    quantization_config=quant_config
                 )
                 
                 pipeline_kwargs = {
