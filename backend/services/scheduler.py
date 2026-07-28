@@ -2,7 +2,7 @@ import threading
 import time
 from datetime import datetime, timedelta
 from backend.database.session import SessionLocal
-from backend.database.models import Job, GenerationProfile
+from backend.database.models import Job
 from backend.services.logger import logger
 
 class AutoScheduler:
@@ -45,29 +45,13 @@ class AutoScheduler:
                     time.sleep(60)
                     continue
 
-                profiles = db.query(GenerationProfile).all()
                 jobs_created_this_cycle = 0
-                
-                for profile in profiles:
-                    last_job = db.query(Job).filter(
-                        Job.profile_id == profile.id,
-                        Job.status.in_(["completed", "running"])
-                    ).order_by(Job.created_at.desc()).first()
-                    
-                    should_create = True
-                    if last_job:
-                        threshold = datetime.utcnow() - timedelta(minutes=self._interval_minutes)
-                        if last_job.created_at > threshold:
-                            should_create = False
-                    
-                    if should_create:
-                        new_job = Job(status="pending", profile_id=profile.id)
-                        db.add(new_job)
-                        db.commit()
-                        logger.info(f"[Scheduler] Nuovo job creato per profilo '{profile.name}' (ID: {new_job.id})")
-                        jobs_created_this_cycle += 1
-                        if jobs_created_this_cycle >= 3:
-                            break  # Crea un massimo di 3 job per ciclo
+                for _ in range(3):
+                    new_job = Job(status="pending")
+                    db.add(new_job)
+                    db.commit()
+                    logger.info(f"[Scheduler] Nuovo job creato automaticamente (ID: {new_job.id})")
+                    jobs_created_this_cycle += 1
                 
                 db.close()
                 time.sleep(60)

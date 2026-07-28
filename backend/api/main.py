@@ -19,7 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from backend.database.session import Base, engine, get_db, SessionLocal
-from backend.database.models import GenerationProfile, Job, Video, PipelineStage
+from backend.database.models import Job, Video, PipelineStage
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger, log_buffer
 from backend.services.social.tiktok_provider import TikTokProvider
@@ -110,8 +110,7 @@ else:
 os.makedirs("output", exist_ok=True)
 app.mount("/output", StaticFiles(directory="output"), name="output")
 
-class ProfileCreate(BaseModel):
-    name: str
+class JobCreate(BaseModel):
     genre: str = "random"
     custom_prompt: str = ""
     language: str = "italian"
@@ -150,18 +149,6 @@ def monitor():
         "gpus": gpus
     }
 
-@app.post("/profiles/")
-def create_profile(profile: ProfileCreate, db: Session = Depends(get_db)):
-    db_profile = GenerationProfile(**profile.dict())
-    db.add(db_profile)
-    db.commit()
-    db.refresh(db_profile)
-    return db_profile
-
-@app.get("/profiles/")
-def get_profiles(db: Session = Depends(get_db)):
-    return db.query(GenerationProfile).all()
-
 @app.post("/jobs/interrupt_all")
 def interrupt_all_jobs(db: Session = Depends(get_db)):
     jobs = db.query(Job).filter(Job.status.in_(["running", "pending"])).all()
@@ -170,13 +157,16 @@ def interrupt_all_jobs(db: Session = Depends(get_db)):
     db.commit()
     return {"status": "interrupted", "count": len(jobs)}
 
-@app.post("/jobs/{profile_id}")
-def start_job(profile_id: int, db: Session = Depends(get_db)):
-    profile = db.query(GenerationProfile).filter(GenerationProfile.id == profile_id).first()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-
-    job = Job(status="pending", profile_id=profile_id)
+@app.post("/jobs/")
+def start_job(job_params: JobCreate, db: Session = Depends(get_db)):
+    job = Job(
+        status="pending",
+        genre=job_params.genre,
+        custom_prompt=job_params.custom_prompt,
+        language=job_params.language,
+        style=job_params.style,
+        duration_seconds=job_params.duration_seconds
+    )
     db.add(job)
     db.commit()
     db.refresh(job)
@@ -304,18 +294,6 @@ def get_job_details(job_id: str, db: Session = Depends(get_db)):
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     stages = db.query(PipelineStage).filter(PipelineStage.job_id == job_id).order_by(PipelineStage.id).all()
-    
-    profile = db.query(GenerationProfile).filter(GenerationProfile.id == job.profile_id).first()
-    profile_data = None
-    if profile:
-        profile_data = {
-            "name": profile.name,
-            "genre": profile.genre,
-            "custom_prompt": profile.custom_prompt,
-            "language": profile.language,
-            "style": profile.style,
-            "duration_seconds": profile.duration_seconds
-        }
 
     video = db.query(Video).filter(Video.job_id == job_id).first()
     video_data = None
@@ -331,9 +309,12 @@ def get_job_details(job_id: str, db: Session = Depends(get_db)):
     return {
         "job_id": job.id,
         "status": job.status,
-        "profile_id": job.profile_id,
+        "genre": job.genre,
+        "custom_prompt": job.custom_prompt,
+        "language": job.language,
+        "style": job.style,
+        "duration_seconds": job.duration_seconds,
         "stages": [{"name": s.stage_name, "status": s.status, "result": s.result, "created_at": s.created_at, "updated_at": s.updated_at} for s in stages],
-        "profile": profile_data,
         "video": video_data
     }
 
@@ -386,7 +367,6 @@ def get_all_jobs(db: Session = Depends(get_db)):
         result.append({
             "id": j.id, 
             "status": j.status, 
-            "profile_id": j.profile_id,
             "progress": {
                 "completed": completed_stages,
                 "total": total_stages

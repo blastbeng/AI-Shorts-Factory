@@ -12,7 +12,7 @@ except RuntimeError:
 import threading
 import time
 from backend.database.session import SessionLocal
-from backend.database.models import Job, GenerationProfile
+from backend.database.models import Job
 from backend.domain.pipeline import PipelineOrchestrator
 from backend.services.logger import logger
 
@@ -52,17 +52,8 @@ class JobWorker:
                     db.commit()
                     logger.info(f"[Worker] Avvio elaborazione job {job.id}")
                     
-                    profile = db.query(GenerationProfile).filter(
-                        GenerationProfile.id == job.profile_id
-                    ).first()
-                    
-                    if not profile:
-                        job.status = "failed"
-                        db.commit()
-                        continue
-                    
                     try:
-                        orchestrator = PipelineOrchestrator(job.id, profile, db)
+                        orchestrator = PipelineOrchestrator(job.id, job, db)
                         result = orchestrator.run()
                         if result == "interrupted":
                             # Non sovrascrivere lo stato, è già "interrupted"

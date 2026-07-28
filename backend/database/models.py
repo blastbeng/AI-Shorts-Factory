@@ -18,7 +18,7 @@ class Job(Base):
     custom_prompt = Column(String, nullable=True)
     language = Column(String, default="italian")
     style = Column(String, default="default")
-    duration_seconds = Column(Integer, default=30)
+    duration_seconds = Column(Integer, default=16)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     videos = relationship("Video", backref="job")

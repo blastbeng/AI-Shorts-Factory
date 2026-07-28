@@ -114,13 +114,11 @@ export default function Home() {
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${apiUrl}/profiles/`, {
+      await fetch(`${apiUrl}/jobs/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: `Gen ${new Date().toLocaleString()}`, ...genParams })
+        body: JSON.stringify(genParams)
       });
-      const profile = await res.json();
-      await fetch(`${apiUrl}/jobs/${profile.id}`, { method: "POST" });
       setGenParams({ genre: "random", custom_prompt: "", language: "italian", duration_seconds: 16 });
       fetchData();
     } catch (error) {

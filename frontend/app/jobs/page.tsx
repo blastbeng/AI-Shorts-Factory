@@ -99,7 +99,7 @@ export default function JobsPage() {
                     className={`bg-gray-700/50 p-3 rounded-lg cursor-pointer hover:bg-gray-600 transition-colors ${selectedJob?.job_id === j.id ? 'ring-2 ring-blue-500' : ''}`}
                     onClick={() => fetchJobDetails(j.id)}
                   >
-                    <strong>Job {String(j.id).substring(0, 8)}</strong> (Profile: {j.profile_id}) - 
+                    <strong>Job {String(j.id).substring(0, 8)}</strong> - 
                     <span className={`ml-2 ${j.status === 'completed' ? 'text-green-400' : j.status === 'failed' ? 'text-red-400' : j.status === 'interrupted' ? 'text-orange-400' : 'text-yellow-400'}`}>
                       {j.status}
                     </span>
@@ -119,21 +119,18 @@ export default function JobsPage() {
               <div>
                 <p className="mb-4 text-sm">Stato generale: <strong>{selectedJob.status}</strong></p>
                 
-                {selectedJob.profile && (
-                  <div className="mt-4 mb-4 bg-gray-700/30 p-3 rounded-lg">
-                    <h3 className="text-sm font-semibold text-gray-300 mb-2">Parametri Profilo</h3>
-                    <ul className="text-xs text-gray-400 space-y-1">
-                      <li><strong>Nome:</strong> {selectedJob.profile.name}</li>
-                      <li><strong>Genere:</strong> {selectedJob.profile.genre}</li>
-                      <li><strong>Lingua:</strong> {selectedJob.profile.language}</li>
-                      <li><strong>Stile:</strong> {selectedJob.profile.style}</li>
-                      <li><strong>Durata:</strong> {selectedJob.profile.duration_seconds}s</li>
-                      {selectedJob.profile.custom_prompt && (
-                        <li className="mt-1"><strong>Prompt:</strong> {selectedJob.profile.custom_prompt}</li>
-                      )}
-                    </ul>
-                  </div>
-                )}
+                <div className="mt-4 mb-4 bg-gray-700/30 p-3 rounded-lg">
+                  <h3 className="text-sm font-semibold text-gray-300 mb-2">Parametri Job</h3>
+                  <ul className="text-xs text-gray-400 space-y-1">
+                    <li><strong>Genere:</strong> {selectedJob.genre}</li>
+                    <li><strong>Lingua:</strong> {selectedJob.language}</li>
+                    <li><strong>Stile:</strong> {selectedJob.style}</li>
+                    <li><strong>Durata:</strong> {selectedJob.duration_seconds}s</li>
+                    {selectedJob.custom_prompt && (
+                      <li className="mt-1"><strong>Prompt:</strong> {selectedJob.custom_prompt}</li>
+                    )}
+                  </ul>
+                </div>
 
                 {selectedJob.video && (
                   <div className="mt-4 mb-4 bg-gray-700/30 p-3 rounded-lg">
