@@ -31,7 +31,7 @@ text:
 video:
   ltx_video:
     backend: rocm
-    path: ./models/video/ltxv-13b-0.9.8-distilled-fp8
+    path: ./models/video/ltxv-13b-0.9.8-distilled-fp8.safetensors
     status: installed
     vram_required_gb: 12
   wan_2_1_1_3b:
