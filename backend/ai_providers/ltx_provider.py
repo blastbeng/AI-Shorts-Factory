@@ -51,13 +51,13 @@ class LtxProvider(BaseAIProvider):
             logger.info("Caricamento pipeline LTX Video (Img2Video)...")
             model_path = self.model_info.get("path")
             try:
-                text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=torch.float16)
+                text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=torch.bfloat16)
                 text_encoder.to("cpu")
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
                     vae=self.vae_path,
                     text_encoder=text_encoder,
-                    torch_dtype=torch.float16
+                    torch_dtype=torch.bfloat16
                 )
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):
@@ -80,13 +80,13 @@ class LtxProvider(BaseAIProvider):
                     raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Operazione annullata per evitare il blocco del sistema.")
                 
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso sequential CPU offload per evitare OOM.")
-                text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=torch.float16)
+                text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=torch.bfloat16)
                 text_encoder.to("cpu")
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
                     vae=self.vae_path,
                     text_encoder=text_encoder,
-                    torch_dtype=torch.float16
+                    torch_dtype=torch.bfloat16
                 )
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):
