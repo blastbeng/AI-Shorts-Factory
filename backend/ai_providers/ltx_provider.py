@@ -46,7 +46,7 @@ class LtxProvider(BaseAIProvider):
                 dtype = torch.float16
                 
                 text_encoder = T5EncoderModel.from_pretrained(
-                    "google/t5-v1_1-xxl",
+                    "google/t5-v1_1-xl",
                     torch_dtype=torch.float16,
                     low_cpu_mem_usage=True
                 )
@@ -84,7 +84,7 @@ class LtxProvider(BaseAIProvider):
                 dtype = torch.float16
                 
                 text_encoder = T5EncoderModel.from_pretrained(
-                    "google/t5-v1_1-xxl",
+                    "google/t5-v1_1-xl",
                     torch_dtype=torch.float16,
                     low_cpu_mem_usage=True
                 )
