@@ -63,7 +63,7 @@ class LtxProvider(BaseAIProvider):
                     text_encoder=text_encoder,
                     torch_dtype=torch.float16,
                     config="Lightricks/LTX-Video",
-                    local_files_only=False
+                    original_config_file="ltxv-13b-0.9.8-distilled-fp8.yaml"
                 )
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):
@@ -102,7 +102,7 @@ class LtxProvider(BaseAIProvider):
                     text_encoder=text_encoder,
                     torch_dtype=torch.float16,
                     config="Lightricks/LTX-Video",
-                    local_files_only=False
+                    original_config_file="ltxv-13b-0.9.8-distilled-fp8.yaml"
                 )
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):
