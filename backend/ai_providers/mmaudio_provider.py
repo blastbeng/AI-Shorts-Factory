@@ -1,6 +1,8 @@
 import os
 import yaml
 import torch
+import cv2
+import numpy as np
 import scipy.io.wavfile as wavfile
 from transformers import AutoProcessor, AutoModel
 from backend.ai_providers.base_provider import BaseAIProvider
@@ -68,20 +70,43 @@ class MMAudioProvider(BaseAIProvider):
             
         logger.info(f"Generazione audio per prompt: {prompt}, video: {video_path}")
         if video_path and os.path.exists(video_path):
-            # Video-to-Audio: genera audio sincronizzato con il video (lipsync, suoni ambientali realistici)
-            inputs = self.processor(text=prompt, video=video_path, return_tensors="pt")
+            # Load video frames
+            cap = cv2.VideoCapture(video_path)
+            frames = []
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                frames.append(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+            cap.release()
+            
+            # Process in chunks of 49 frames to match video generation and ensure sync
+            chunk_size = 49
+            audio_chunks = []
+            model_device = next(self.model.parameters()).device
+            total_chunks = (len(frames) - 1) // chunk_size + 1
+            
+            for i in range(0, len(frames), chunk_size):
+                chunk = frames[i:i+chunk_size]
+                chunk_num = i // chunk_size + 1
+                logger.info(f"Generazione audio per chunk {chunk_num}/{total_chunks} ({len(chunk)} frames)")
+                inputs = self.processor(text=prompt, video=chunk, return_tensors="pt")
+                inputs = {k: v.to(model_device) for k, v in inputs.items()}
+                with torch.no_grad():
+                    audio_values = self.model.generate(**inputs)
+                audio_chunks.append(audio_values.cpu().numpy().squeeze())
+            
+            audio_values = np.concatenate(audio_chunks)
         else:
             # Text-to-Audio: fallback solo testo
             inputs = self.processor(text=prompt, return_tensors="pt")
-        # Move inputs to the model's actual device (handles device_map="auto")
-        model_device = next(self.model.parameters()).device
-        inputs = {k: v.to(model_device) for k, v in inputs.items()}
-        
-        with torch.no_grad():
-            audio_values = self.model.generate(**inputs)
+            model_device = next(self.model.parameters()).device
+            inputs = {k: v.to(model_device) for k, v in inputs.items()}
+            with torch.no_grad():
+                audio_values = self.model.generate(**inputs)
+            audio_values = audio_values.cpu().numpy().squeeze()
             
         sampling_rate = self.model.config.audio_encoder.sampling_rate
-        audio_values = audio_values.cpu().numpy().squeeze()
         # Converti da float32 [-1, 1] a int16
         audio_values = (audio_values * 32767).astype("int16")
         wavfile.write(output_path, sampling_rate, audio_values)
