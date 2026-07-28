@@ -10,15 +10,6 @@ type Stage = {
   updated_at: string;
 };
 
-type Profile = {
-  name: string;
-  genre: string;
-  custom_prompt: string;
-  language: string;
-  style: string;
-  duration_seconds: number;
-};
-
 type Video = {
   id: number;
   file_path: string;
@@ -30,9 +21,12 @@ type Video = {
 type JobDetails = {
   job_id: string;
   status: string;
-  profile_id: number;
+  genre: string;
+  custom_prompt: string | null;
+  language: string;
+  style: string;
+  duration_seconds: number;
   stages: Stage[];
-  profile: Profile | null;
   video: Video | null;
 };
 
