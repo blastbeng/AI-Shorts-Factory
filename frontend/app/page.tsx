@@ -15,7 +15,6 @@ type Video = {
 type Job = {
   id: string;
   status: string;
-  profile_id: number;
   progress: {
     completed: number;
     total: number;

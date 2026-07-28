@@ -31,7 +31,7 @@ type JobDetails = {
 };
 
 export default function JobsPage() {
-  const [jobs, setJobs] = useState<{ id: string; status: string; profile_id: number }[]>([]);
+  const [jobs, setJobs] = useState<{ id: string; status: string; progress: { completed: number; total: number } }[]>([]);
   const [selectedJob, setSelectedJob] = useState<JobDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
