@@ -8,6 +8,7 @@ image:
   flux:
     backend: rocm
     model_path: models/image/flux1-schnell-Q8_0.gguf
+    t5_encoder_path: models/image/t5-v1_1-xxl-encoder-fp16
     status: installed
     vram_required_gb: 20
     use_cpu_offload: true

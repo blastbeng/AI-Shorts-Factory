@@ -59,13 +59,19 @@ class FluxProvider(BaseAIProvider):
                     "torch_dtype": torch.float16
                 }
 
-                # Handle GGUF T5 encoder if specified
-                if self.t5_gguf_path and self.t5_gguf_path.endswith(".gguf"):
-                    text_encoder_2 = T5EncoderModel.from_pretrained(
-                        os.path.dirname(self.t5_gguf_path),
-                        gguf_file=os.path.basename(self.t5_gguf_path),
-                        torch_dtype=torch.float16
-                    )
+                if self.t5_gguf_path:
+                    if self.t5_gguf_path.endswith(".gguf"):
+                        text_encoder_2 = T5EncoderModel.from_pretrained(
+                            os.path.dirname(self.t5_gguf_path),
+                            gguf_file=os.path.basename(self.t5_gguf_path),
+                            torch_dtype=torch.float16
+                        )
+                    else:
+                        text_encoder_2 = T5EncoderModel.from_pretrained(
+                            self.t5_gguf_path,
+                            torch_dtype=torch.float16,
+                            local_files_only=True
+                        )
                     pipeline_kwargs["text_encoder_2"] = text_encoder_2
                 
                 self.pipeline = FluxPipeline.from_pretrained(
@@ -74,9 +80,6 @@ class FluxProvider(BaseAIProvider):
                 )
                 self.pipeline.enable_vae_tiling()
                 self.pipeline.vae.enable_slicing()
-                
-                # Keep T5 encoder (text_encoder_2) on CPU to save VRAM
-                self.pipeline.text_encoder_2.to(dtype=torch.float16, device="cpu")
                 
                 # Determine if we need CPU offload based on VRAM
                 use_offload = gpu['vram_gb'] < 20
@@ -87,7 +90,8 @@ class FluxProvider(BaseAIProvider):
                     logger.info(f"VRAM {gpu['vram_gb']}GB >= 20GB, caricamento su GPU.")
                     self.pipeline.to(f"cuda:{gpu['id']}")
                     # Ensure T5 stays on CPU even if pipeline is moved to GPU
-                    self.pipeline.text_encoder_2.to("cpu")
+                    if hasattr(self.pipeline, "text_encoder_2") and self.pipeline.text_encoder_2:
+                        self.pipeline.text_encoder_2.to("cpu")
             except Exception as e:
                 logger.exception("Errore nel caricamento del modello Flux.")
                 raise e
