@@ -65,6 +65,11 @@ export default function JobsPage() {
 
   useEffect(() => {
     fetchJobs();
+    const params = new URLSearchParams(window.location.search);
+    const jobId = params.get("job_id");
+    if (jobId) {
+      fetchJobDetails(jobId);
+    }
     const interval = setInterval(fetchJobs, 5000);
     return () => clearInterval(interval);
   }, []);
