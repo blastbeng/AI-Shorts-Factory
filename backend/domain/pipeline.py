@@ -348,7 +348,8 @@ class PipelineOrchestrator:
                             f"Include ambient sounds, sound effects, and background music. "
                             f"Crucially, if there are characters speaking or moving their lips in the video, generate clear lipsync dialogue and voices matching their movements. "
                             f"The audio should feel like a real scene, without any meta-text, scene numbers, or descriptions of what is happening. "
-                            f"Any voice or dialogue should be in the language: {self.profile.language}."
+                            f"Any voice or dialogue should be in the language: {self.profile.language}. "
+                            f"Scene context: {clean_storyboard}"
                         )
                         
                         if not mmaudio.health_check():
