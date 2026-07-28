@@ -80,7 +80,7 @@ class KokoroProvider(BaseAIProvider):
             logger.info("Kokoro: spostamento GPU...")
             self.model = self.model.to(
                 device=torch.device(device),
-                dtype=torch.float16
+                dtype=torch.float32
             )
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
