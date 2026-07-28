@@ -115,19 +115,6 @@ class WanProvider(BaseAIProvider):
                     ProgressTracker().update(job_id, "video_generation", step + 1, 15, f"Generazione clip {i+1}/{len(prompts)}: step {step + 1}/15")
                 return callback_kwargs
 
-            # Aggiungi parametri per video verticale (Shorts)
-            last_frame = None
-            if temp_clips:
-                prev_cap = cv2.VideoCapture(temp_clips[-1])
-                total_frames = int(prev_cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                prev_cap.set(cv2.CAP_PROP_POS_FRAMES, max(0, total_frames - 1))
-                ret, last_frame_bgr = prev_cap.read()
-                prev_cap.release()
-                if ret:
-                    last_frame_rgb = cv2.cvtColor(last_frame_bgr, cv2.COLOR_BGR2RGB)
-                    from PIL import Image
-                    last_frame = Image.fromarray(last_frame_rgb)
-
             generate_kwargs = {
                 "prompt": prompt,
                 "num_inference_steps": 15,
@@ -138,8 +125,6 @@ class WanProvider(BaseAIProvider):
                 "callback_on_step_end": progress_callback,
                 "callback_on_step_end_tensor_inputs": []
             }
-            if last_frame is not None:
-                generate_kwargs["image"] = last_frame
 
             video = self.pipeline(**generate_kwargs).frames[0]
 
