@@ -20,4 +20,38 @@ genres:
   - "Noir"
   - "Psicologico"
 
-random_prompt_instruction: "Genera un'idea creativa, audace, originale e un po' trasgressiva per un video short di genere {genre}. L'idea deve essere specifica, coinvolgente e adatta a catturare l'attenzione su TikTok/Shorts. Restituisci solo l'idea, senza testo extra o commenti."
+settings:
+  - "in an abandoned spaceship"
+  - "in a neon-lit futuristic city"
+  - "in a quiet suburban neighborhood"
+  - "in a dense, ancient forest"
+  - "in a bustling 1920s jazz club"
+  - "in a snowy mountain cabin"
+  - "in an underground secret laboratory"
+  - "on a deserted tropical island"
+  - "in a medieval castle"
+  - "in a cyberpunk hacker den"
+
+characters:
+  - "a cynical detective"
+  - "an ambitious scientist"
+  - "a rogue AI"
+  - "a time-traveling historian"
+  - "a struggling artist"
+  - "a retired superhero"
+  - "a mysterious stranger"
+  - "a curious child"
+  - "an alien in disguise"
+  - "a treasure hunter"
+
+twists:
+  - "with an unexpected plot twist at the end"
+  - "where nothing is as it seems"
+  - "featuring a shocking betrayal"
+  - "with a cliffhanger ending"
+  - "where the protagonist discovers a hidden power"
+  - "with a dark secret revealed"
+  - "featuring an ironic coincidence"
+  - "where the villain is actually the hero"
+
+random_prompt_instruction: "Genera un'idea creativa, audace, originale e un po' trasgressiva per un video short di genere {genre}. L'idea deve essere ambientata {setting} e avere come protagonista {character}, {twist}. L'idea deve essere specifica, coinvolgente e adatta a catturare l'attenzione su TikTok/Shorts. Restituisci solo l'idea, senza testo extra o commenti."

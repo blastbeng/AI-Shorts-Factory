@@ -43,8 +43,8 @@ class LLMProvider(BaseAIProvider):
             self.flash_attn = False
             self.type_k = 0  # Default (F16)
             self.type_v = 0  # Default (F16)
-            self.temperature = 0.8
-            self.top_p = 0.95
+            self.temperature = 1.1
+            self.top_p = 0.98
             self.top_k = 40
             self.repeat_penalty = 1.1
             
