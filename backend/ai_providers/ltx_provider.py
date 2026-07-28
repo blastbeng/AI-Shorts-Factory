@@ -104,10 +104,10 @@ class LtxProvider(BaseAIProvider):
                 init_image = init_image.resize((320, 576), Image.LANCZOS)
                 current_image = init_image
             elif temp_clips:
-                # Extract last frame of the previous clip
+                # Extract a frame slightly before the end of the previous clip to avoid drift
                 prev_cap = cv2.VideoCapture(temp_clips[-1])
                 total_frames = int(prev_cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                prev_cap.set(cv2.CAP_PROP_POS_FRAMES, max(0, total_frames - 1))
+                prev_cap.set(cv2.CAP_PROP_POS_FRAMES, max(0, total_frames - 5))
                 ret, frame_bgr = prev_cap.read()
                 prev_cap.release()
                 if ret:
@@ -120,11 +120,15 @@ class LtxProvider(BaseAIProvider):
                 logger.warning("Nessuna immagine iniziale fornita. Uso immagine nera.")
                 current_image = Image.new("RGB", (320, 576), color="black")
 
+            # Add continuity prompt for subsequent clips
+            if i > 0:
+                prompt = f"Continue the previous scene. Same character, same clothing, same environment. Maintain visual consistency. {prompt}"
+
             def progress_callback(pipe, step, timestep, callback_kwargs):
-                logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/10")
+                logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/12")
                 if job_id:
                     from backend.services.progress_tracker import ProgressTracker
-                    ProgressTracker().update(job_id, "video_generation", step + 1, 10, f"Generazione clip {i+1}/{len(prompts)}: step {step + 1}/10")
+                    ProgressTracker().update(job_id, "video_generation", step + 1, 12, f"Generazione clip {i+1}/{len(prompts)}: step {step + 1}/12")
                 return callback_kwargs
 
             # Always generate 49 frames per clip to ensure consistent motion and audio sync
@@ -133,7 +137,7 @@ class LtxProvider(BaseAIProvider):
             video = self.pipeline(
                 image=current_image,
                 prompt=prompt,
-                num_inference_steps=10,
+                num_inference_steps=12,
                 height=576,
                 width=320,
                 num_frames=num_frames,
