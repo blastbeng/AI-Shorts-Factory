@@ -92,14 +92,19 @@ class WanProvider(BaseAIProvider):
                     self.pipeline.enable_vae_slicing()
                 self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
 
+        import gc
+        gc.collect()
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
+        
         logger.info(f"Generazione video per prompt: {prompt}")
         # Aggiungi parametri per video verticale (Shorts)
         video = self.pipeline(
             prompt, 
             num_inference_steps=20, 
-            height=960, 
-            width=544,
-            num_frames=49
+            height=832, 
+            width=480,
+            num_frames=16
         ).frames[0]
 
         if isinstance(video, torch.Tensor):
