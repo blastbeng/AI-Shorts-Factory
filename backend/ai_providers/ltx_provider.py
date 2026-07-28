@@ -48,18 +48,19 @@ class LtxProvider(BaseAIProvider):
                 text_encoder = T5EncoderModel.from_pretrained(
                     "google/t5-v1_1-xxl",
                     torch_dtype=torch.float16,
-                    device_map="cpu",
                     low_cpu_mem_usage=True
                 )
                 text_encoder.eval()
-                text_encoder.to("cpu")
                 
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
                     text_encoder=text_encoder,
-                    torch_dtype=dtype,
+                    torch_dtype=torch.float16,
                     low_cpu_mem_usage=True
                 )
+                del text_encoder
+                import gc
+                gc.collect()
                 self.pipeline.vae.enable_slicing()
                 self.pipeline.vae.enable_tiling()
                 self.pipeline.enable_attention_slicing("max")
@@ -85,18 +86,19 @@ class LtxProvider(BaseAIProvider):
                 text_encoder = T5EncoderModel.from_pretrained(
                     "google/t5-v1_1-xxl",
                     torch_dtype=torch.float16,
-                    device_map="cpu",
                     low_cpu_mem_usage=True
                 )
                 text_encoder.eval()
-                text_encoder.to("cpu")
                 
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
                     text_encoder=text_encoder,
-                    torch_dtype=dtype,
+                    torch_dtype=torch.float16,
                     low_cpu_mem_usage=True
                 )
+                del text_encoder
+                import gc
+                gc.collect()
                 self.pipeline.vae.enable_slicing()
                 self.pipeline.vae.enable_tiling()
                 self.pipeline.enable_attention_slicing("max")
