@@ -11,7 +11,7 @@ imageio
 librosa
 scipy
 transformers
-diffusers
+git+https://github.com/huggingface/diffusers.git
 kokoro
 spacy
 huggingface_hub
