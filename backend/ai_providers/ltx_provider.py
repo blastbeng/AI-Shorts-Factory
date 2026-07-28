@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import cv2
 from PIL import Image
-from diffusers import LTXImageToVideoPipeline
+from diffusers import LTXImageToVideoPipeline, AutoencoderKL
 from transformers import T5EncoderModel
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
@@ -55,11 +55,13 @@ class LtxProvider(BaseAIProvider):
                 dtype = torch.float16
                 text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=dtype)
                 text_encoder.to("cpu")
+                vae = AutoencoderKL.from_single_file(self.vae_path, torch_dtype=dtype)
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
-                    vae=self.vae_path,
+                    vae=vae,
                     text_encoder=text_encoder,
-                    torch_dtype=dtype
+                    torch_dtype=dtype,
+                    config="Lightricks/LTX-Video"
                 )
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):
@@ -89,11 +91,13 @@ class LtxProvider(BaseAIProvider):
                 dtype = torch.float16
                 text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=dtype)
                 text_encoder.to("cpu")
+                vae = AutoencoderKL.from_single_file(self.vae_path, torch_dtype=dtype)
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
-                    vae=self.vae_path,
+                    vae=vae,
                     text_encoder=text_encoder,
-                    torch_dtype=dtype
+                    torch_dtype=dtype,
+                    config="Lightricks/LTX-Video"
                 )
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):

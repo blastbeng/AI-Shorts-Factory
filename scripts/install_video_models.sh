@@ -16,16 +16,16 @@ else
 fi
 
 LTX_DIR="./models/video/ltx_video"
-LTX_MODEL="$LTX_DIR/ltx-video-13b-0.9.8-distilled.safetensors"
+LTX_MODEL="$LTX_DIR/ltxv-13b-0.9.8-distilled.safetensors"
 LTX_VAE_DIR="$LTX_DIR/vae"
-LTX_VAE="$LTX_VAE_DIR/ltx-video-13b-0.9.8-vae.safetensors"
+LTX_VAE="$LTX_VAE_DIR/LTXV-13B-0.9.8-distilled-VAE.safetensors"
 
 if [ ! -f "$LTX_MODEL" ] || [ ! -f "$LTX_VAE" ]; then
     mkdir -p "$LTX_DIR" "$LTX_VAE_DIR"
-    echo "Downloading ltx-video-13b-0.9.8-distilled.safetensors..."
-    wget -q --show-progress -O "$LTX_MODEL" "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltx-video-13b-0.9.8-distilled.safetensors"
-    echo "Downloading ltx-video-13b-0.9.8-vae.safetensors..."
-    wget -q --show-progress -O "$LTX_VAE" "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltx-video-13b-0.9.8-vae.safetensors"
+    echo "Downloading ltxv-13b-0.9.8-distilled.safetensors..."
+    wget -q --show-progress -O "$LTX_MODEL" "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltxv-13b-0.9.8-distilled.safetensors"
+    echo "Downloading LTXV-13B-0.9.8-distilled-VAE.safetensors..."
+    wget -q --show-progress -O "$LTX_VAE" "https://huggingface.co/QuantStack/LTXV-13B-0.9.8-distilled-GGUF/resolve/main/vae/LTXV-13B-0.9.8-distilled-VAE.safetensors"
     touch "$LTX_DIR/.download_complete"
 else
     echo "[OK] Modello ltx_video già installato."
