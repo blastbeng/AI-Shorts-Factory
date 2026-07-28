@@ -316,11 +316,36 @@ export default function Home() {
                           )}
                         </div>
                       </div>
-                      {progress[j.id] && progress[j.id].stage && (
-                        <p className="text-xs text-blue-400 mb-2 truncate">
-                          {progress[j.id].message} ({progress[j.id].current_step}/{progress[j.id].total_steps})
-                        </p>
-                      )}
+                      {progress[j.id] && progress[j.id].stage && (() => {
+                        const p = progress[j.id];
+                        let etaInfo = null;
+                        if (p.start_time && p.updated_time && p.total_steps > 0 && p.current_step > 0) {
+                          const elapsed = p.updated_time - p.start_time;
+                          const stepsRemaining = p.total_steps - p.current_step;
+                          const timePerStep = elapsed / p.current_step;
+                          const etaSeconds = Math.round(timePerStep * stepsRemaining);
+                          const endTimeMs = (p.updated_time + etaSeconds) * 1000;
+                          
+                          const mins = Math.floor(etaSeconds / 60);
+                          const secs = etaSeconds % 60;
+                          const etaStr = `${mins}m ${secs}s`;
+                          const endStr = new Date(endTimeMs).toLocaleTimeString();
+                          
+                          etaInfo = (
+                            <p className="text-xs text-gray-400 mt-1">
+                              ETA: {etaStr} (Fine: {endStr})
+                            </p>
+                          );
+                        }
+                        return (
+                          <div className="mb-2">
+                            <p className="text-xs text-blue-400 truncate">
+                              {p.message} ({p.current_step}/{p.total_steps})
+                            </p>
+                            {etaInfo}
+                          </div>
+                        );
+                      })()}
                       {j.progress.total > 0 ? (
                         <div className="w-full bg-gray-600 rounded-full h-1.5">
                           <div className="bg-blue-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${progressPercent}%` }}></div>
