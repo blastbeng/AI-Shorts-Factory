@@ -20,6 +20,12 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 echo "Installazione delle librerie Python di base..."
 pip install -r requirements.txt
 
+echo "Reinstallazione di PyTorch con supporto ROCm per GPU AMD (dopo requirements.txt)..."
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.4 --force-reinstall
+
+echo "Installazione di torchcodec 0.9.1 (CPU) per compatibilità ROCm..."
+pip install torchcodec==0.9.1 --index-url https://download.pytorch.org/whl/cpu --force-reinstall
+
 echo "Verifica dei modelli linguistici SpaCy per Kokoro TTS..."
 for model in en_core_web_sm it_core_news_sm es_core_news_sm fr_core_news_sm de_core_news_sm; do
     if ! python -c "import spacy; spacy.load('$model')" 2>/dev/null; then
