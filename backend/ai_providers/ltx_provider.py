@@ -162,8 +162,6 @@ Camera movement continues smoothly.
                 image=current_image,
                 prompt=prompt,
                 num_inference_steps=12,
-                height=576,
-                width=320,
                 num_frames=num_frames,
                 guidance_scale=1.5,
                 callback_on_step_end=progress_callback,
