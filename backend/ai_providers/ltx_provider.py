@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import cv2
 from PIL import Image
-from diffusers import LTXImageToVideoPipeline, AutoencoderKLLTXVideo
+from diffusers import LTXImageToVideoPipeline
 from transformers import T5EncoderModel
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
@@ -54,12 +54,9 @@ class LtxProvider(BaseAIProvider):
                 dtype = torch.float16
                 text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=dtype)
                 text_encoder.to("cpu")
-                vae = AutoencoderKLLTXVideo.from_pretrained("Lightricks/LTX-Video", torch_dtype=dtype)
-                vae.to("cpu")
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
                     text_encoder=text_encoder,
-                    vae=vae,
                     torch_dtype=torch.float16
                 )
                 self.pipeline.enable_attention_slicing()
@@ -90,12 +87,9 @@ class LtxProvider(BaseAIProvider):
                 dtype = torch.float16
                 text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=dtype)
                 text_encoder.to("cpu")
-                vae = AutoencoderKLLTXVideo.from_pretrained("Lightricks/LTX-Video", torch_dtype=dtype)
-                vae.to("cpu")
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
                     text_encoder=text_encoder,
-                    vae=vae,
                     torch_dtype=torch.float16
                 )
                 self.pipeline.enable_attention_slicing()
