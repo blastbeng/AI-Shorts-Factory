@@ -48,7 +48,7 @@ class FluxProvider(BaseAIProvider):
             try:
                 transformer = FluxTransformer2DModel.from_single_file(
                     self.flux_gguf_path,
-                    quantization_config=PipelineQuantizationConfig(),
+                    quantization_config=PipelineQuantizationConfig(quant_backend="gguf"),
                     torch_dtype=torch.float16
                 )
                 text_encoder = T5EncoderModel.from_pretrained(
@@ -84,7 +84,7 @@ class FluxProvider(BaseAIProvider):
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso model CPU offload per evitare OOM.")
                 transformer = FluxTransformer2DModel.from_single_file(
                     self.flux_gguf_path,
-                    quantization_config=PipelineQuantizationConfig(),
+                    quantization_config=PipelineQuantizationConfig(quant_backend="gguf"),
                     torch_dtype=torch.float16
                 )
                 text_encoder = T5EncoderModel.from_pretrained(
@@ -144,7 +144,7 @@ class FluxProvider(BaseAIProvider):
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Re-inizializzazione pipeline con sequential CPU offload.")
                 transformer = FluxTransformer2DModel.from_single_file(
                     self.flux_gguf_path,
-                    quantization_config=PipelineQuantizationConfig(),
+                    quantization_config=PipelineQuantizationConfig(quant_backend="gguf"),
                     torch_dtype=torch.float16
                 )
                 text_encoder = T5EncoderModel.from_pretrained(
