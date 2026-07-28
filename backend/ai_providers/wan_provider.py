@@ -107,17 +107,17 @@ class WanProvider(BaseAIProvider):
             logger.info(f"Generazione clip {i+1}/{len(prompts)} per prompt: {prompt}")
             
             def progress_callback(pipe, step, timestep, callback_kwargs):
-                logger.info(f"Wan generation progress (clip {i+1}): step {step + 1}/20")
+                logger.info(f"Wan generation progress (clip {i+1}): step {step + 1}/15")
                 return callback_kwargs
 
             # Aggiungi parametri per video verticale (Shorts)
             video = self.pipeline(
                 prompt, 
-                num_inference_steps=20, 
-                height=384, 
-                width=672,
-                num_frames=33,
-                guidance_scale=4.5,
+                num_inference_steps=15, 
+                height=320, 
+                width=576,
+                num_frames=25,
+                guidance_scale=4.0,
                 callback_on_step_end=progress_callback,
                 callback_on_step_end_tensor_inputs=[]
             ).frames[0]
