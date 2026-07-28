@@ -52,16 +52,14 @@ class LtxProvider(BaseAIProvider):
             try:
                 model_path = os.path.abspath(self.model_info.get("path"))
                 config_path = os.path.abspath(self.model_info.get("config_path"))
-                dtype = torch.float16
+                dtype = torch.bfloat16
                 
                 if not os.path.exists(config_path):
                     raise FileNotFoundError(f"LTX config non trovata: {config_path}")
                 
                 text_encoder = T5EncoderModel.from_pretrained(
-                    "Lightricks/LTX-Video",
-                    subfolder="text_encoder",
-                    revision="main",
-                    torch_dtype=dtype
+                    "google/t5-v1_1-xxl",
+                    torch_dtype=torch.float16
                 )
                 text_encoder.eval()
                 text_encoder.to("cpu")
@@ -71,11 +69,8 @@ class LtxProvider(BaseAIProvider):
                     text_encoder=text_encoder,
                     torch_dtype=dtype,
                     original_config_file=config_path,
-                    low_cpu_mem_usage=False,
-                    load_safety_checker=False
+                    low_cpu_mem_usage=True
                 )
-                self.pipeline.transformer.to(dtype=dtype)
-                self.pipeline.enable_attention_slicing("max")
                 self.pipeline.vae.enable_slicing()
                 self.pipeline.vae.enable_tiling()
                 if use_cpu_offload:
@@ -99,16 +94,14 @@ class LtxProvider(BaseAIProvider):
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso sequential CPU offload per evitare OOM.")
                 model_path = os.path.abspath(self.model_info.get("path"))
                 config_path = os.path.abspath(self.model_info.get("config_path"))
-                dtype = torch.float16
+                dtype = torch.bfloat16
                 
                 if not os.path.exists(config_path):
                     raise FileNotFoundError(f"LTX config non trovata: {config_path}")
                 
                 text_encoder = T5EncoderModel.from_pretrained(
-                    "Lightricks/LTX-Video",
-                    subfolder="text_encoder",
-                    revision="main",
-                    torch_dtype=dtype
+                    "google/t5-v1_1-xxl",
+                    torch_dtype=torch.float16
                 )
                 text_encoder.eval()
                 text_encoder.to("cpu")
@@ -118,11 +111,8 @@ class LtxProvider(BaseAIProvider):
                     text_encoder=text_encoder,
                     torch_dtype=dtype,
                     original_config_file=config_path,
-                    low_cpu_mem_usage=False,
-                    load_safety_checker=False
+                    low_cpu_mem_usage=True
                 )
-                self.pipeline.transformer.to(dtype=dtype)
-                self.pipeline.enable_attention_slicing("max")
                 self.pipeline.vae.enable_slicing()
                 self.pipeline.vae.enable_tiling()
                 self.pipeline.enable_sequential_cpu_offload()
