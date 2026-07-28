@@ -160,8 +160,9 @@ Professional movie cinematography, high quality.
 
             prompt = motion_prefix + prompt
 
+            import random
             steps = 20
-            generator = torch.Generator(device="cuda").manual_seed(42)
+            generator = torch.Generator(device="cuda").manual_seed(random.randint(0, 2**32 - 1))
 
             def progress_callback(pipe, step, timestep, callback_kwargs):
                 logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/{steps}")
@@ -213,6 +214,16 @@ Professional movie cinematography, high quality.
             video_writer.release()
             temp_clips.append(temp_clip_path)
             logger.info(f"Clip {i+1} salvata in {temp_clip_path}")
+            
+            # Explicitly delete large objects to prevent VRAM/RAM fragmentation
+            del video
+            del current_image
+            if 'init_image' in locals():
+                del init_image
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                torch.cuda.ipc_collect()
 
         logger.info(f"Concatenazione di {len(temp_clips)} clip in {output_path}...")
         cap = cv2.VideoCapture(temp_clips[0])
