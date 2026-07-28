@@ -91,6 +91,7 @@ class KokoroProvider(BaseAIProvider):
             raise
 
     def generate(self, text: str, output_path: str, *args, **kwargs):
+        logger.info("Kokoro generate() chiamato.")
         if not self.health_check():
             raise RuntimeError("Modello Kokoro TTS non installato.")
             
