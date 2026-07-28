@@ -17,10 +17,10 @@ else
     echo "[OK] Flux GGUF model already installed."
 fi
 
-T5_GGUF="./models/text/t5-v1_1-xxl-encoder-Q8_0.gguf"
+T5_GGUF="./models/image/t5-v1_1-xxl-encoder-Q8_0.gguf"
 if [ ! -f "$T5_GGUF" ]; then
     echo "[INFO] Downloading T5 encoder GGUF model..."
-    mkdir -p "./models/text"
+    mkdir -p "./models/image"
     wget -O "$T5_GGUF" "https://huggingface.co/city96/t5-v1_1-xxl-encoder-gguf/resolve/main/t5-v1_1-xxl-encoder-Q8_0.gguf"
 else
     echo "[OK] T5 encoder GGUF model already installed."
