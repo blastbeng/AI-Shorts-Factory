@@ -90,18 +90,33 @@ class FluxProvider(BaseAIProvider):
             ).images[0]
         except RuntimeError as e:
             if "out of memory" in str(e).lower():
-                logger.warning("OOM rilevato durante la generazione Flux. Attivazione sequential CPU offload e riprovando...")
-                self.pipeline.to("cpu")
+                logger.warning("OOM rilevato durante la generazione Flux. Pulizia completa e re-inizializzazione con sequential CPU offload...")
+                
+                # 1. Distruggi completamente la pipeline attuale per liberare VRAM e RAM
+                if self.pipeline is not None:
+                    del self.pipeline
+                    self.pipeline = None
+                
                 import gc
                 gc.collect()
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
+                    torch.cuda.ipc_collect()
                 
+                # 2. Verifica RAM disponibile
                 available_ram = self.gm.get_available_system_ram_gb()
                 if available_ram < 24.0:
                     raise RuntimeError(f"OOM su GPU, ma RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Operazione annullata per evitare il blocco del sistema.")
                 
+                # 3. Re-inizializza la pipeline da zero con sequential CPU offload
+                logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Re-inizializzazione pipeline con sequential CPU offload.")
+                model_path = self.model_info.get("path")
+                self.pipeline = FluxPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16)
+                self.pipeline.enable_vae_tiling()
+                self.pipeline.enable_vae_slicing()
                 self.pipeline.enable_sequential_cpu_offload(gpu_id=gpu['device_index'])
+                
+                # 4. Riprova la generazione
                 image = self.pipeline(
                     prompt, 
                     num_inference_steps=4,
