@@ -90,7 +90,7 @@ class FluxProvider(BaseAIProvider):
             ).images[0]
         except RuntimeError as e:
             if "out of memory" in str(e).lower():
-                logger.warning("OOM rilevato durante la generazione Flux. Attivazione CPU offload e riprovando...")
+                logger.warning("OOM rilevato durante la generazione Flux. Attivazione sequential CPU offload e riprovando...")
                 self.pipeline.to("cpu")
                 import gc
                 gc.collect()
@@ -101,7 +101,7 @@ class FluxProvider(BaseAIProvider):
                 if available_ram < 24.0:
                     raise RuntimeError(f"OOM su GPU, ma RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Operazione annullata per evitare il blocco del sistema.")
                 
-                self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
+                self.pipeline.enable_sequential_cpu_offload(gpu_id=gpu['device_index'])
                 image = self.pipeline(
                     prompt, 
                     num_inference_steps=4,
