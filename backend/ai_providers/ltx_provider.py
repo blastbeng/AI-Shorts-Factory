@@ -64,11 +64,10 @@ class LtxProvider(BaseAIProvider):
                 text_encoder.eval()
                 text_encoder.to("cpu")
                 
-                self.pipeline = LTXImageToVideoPipeline.from_single_file(
+                self.pipeline = LTXImageToVideoPipeline.from_pretrained(
                     model_path,
                     text_encoder=text_encoder,
                     torch_dtype=dtype,
-                    original_config_file=config_path,
                     low_cpu_mem_usage=True
                 )
                 self.pipeline.vae.enable_slicing()
@@ -107,11 +106,10 @@ class LtxProvider(BaseAIProvider):
                 text_encoder.eval()
                 text_encoder.to("cpu")
                 
-                self.pipeline = LTXImageToVideoPipeline.from_single_file(
+                self.pipeline = LTXImageToVideoPipeline.from_pretrained(
                     model_path,
                     text_encoder=text_encoder,
                     torch_dtype=dtype,
-                    original_config_file=config_path,
                     low_cpu_mem_usage=True
                 )
                 self.pipeline.vae.enable_slicing()
