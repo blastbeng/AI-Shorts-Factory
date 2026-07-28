@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import cv2
 from PIL import Image
-from diffusers import LTXImageToVideoPipeline, AutoencoderKLLTXVideo
+from diffusers import LTXImageToVideoPipeline
 from transformers import T5EncoderModel
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
@@ -16,7 +16,6 @@ class LtxProvider(BaseAIProvider):
         with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
             self.models_config = yaml.safe_load(f)
         self.model_info = self.models_config.get("video", {}).get("ltx_video", {})
-        self.vae_path = os.path.abspath(self.model_info.get("vae_path"))
         self.gm = GPUManager()
         self.pipeline = None
 
@@ -55,16 +54,10 @@ class LtxProvider(BaseAIProvider):
                 dtype = torch.float16
                 text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=dtype)
                 text_encoder.to("cpu")
-                vae = AutoencoderKLLTXVideo.from_single_file(
-                    self.vae_path,
-                    torch_dtype=dtype
-                )
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
-                    vae=vae,
                     text_encoder=text_encoder,
-                    torch_dtype=dtype,
-                    config="Lightricks/LTX-Video"
+                    torch_dtype=torch.float16
                 )
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):
@@ -94,16 +87,10 @@ class LtxProvider(BaseAIProvider):
                 dtype = torch.float16
                 text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=dtype)
                 text_encoder.to("cpu")
-                vae = AutoencoderKLLTXVideo.from_single_file(
-                    self.vae_path,
-                    torch_dtype=dtype
-                )
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
-                    vae=vae,
                     text_encoder=text_encoder,
-                    torch_dtype=dtype,
-                    config="Lightricks/LTX-Video"
+                    torch_dtype=torch.float16
                 )
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):
@@ -172,11 +159,9 @@ Camera movement continues smoothly.
             video = self.pipeline(
                 image=current_image,
                 prompt=prompt,
-                num_inference_steps=12,
-                num_frames=num_frames,
-                guidance_scale=1.5,
-                callback_on_step_end=progress_callback,
-                callback_on_step_end_tensor_inputs=[]
+                num_inference_steps=20,
+                num_frames=49,
+                guidance_scale=2.5
             ).frames[0]
 
             if isinstance(video, torch.Tensor):
