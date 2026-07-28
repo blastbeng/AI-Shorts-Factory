@@ -85,10 +85,10 @@ class FluxProvider(BaseAIProvider):
                 use_offload = gpu['vram_gb'] < 20
                 if use_offload:
                     logger.info(f"VRAM {gpu['vram_gb']}GB < 20GB, abilitazione sequential CPU offload.")
-                    self.pipeline.enable_sequential_cpu_offload(gpu_id=gpu['id'])
+                    self.pipeline.enable_sequential_cpu_offload(gpu_id=gpu['device_index'])
                 else:
                     logger.info(f"VRAM {gpu['vram_gb']}GB >= 20GB, caricamento su GPU.")
-                    self.pipeline.to(f"cuda:{gpu['id']}")
+                    self.pipeline.to(f"cuda:{gpu['device_index']}")
                     # Ensure T5 stays on CPU even if pipeline is moved to GPU
                     if hasattr(self.pipeline, "text_encoder_2") and self.pipeline.text_encoder_2:
                         self.pipeline.text_encoder_2.to("cpu")
