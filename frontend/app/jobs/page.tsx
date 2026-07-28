@@ -160,9 +160,11 @@ export default function JobsPage() {
                         </span>
                       </div>
                       {s.result && (
-                        <p className="text-xs text-gray-400 mt-1 truncate">
-                          Result: {s.result.substring(0, 50)}...
-                        </p>
+                        <div className="text-xs text-gray-400 mt-2 bg-gray-800/50 p-2 rounded max-h-40 overflow-y-auto whitespace-pre-wrap break-words">
+                          <span className="font-semibold text-gray-300">Risultato:</span>
+                          <br />
+                          {s.result}
+                        </div>
                       )}
                       {s.updated_at && (
                         <p className="text-xs text-gray-500 mt-1">
