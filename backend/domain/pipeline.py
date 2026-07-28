@@ -213,8 +213,8 @@ class PipelineOrchestrator:
                     self._update_stage(stage, "completed", image_path)
 
                 elif stage == "video_generation":
-                    from backend.ai_providers.wan_provider import WanProvider
-                    wan = WanProvider()
+                    from backend.ai_providers.ltx_provider import LtxProvider
+                    ltx = LtxProvider()
                     try:
                         video_path = f"output/video_{self.job_id}.mp4"
                         # Parse storyboard into individual scenes and strip numbering
@@ -230,13 +230,13 @@ class PipelineOrchestrator:
                             scenes = [storyboard]
                         video_prompts = [f"Video short verticale basato su questa scena: {scene}. Il video deve essere coerente con la lingua: {self.profile.language}. IMPORTANT: The video must NOT contain any text, letters, or words." for scene in scenes]
                         
-                        if not wan.health_check():
-                            logger.warning("Wan 2.2 non installato. Uso video dummy.")
+                        if not ltx.health_check():
+                            logger.warning("LTX Video non installato. Uso video dummy.")
                             self._generate_dummy_media("video", video_path)
                         else:
-                            wan.generate(video_prompts, video_path, job_id=self.job_id)
+                            ltx.generate(video_prompts, video_path, job_id=self.job_id, image_path=image_path)
                     finally:
-                        wan.cleanup()
+                        ltx.cleanup()
                     self._update_stage(stage, "completed", video_path)
 
                 elif stage == "video_upscaling":
