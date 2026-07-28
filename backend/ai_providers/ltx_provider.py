@@ -57,7 +57,8 @@ class LtxProvider(BaseAIProvider):
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
                     text_encoder=text_encoder,
-                    torch_dtype=torch.float16
+                    torch_dtype=torch.float16,
+                    config="Lightricks/LTX-Video"
                 )
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):
@@ -90,7 +91,8 @@ class LtxProvider(BaseAIProvider):
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
                     text_encoder=text_encoder,
-                    torch_dtype=torch.float16
+                    torch_dtype=torch.float16,
+                    config="Lightricks/LTX-Video"
                 )
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):
