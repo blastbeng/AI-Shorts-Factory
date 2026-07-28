@@ -28,3 +28,4 @@ gfpgan
 opencv-python
 gguf
 imageio[ffmpeg]
+imageio-ffmpeg
