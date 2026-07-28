@@ -304,11 +304,37 @@ def get_job_details(job_id: str, db: Session = Depends(get_db)):
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     stages = db.query(PipelineStage).filter(PipelineStage.job_id == job_id).order_by(PipelineStage.id).all()
+    
+    profile = db.query(GenerationProfile).filter(GenerationProfile.id == job.profile_id).first()
+    profile_data = None
+    if profile:
+        profile_data = {
+            "name": profile.name,
+            "genre": profile.genre,
+            "custom_prompt": profile.custom_prompt,
+            "language": profile.language,
+            "style": profile.style,
+            "duration_seconds": profile.duration_seconds
+        }
+
+    video = db.query(Video).filter(Video.job_id == job_id).first()
+    video_data = None
+    if video:
+        video_data = {
+            "id": video.id,
+            "file_path": video.file_path,
+            "quality_score": video.quality_score,
+            "approved": video.approved,
+            "published": video.published
+        }
+
     return {
         "job_id": job.id,
         "status": job.status,
         "profile_id": job.profile_id,
-        "stages": [{"name": s.stage_name, "status": s.status, "result": s.result, "created_at": s.created_at, "updated_at": s.updated_at} for s in stages]
+        "stages": [{"name": s.stage_name, "status": s.status, "result": s.result, "created_at": s.created_at, "updated_at": s.updated_at} for s in stages],
+        "profile": profile_data,
+        "video": video_data
     }
 
 @app.get("/stats")

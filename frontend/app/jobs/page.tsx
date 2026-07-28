@@ -10,11 +10,30 @@ type Stage = {
   updated_at: string;
 };
 
+type Profile = {
+  name: string;
+  genre: string;
+  custom_prompt: string;
+  language: string;
+  style: string;
+  duration_seconds: number;
+};
+
+type Video = {
+  id: number;
+  file_path: string;
+  quality_score: number;
+  approved: boolean;
+  published: boolean;
+};
+
 type JobDetails = {
   job_id: string;
   status: string;
   profile_id: number;
   stages: Stage[];
+  profile: Profile | null;
+  video: Video | null;
 };
 
 export default function JobsPage() {
@@ -94,6 +113,38 @@ export default function JobsPage() {
             ) : (
               <div>
                 <p className="mb-4 text-sm">Stato generale: <strong>{selectedJob.status}</strong></p>
+                
+                {selectedJob.profile && (
+                  <div className="mt-4 mb-4 bg-gray-700/30 p-3 rounded-lg">
+                    <h3 className="text-sm font-semibold text-gray-300 mb-2">Parametri Profilo</h3>
+                    <ul className="text-xs text-gray-400 space-y-1">
+                      <li><strong>Nome:</strong> {selectedJob.profile.name}</li>
+                      <li><strong>Genere:</strong> {selectedJob.profile.genre}</li>
+                      <li><strong>Lingua:</strong> {selectedJob.profile.language}</li>
+                      <li><strong>Stile:</strong> {selectedJob.profile.style}</li>
+                      <li><strong>Durata:</strong> {selectedJob.profile.duration_seconds}s</li>
+                      {selectedJob.profile.custom_prompt && (
+                        <li className="mt-1"><strong>Prompt:</strong> {selectedJob.profile.custom_prompt}</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+
+                {selectedJob.video && (
+                  <div className="mt-4 mb-4 bg-gray-700/30 p-3 rounded-lg">
+                    <h3 className="text-sm font-semibold text-gray-300 mb-2">Video Generato</h3>
+                    <ul className="text-xs text-gray-400 space-y-1 mb-2">
+                      <li><strong>ID Video:</strong> {selectedJob.video.id}</li>
+                      <li><strong>Score:</strong> {selectedJob.video.quality_score.toFixed(1)}/10</li>
+                      <li><strong>Approvato:</strong> {selectedJob.video.approved ? "Sì" : "No"}</li>
+                      <li><strong>Pubblicato:</strong> {selectedJob.video.published ? "Sì" : "No"}</li>
+                    </ul>
+                    {selectedJob.video.file_path && (
+                      <video src={`${apiUrl}/${selectedJob.video.file_path}`} controls className="w-full rounded-lg bg-black aspect-video" />
+                    )}
+                  </div>
+                )}
+
                 <ul className="space-y-2">
                   {selectedJob.stages.map((s, index) => (
                     <li key={index} className="bg-gray-700/50 p-3 rounded-lg">
