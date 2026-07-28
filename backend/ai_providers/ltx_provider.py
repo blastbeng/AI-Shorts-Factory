@@ -115,13 +115,13 @@ class LtxProvider(BaseAIProvider):
             if i == 0 and image_path and os.path.exists(image_path):
                 # Load and resize the initial Flux image to match video dimensions (320x576)
                 init_image = Image.open(image_path).convert("RGB")
-                init_image = init_image.resize((320, 576), Image.LANCZOS)
+                init_image = init_image.resize((432, 768), Image.LANCZOS)
                 current_image = init_image
             elif temp_clips:
                 # Extract a frame slightly before the end of the previous clip to avoid drift
                 prev_cap = cv2.VideoCapture(temp_clips[-1])
                 total_frames = int(prev_cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                prev_cap.set(cv2.CAP_PROP_POS_FRAMES, max(0, total_frames - 1))
+                prev_cap.set(cv2.CAP_PROP_POS_FRAMES, max(0, total_frames - 6))
                 ret, frame_bgr = prev_cap.read()
                 prev_cap.release()
                 if ret:
@@ -129,10 +129,10 @@ class LtxProvider(BaseAIProvider):
                     current_image = Image.fromarray(frame_rgb)
                 else:
                     logger.warning("Impossibile estrarre l'ultimo frame. Uso immagine nera.")
-                    current_image = Image.new("RGB", (320, 576), color="black")
+                    current_image = Image.new("RGB", (432, 768), color="black")
             else:
                 logger.warning("Nessuna immagine iniziale fornita. Uso immagine nera.")
-                current_image = Image.new("RGB", (320, 576), color="black")
+                current_image = Image.new("RGB", (432, 768), color="black")
 
             # Add continuity prompt for subsequent clips
             if i > 0:
@@ -143,6 +143,17 @@ Smooth camera continuity.
 
 {prompt}
 """
+            motion_prefix = """
+Cinematic action video.
+Dynamic camera movement.
+The camera follows the subject.
+Realistic physics.
+Continuous motion.
+Objects move naturally.
+No static image.
+"""
+
+            prompt = motion_prefix + prompt
 
             def progress_callback(pipe, step, timestep, callback_kwargs):
                 logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/12")
@@ -159,9 +170,11 @@ Smooth camera continuity.
                 prompt=prompt,
                 num_inference_steps=12,
                 num_frames=49,
-                height=576,
-                width=320,
-                guidance_scale=1.5
+                height=768,
+                width=432,
+                guidance_scale=1.5,
+                callback_on_step_end=progress_callback,
+                callback_on_step_end_tensor_inputs=[]
             ).frames[0]
 
             if isinstance(video, torch.Tensor):
