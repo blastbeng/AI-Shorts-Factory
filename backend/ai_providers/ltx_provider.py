@@ -121,7 +121,7 @@ class LtxProvider(BaseAIProvider):
                 # Extract a frame slightly before the end of the previous clip to avoid drift
                 prev_cap = cv2.VideoCapture(temp_clips[-1])
                 total_frames = int(prev_cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                prev_cap.set(cv2.CAP_PROP_POS_FRAMES, max(0, total_frames - 5))
+                prev_cap.set(cv2.CAP_PROP_POS_FRAMES, max(0, total_frames - 1))
                 ret, frame_bgr = prev_cap.read()
                 prev_cap.release()
                 if ret:
@@ -137,11 +137,9 @@ class LtxProvider(BaseAIProvider):
             # Add continuity prompt for subsequent clips
             if i > 0:
                 prompt = f"""
-Continue the previous shot.
-Same character, same clothes, same environment.
-The scene continues naturally from the previous frame.
-Maintain identity and visual consistency.
-Camera movement continues smoothly.
+Continue the previous scene.
+Keep the same character and environment.
+Smooth camera continuity.
 
 {prompt}
 """
@@ -159,9 +157,11 @@ Camera movement continues smoothly.
             video = self.pipeline(
                 image=current_image,
                 prompt=prompt,
-                num_inference_steps=20,
+                num_inference_steps=12,
                 num_frames=49,
-                guidance_scale=2.5
+                height=576,
+                width=320,
+                guidance_scale=1.5
             ).frames[0]
 
             if isinstance(video, torch.Tensor):
