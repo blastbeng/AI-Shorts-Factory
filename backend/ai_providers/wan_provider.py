@@ -4,6 +4,7 @@ import yaml
 import torch
 torch.backends.cuda.matmul.allow_tf32 = False
 import numpy as np
+import cv2
 from diffusers import DiffusionPipeline
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
@@ -96,7 +97,6 @@ class WanProvider(BaseAIProvider):
                 self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
 
         import gc
-        import imageio
         import os
         
         temp_clips = []
@@ -134,21 +134,35 @@ class WanProvider(BaseAIProvider):
             video = (video * 255).round().astype("uint8")
 
             temp_clip_path = output_path.replace(".mp4", f"_clip_{i}.mp4")
-            writer = imageio.get_writer(temp_clip_path, fps=24, codec='libx264')
+            frame_height, frame_width = video.shape[1], video.shape[2]
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            video_writer = cv2.VideoWriter(temp_clip_path, fourcc, 24.0, (frame_width, frame_height))
             for frame in video:
-                writer.append_data(frame)
-            writer.close()
+                # imageio/diffusers frames are RGB, cv2 expects BGR
+                frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                video_writer.write(frame_bgr)
+            video_writer.release()
             temp_clips.append(temp_clip_path)
             logger.info(f"Clip {i+1} salvata in {temp_clip_path}")
 
         logger.info(f"Concatenazione di {len(temp_clips)} clip in {output_path}...")
-        writer = imageio.get_writer(output_path, fps=24, codec='libx264')
+        # Determine output size from the first clip
+        cap = cv2.VideoCapture(temp_clips[0])
+        frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        cap.release()
+        
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        final_writer = cv2.VideoWriter(output_path, fourcc, 24.0, (frame_width, frame_height))
         for temp_clip_path in temp_clips:
-            reader = imageio.get_reader(temp_clip_path)
-            for frame in reader:
-                writer.append_data(frame)
-            reader.close()
-        writer.close()
+            cap = cv2.VideoCapture(temp_clip_path)
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                final_writer.write(frame)
+            cap.release()
+        final_writer.release()
         
         # Cleanup temp clips
         for temp_clip_path in temp_clips:
