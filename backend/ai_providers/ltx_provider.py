@@ -118,8 +118,8 @@ class LtxProvider(BaseAIProvider):
             logger.info(f"Generazione clip {i+1}/{len(prompts)} per prompt: {prompt}")
             
             # Determine the conditioning image for this clip
-            target_width = 320
-            target_height = 576
+            target_width = 448
+            target_height = 800
             if i == 0 and image_path and os.path.exists(image_path):
                 # Load and resize the initial Flux image to match video dimensions
                 init_image = Image.open(image_path).convert("RGB")
@@ -151,7 +151,7 @@ Professional movie cinematography, high quality.
             prompt = motion_prefix + prompt
 
             import random
-            steps = 20
+            steps = 30
             generator = torch.Generator(device="cuda").manual_seed(random.randint(0, 2**32 - 1))
 
             def progress_callback(pipe, step, timestep, callback_kwargs):
