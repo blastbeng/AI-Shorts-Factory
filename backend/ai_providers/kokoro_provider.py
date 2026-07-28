@@ -197,12 +197,8 @@ class KokoroProvider(BaseAIProvider):
         return {"vram_required_gb": self.model_info.get("vram_required_gb"), "backend": self.model_info.get("backend")}
 
     def cleanup(self):
-        if self.model is not None:
-            del self.model
-            self.model = None
-        if self.pipeline is not None:
-            del self.pipeline
-            self.pipeline = None
+        # Non distruggere il modello Kokoro (singleton) per evitare deadlock al prossimo caricamento.
+        # Manteniamo il modello in memoria, puliamo solo la cache CUDA.
         import gc
         import torch
         gc.collect()
