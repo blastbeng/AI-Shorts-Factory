@@ -64,13 +64,11 @@ class WanProvider(BaseAIProvider):
                     self.pipeline.enable_vae_tiling()
                 if hasattr(self.pipeline, "enable_vae_slicing"):
                     self.pipeline.enable_vae_slicing()
+                self.pipeline.enable_attention_slicing()
                 
                 logger.info("Torch compile disabilitato per VRAM limitata")
-                if use_cpu_offload:
-                    logger.info("Uso model CPU offload per evitare OOM (più veloce del sequential).")
-                    self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
-                else:
-                    self.pipeline.to(device)
+                logger.info("Uso model CPU offload per evitare OOM (più veloce del sequential).")
+                self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
             except Exception as e:
                 logger.exception(f"Errore nel caricamento del modello su GPU. Fallback con offload su RAM.")
                 if self.pipeline is not None:
