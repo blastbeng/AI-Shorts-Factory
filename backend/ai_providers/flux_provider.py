@@ -41,7 +41,7 @@ class FluxProvider(BaseAIProvider):
             logger.info("Caricamento pipeline Flux...")
             model_path = self.model_info.get("path")
             try:
-                self.pipeline = FluxPipeline.from_pretrained(model_path, torch_dtype=torch.float16)
+                self.pipeline = FluxPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16)
                 self.pipeline.enable_vae_tiling()
                 self.pipeline.enable_vae_slicing()
                 self.pipeline.enable_attention_slicing()
@@ -57,15 +57,14 @@ class FluxProvider(BaseAIProvider):
                 
                 # Check system RAM before attempting CPU offload
                 available_ram = self.gm.get_available_system_ram_gb()
-                if available_ram < 8.0:
-                    raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Operazione annullata per evitare il blocco del sistema.")
+                if available_ram < 24.0:
+                    raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Flux richiede circa 24GB di RAM. Operazione annullata per evitare il blocco del sistema.")
                 
-                logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso sequential CPU offload per evitare OOM.")
-                self.pipeline = FluxPipeline.from_pretrained(model_path, torch_dtype=torch.float16)
+                logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso model CPU offload per evitare OOM.")
+                self.pipeline = FluxPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16)
                 self.pipeline.enable_vae_tiling()
                 self.pipeline.enable_vae_slicing()
-                self.pipeline.enable_attention_slicing()
-                self.pipeline.enable_sequential_cpu_offload(gpu_id=gpu['device_index'])
+                self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
             
         logger.info(f"Generazione immagine per prompt: {prompt}")
         try:
@@ -84,6 +83,11 @@ class FluxProvider(BaseAIProvider):
                 gc.collect()
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
+                
+                available_ram = self.gm.get_available_system_ram_gb()
+                if available_ram < 24.0:
+                    raise RuntimeError(f"OOM su GPU, ma RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Operazione annullata per evitare il blocco del sistema.")
+                
                 self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
                 image = self.pipeline(
                     prompt, 
