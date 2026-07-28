@@ -110,6 +110,15 @@ class FluxProvider(BaseAIProvider):
                 ProgressTracker().update(job_id, "image_generation", step + 1, 4, f"Flux generation progress: step {step + 1}/4")
             return callback_kwargs
 
+        print(
+            "transformer dtype:",
+            next(self.pipeline.transformer.parameters()).dtype
+        )
+        print(
+            "text encoder dtype:",
+            next(self.pipeline.text_encoder_2.parameters()).dtype
+        )
+
         logger.info(f"Generazione immagine per prompt: {prompt}")
         image = self.pipeline(
             prompt, 
