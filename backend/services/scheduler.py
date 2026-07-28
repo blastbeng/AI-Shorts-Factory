@@ -46,6 +46,7 @@ class AutoScheduler:
                     continue
 
                 profiles = db.query(GenerationProfile).all()
+                jobs_created_this_cycle = 0
                 
                 for profile in profiles:
                     last_job = db.query(Job).filter(
@@ -64,7 +65,9 @@ class AutoScheduler:
                         db.add(new_job)
                         db.commit()
                         logger.info(f"[Scheduler] Nuovo job creato per profilo '{profile.name}' (ID: {new_job.id})")
-                        break  # Crea un solo job per ciclo per non saturare la coda
+                        jobs_created_this_cycle += 1
+                        if jobs_created_this_cycle >= 3:
+                            break  # Crea un massimo di 3 job per ciclo
                 
                 db.close()
                 time.sleep(60)
