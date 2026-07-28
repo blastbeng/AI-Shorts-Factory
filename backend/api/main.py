@@ -60,7 +60,7 @@ app = FastAPI(title="AI Shorts Factory")
 # Configurazione CORS per permettere al frontend di comunicare con il backend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Permette tutte le origini per lo sviluppo locale
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://192.168.1.29:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
