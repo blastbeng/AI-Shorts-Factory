@@ -14,7 +14,9 @@ class FluxProvider(BaseAIProvider):
             self.models_config = yaml.safe_load(f)
         self.model_info = self.models_config.get("image", {}).get("flux", {})
         self.flux_gguf_path = os.path.abspath(self.model_info.get("model_path"))
-        self.t5_gguf_path = os.path.abspath(self.model_info.get("t5_encoder_path"))
+        self.t5_gguf_path = self.model_info.get("t5_encoder_path", "")
+        if self.t5_gguf_path:
+            self.t5_gguf_path = os.path.abspath(self.t5_gguf_path)
         self.gm = GPUManager()
         self.pipeline = None
 
@@ -52,30 +54,29 @@ class FluxProvider(BaseAIProvider):
                     torch_dtype=torch.float16
                 )
                 
-                # Handle both GGUF and standard fp16 T5 encoder paths
-                if self.t5_gguf_path.endswith(".gguf"):
-                    text_encoder = T5EncoderModel.from_pretrained(
+                pipeline_kwargs = {
+                    "transformer": transformer,
+                    "torch_dtype": torch.float16
+                }
+
+                # Handle GGUF T5 encoder if specified
+                if self.t5_gguf_path and self.t5_gguf_path.endswith(".gguf"):
+                    text_encoder_2 = T5EncoderModel.from_pretrained(
                         os.path.dirname(self.t5_gguf_path),
                         gguf_file=os.path.basename(self.t5_gguf_path),
                         torch_dtype=torch.float16
                     )
-                else:
-                    text_encoder = T5EncoderModel.from_pretrained(
-                        self.t5_gguf_path,
-                        torch_dtype=torch.float16
-                    )
-                
-                # Keep T5 encoder on CPU to save VRAM
-                text_encoder = text_encoder.to(dtype=torch.float16, device="cpu")
+                    pipeline_kwargs["text_encoder_2"] = text_encoder_2
                 
                 self.pipeline = FluxPipeline.from_pretrained(
                     "black-forest-labs/FLUX.1-schnell",
-                    transformer=transformer,
-                    text_encoder=text_encoder,
-                    torch_dtype=torch.float16
+                    **pipeline_kwargs
                 )
                 self.pipeline.enable_vae_tiling()
                 self.pipeline.vae.enable_slicing()
+                
+                # Keep T5 encoder (text_encoder_2) on CPU to save VRAM
+                self.pipeline.text_encoder_2.to(dtype=torch.float16, device="cpu")
                 
                 # Determine if we need CPU offload based on VRAM
                 use_offload = gpu['vram_gb'] < 20
@@ -86,7 +87,7 @@ class FluxProvider(BaseAIProvider):
                     logger.info(f"VRAM {gpu['vram_gb']}GB >= 20GB, caricamento su GPU.")
                     self.pipeline.to(f"cuda:{gpu['id']}")
                     # Ensure T5 stays on CPU even if pipeline is moved to GPU
-                    self.pipeline.text_encoder.to("cpu")
+                    self.pipeline.text_encoder_2.to("cpu")
             except Exception as e:
                 logger.exception("Errore nel caricamento del modello Flux.")
                 raise e
