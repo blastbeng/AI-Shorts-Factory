@@ -339,7 +339,7 @@ class PipelineOrchestrator:
                             logger.warning("MMAudio non installato. Uso file audio dummy.")
                             self._generate_dummy_media("audio", audio_path)
                         else:
-                            mmaudio.generate(audio_prompt, audio_path)
+                            mmaudio.generate(audio_prompt, audio_path, video_path=video_path)
                     finally:
                         mmaudio.cleanup()
                     self._update_stage(stage, "completed", audio_path)

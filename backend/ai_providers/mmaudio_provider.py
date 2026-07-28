@@ -22,7 +22,7 @@ class MMAudioProvider(BaseAIProvider):
     def health_check(self):
         return self.install_status() == "installed"
 
-    def generate(self, prompt: str, output_path: str, *args, **kwargs):
+    def generate(self, prompt: str, output_path: str, *args, video_path: str = None, **kwargs):
         if not self.health_check():
             raise RuntimeError("Modello MMAudio non installato.")
             
@@ -66,8 +66,13 @@ class MMAudioProvider(BaseAIProvider):
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso offload su RAM.")
                 self.model = AutoModel.from_pretrained(model_path, torch_dtype=torch.bfloat16, device_map="auto")
             
-        logger.info(f"Generazione audio per prompt: {prompt}")
-        inputs = self.processor(text=prompt, return_tensors="pt")
+        logger.info(f"Generazione audio per prompt: {prompt}, video: {video_path}")
+        if video_path and os.path.exists(video_path):
+            # Video-to-Audio: genera audio sincronizzato con il video (lipsync, suoni ambientali realistici)
+            inputs = self.processor(text=prompt, video=video_path, return_tensors="pt")
+        else:
+            # Text-to-Audio: fallback solo testo
+            inputs = self.processor(text=prompt, return_tensors="pt")
         # Move inputs to the model's actual device (handles device_map="auto")
         model_device = next(self.model.parameters()).device
         inputs = {k: v.to(model_device) for k, v in inputs.items()}
