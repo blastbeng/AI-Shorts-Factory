@@ -158,14 +158,13 @@ class PipelineOrchestrator:
                         self._update_stage(stage, "completed", storyboard)
                     finally:
                         llm.cleanup()
-
-                # Pulizia esplicita della VRAM dopo le fasi LLM
-                import gc
-                import torch
-                gc.collect()
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-                logger.info("VRAM pulita dopo la generazione dello storyboard.")
+                        # Pulizia esplicita della VRAM dopo le fasi LLM
+                        import gc
+                        import torch
+                        gc.collect()
+                        if torch.cuda.is_available():
+                            torch.cuda.empty_cache()
+                        logger.info("VRAM pulita dopo la generazione dello storyboard.")
 
                 elif stage == "voice_generation":
                     from backend.ai_providers.kokoro_provider import KokoroProvider
