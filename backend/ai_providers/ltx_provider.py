@@ -16,7 +16,7 @@ class LtxProvider(BaseAIProvider):
         with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
             self.models_config = yaml.safe_load(f)
         self.model_info = self.models_config.get("video", {}).get("ltx_video", {})
-        self.vae_path = self.model_info.get("vae_path")
+        self.vae_path = os.path.abspath(self.model_info.get("vae_path"))
         self.gm = GPUManager()
         self.pipeline = None
 
@@ -51,6 +51,7 @@ class LtxProvider(BaseAIProvider):
             logger.info("Caricamento pipeline LTX Video (Img2Video)...")
             model_path = self.model_info.get("path")
             try:
+                model_path = os.path.abspath(self.model_info.get("path"))
                 dtype = torch.float16
                 text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=dtype)
                 text_encoder.to("cpu")
@@ -84,6 +85,7 @@ class LtxProvider(BaseAIProvider):
                     raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Operazione annullata per evitare il blocco del sistema.")
                 
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso sequential CPU offload per evitare OOM.")
+                model_path = os.path.abspath(self.model_info.get("path"))
                 dtype = torch.float16
                 text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=dtype)
                 text_encoder.to("cpu")
