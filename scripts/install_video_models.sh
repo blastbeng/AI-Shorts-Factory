@@ -31,7 +31,7 @@ fi
 if [ ! -f "$LTX_CONFIG" ]; then
     mkdir -p "$LTX_DIR"
     echo "Downloading ltxv-13b-0.9.8-distilled-fp8.yaml..."
-    wget -q --show-progress -O "$LTX_CONFIG" "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltxv-13b-0.9.8-distilled-fp8.yaml"
+    wget -q --show-progress -O "$LTX_CONFIG" "https://raw.githubusercontent.com/Lightricks/LTX-Video/main/configs/ltxv-13b-0.9.8-distilled-fp8.yaml"
 else
     echo "[OK] Config ltx_video già installato."
 fi
