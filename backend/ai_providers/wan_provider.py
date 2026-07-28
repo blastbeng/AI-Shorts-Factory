@@ -98,13 +98,20 @@ class WanProvider(BaseAIProvider):
         torch.cuda.ipc_collect()
         
         logger.info(f"Generazione video per prompt: {prompt}")
+        
+        def progress_callback(pipe, step, timestep, callback_kwargs):
+            logger.info(f"Wan generation progress: step {step + 1}/20")
+            return callback_kwargs
+
         # Aggiungi parametri per video verticale (Shorts)
         video = self.pipeline(
             prompt, 
             num_inference_steps=20, 
             height=832, 
             width=480,
-            num_frames=16
+            num_frames=16,
+            callback_on_step_end=progress_callback,
+            callback_on_step_end_tensor_inputs=[]
         ).frames[0]
 
         if isinstance(video, torch.Tensor):
