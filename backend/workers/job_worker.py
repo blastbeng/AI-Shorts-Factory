@@ -1,4 +1,6 @@
 import os
+os.environ["TORCH_BLAS_PREFER_HIPBLASLT"] = "0"
+os.environ["TORCH_BLAS_PREFER_HIPBLAS"] = "1"
 os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 import multiprocessing

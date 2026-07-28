@@ -1,8 +1,9 @@
 import os
 os.environ["TORCH_BLAS_PREFER_HIPBLASLT"] = "0"
+os.environ["TORCH_BLAS_PREFER_HIPBLAS"] = "1"
 import yaml
 import torch
-torch.backends.cudnn.enabled = True
+torch.backends.cudnn.enabled = False
 torch.backends.cudnn.benchmark = False
 torch.backends.cudnn.deterministic = True
 import random
