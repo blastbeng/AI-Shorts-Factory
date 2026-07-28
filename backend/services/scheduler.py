@@ -37,6 +37,14 @@ class AutoScheduler:
         while self._running:
             try:
                 db = SessionLocal()
+                
+                # Global check: do not create new jobs if any job is already running or pending
+                active_jobs_count = db.query(Job).filter(Job.status.in_(["pending", "running"])).count()
+                if active_jobs_count > 0:
+                    db.close()
+                    time.sleep(60)
+                    continue
+
                 profiles = db.query(GenerationProfile).all()
                 
                 for profile in profiles:
