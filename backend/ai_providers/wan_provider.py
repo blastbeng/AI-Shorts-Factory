@@ -133,7 +133,7 @@ class WanProvider(BaseAIProvider):
                 "num_inference_steps": 15,
                 "height": 576,
                 "width": 320,
-                "num_frames": 25,
+                "num_frames": 49,
                 "guidance_scale": 4.0,
                 "callback_on_step_end": progress_callback,
                 "callback_on_step_end_tensor_inputs": []
