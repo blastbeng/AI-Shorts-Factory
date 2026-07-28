@@ -98,9 +98,9 @@ class LtxProvider(BaseAIProvider):
             
             # Determine the conditioning image for this clip
             if i == 0 and image_path and os.path.exists(image_path):
-                # Load and resize the initial Flux image to match video dimensions (320x576)
+                # Load and resize the initial Flux image to match video dimensions (288x512)
                 init_image = Image.open(image_path).convert("RGB")
-                init_image = init_image.resize((320, 576), Image.LANCZOS)
+                init_image = init_image.resize((288, 512), Image.LANCZOS)
                 current_image = init_image
             elif temp_clips:
                 # Extract last frame of the previous clip
@@ -114,10 +114,10 @@ class LtxProvider(BaseAIProvider):
                     current_image = Image.fromarray(frame_rgb)
                 else:
                     logger.warning("Impossibile estrarre l'ultimo frame. Uso immagine nera.")
-                    current_image = Image.new("RGB", (320, 576), color="black")
+                    current_image = Image.new("RGB", (288, 512), color="black")
             else:
                 logger.warning("Nessuna immagine iniziale fornita. Uso immagine nera.")
-                current_image = Image.new("RGB", (320, 576), color="black")
+                current_image = Image.new("RGB", (288, 512), color="black")
 
             def progress_callback(pipe, step, timestep, callback_kwargs):
                 logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/8")
