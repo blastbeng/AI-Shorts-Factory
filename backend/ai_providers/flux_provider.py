@@ -48,7 +48,7 @@ class FluxProvider(BaseAIProvider):
                 self.pipeline.enable_vae_tiling()
                 self.pipeline.vae.enable_slicing()
                 self.pipeline.enable_attention_slicing()
-                self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
+                self.pipeline.to(device)
             except Exception as e:
                 logger.exception(f"Errore nel caricamento del modello su GPU. Fallback con offload su RAM.")
                 if self.pipeline is not None:
