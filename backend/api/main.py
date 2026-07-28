@@ -79,15 +79,6 @@ log_environment_info()
 # Validazione configurazione
 ConfigValidator.validate_and_exit()
 
-try:
-    from backend.ai_providers.kokoro_provider import KokoroProvider
-    logger.info("Pre-caricamento modello Kokoro nel thread principale...")
-    kokoro_provider = KokoroProvider()
-    kokoro_provider.load_model()
-    logger.info("Kokoro pre-caricato con successo.")
-except Exception as e:
-    logger.error(f"Errore nel pre-caricamento di Kokoro: {e}")
-
 # Avvia il worker in background per processare i job avviati manualmente
 job_worker.start()
 logger.info("AutoScheduler non avviato automaticamente. Generazione manuale abilitata.")
