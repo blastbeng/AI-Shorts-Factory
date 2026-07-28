@@ -52,7 +52,7 @@ class LtxProvider(BaseAIProvider):
             try:
                 model_path = os.path.abspath(self.model_info.get("path"))
                 config_path = os.path.abspath(self.model_info.get("config_path"))
-                dtype = torch.bfloat16
+                dtype = torch.float16
                 
                 if not os.path.exists(config_path):
                     raise FileNotFoundError(f"LTX config non trovata: {config_path}")
@@ -73,6 +73,7 @@ class LtxProvider(BaseAIProvider):
                 )
                 self.pipeline.vae.enable_slicing()
                 self.pipeline.vae.enable_tiling()
+                self.pipeline.enable_attention_slicing("max")
                 if use_cpu_offload:
                     self.pipeline.enable_sequential_cpu_offload()
                 else:
@@ -94,7 +95,7 @@ class LtxProvider(BaseAIProvider):
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso sequential CPU offload per evitare OOM.")
                 model_path = os.path.abspath(self.model_info.get("path"))
                 config_path = os.path.abspath(self.model_info.get("config_path"))
-                dtype = torch.bfloat16
+                dtype = torch.float16
                 
                 if not os.path.exists(config_path):
                     raise FileNotFoundError(f"LTX config non trovata: {config_path}")
@@ -115,6 +116,7 @@ class LtxProvider(BaseAIProvider):
                 )
                 self.pipeline.vae.enable_slicing()
                 self.pipeline.vae.enable_tiling()
+                self.pipeline.enable_attention_slicing("max")
                 self.pipeline.enable_sequential_cpu_offload()
 
         import gc
