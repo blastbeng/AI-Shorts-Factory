@@ -39,7 +39,7 @@ export default function Home() {
   const [gpus, setGpus] = useState<Gpu[]>([]);
   const [logs, setLogs] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [genParams, setGenParams] = useState({ genre: "random", custom_prompt: "", language: "italian", duration_seconds: 30 });
+  const [genParams, setGenParams] = useState({ genre: "random", custom_prompt: "", language: "italian", duration_seconds: 16 });
   const [schedulerRunning, setSchedulerRunning] = useState(false);
   const [models, setModels] = useState<{name: string, status: string}[]>([]);
   const [stats, setStats] = useState({total_videos: 0, approved_videos: 0, published_videos: 0, total_jobs: 0});
@@ -121,7 +121,7 @@ export default function Home() {
       });
       const profile = await res.json();
       await fetch(`${apiUrl}/jobs/${profile.id}`, { method: "POST" });
-      setGenParams({ genre: "random", custom_prompt: "", language: "italian", duration_seconds: 30 });
+      setGenParams({ genre: "random", custom_prompt: "", language: "italian", duration_seconds: 16 });
       fetchData();
     } catch (error) {
       console.error("Errore generazione:", error);

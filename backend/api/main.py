@@ -116,7 +116,7 @@ class ProfileCreate(BaseModel):
     custom_prompt: str = ""
     language: str = "italian"
     style: str = "default"
-    duration_seconds: int = 30
+    duration_seconds: int = 16
 
 @app.get("/health")
 def health():
