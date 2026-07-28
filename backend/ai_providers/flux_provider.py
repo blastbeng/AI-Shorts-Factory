@@ -44,10 +44,11 @@ class FluxProvider(BaseAIProvider):
             model_path = self.model_info.get("path")
             try:
                 self.pipeline = FluxPipeline.from_pretrained(model_path, torch_dtype=torch.float16)
+                self.pipeline.transformer.to(torch.float16)
                 self.pipeline.enable_vae_tiling()
-                self.pipeline.enable_vae_slicing()
+                self.pipeline.vae.enable_slicing()
                 self.pipeline.enable_attention_slicing()
-                self.pipeline.to(device)
+                self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
             except Exception as e:
                 logger.exception(f"Errore nel caricamento del modello su GPU. Fallback con offload su RAM.")
                 if self.pipeline is not None:
