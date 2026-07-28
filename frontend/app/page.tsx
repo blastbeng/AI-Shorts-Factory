@@ -142,6 +142,11 @@ export default function Home() {
     fetchData();
   };
 
+  const handleInterruptAll = async () => {
+    await fetch(`${apiUrl}/jobs/interrupt_all`, { method: "POST" });
+    fetchData();
+  };
+
   const handlePublish = async (videoId: number, platform: string) => {
     await fetch(`${apiUrl}/videos/${videoId}/publish/${platform}`, { method: "POST" });
     alert(`Pubblicazione su ${platform} avviata (simulata).`);
@@ -288,6 +293,9 @@ export default function Home() {
           <div className="bg-gray-800/50 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-lg h-[500px] flex flex-col">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
               <span className="w-2 h-2 bg-yellow-500 rounded-full"></span> Stato Generazioni
+              <button onClick={handleInterruptAll} className="ml-auto text-xs bg-red-600/80 hover:bg-red-600 px-2 py-1 rounded-full">
+                Ferma Tutti
+              </button>
             </h2>
             {loading ? <p className="text-gray-400">Caricamento...</p> : (
               <ul className="space-y-3 flex-1 overflow-y-auto pr-2">

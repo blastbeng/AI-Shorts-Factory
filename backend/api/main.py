@@ -187,6 +187,14 @@ def interrupt_job(job_id: str, db: Session = Depends(get_db)):
     db.refresh(job)
     return {"status": "interrupted", "job_id": job_id}
 
+@app.post("/jobs/interrupt_all")
+def interrupt_all_jobs(db: Session = Depends(get_db)):
+    jobs = db.query(Job).filter(Job.status.in_(["running", "pending"])).all()
+    for job in jobs:
+        job.status = "interrupted"
+    db.commit()
+    return {"status": "interrupted", "count": len(jobs)}
+
 @app.get("/videos/")
 def get_videos(db: Session = Depends(get_db)):
     return db.query(Video).all()
