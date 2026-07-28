@@ -58,7 +58,7 @@ class KokoroProvider(BaseAIProvider):
             import threading
             logger.info(f"Thread corrente: {threading.current_thread().name}")
             logger.info("PRIMA KModel")
-            self.model = KModel(disable_complex=True)
+            self.model = KModel()
             logger.info("DOPO KModel")
             logger.info("Kokoro: modello CPU pronto")
             self.model.eval()
