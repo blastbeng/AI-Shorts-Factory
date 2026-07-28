@@ -120,20 +120,20 @@ class LtxProvider(BaseAIProvider):
                 current_image = Image.new("RGB", (320, 576), color="black")
 
             def progress_callback(pipe, step, timestep, callback_kwargs):
-                logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/8")
+                logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/10")
                 if job_id:
                     from backend.services.progress_tracker import ProgressTracker
-                    ProgressTracker().update(job_id, "video_generation", step + 1, 8, f"Generazione clip {i+1}/{len(prompts)}: step {step + 1}/8")
+                    ProgressTracker().update(job_id, "video_generation", step + 1, 10, f"Generazione clip {i+1}/{len(prompts)}: step {step + 1}/10")
                 return callback_kwargs
 
             video = self.pipeline(
                 image=current_image,
                 prompt=prompt,
-                num_inference_steps=8,
+                num_inference_steps=10,
                 height=576,
                 width=320,
                 num_frames=49,
-                guidance_scale=1.0,
+                guidance_scale=1.2,
                 callback_on_step_end=progress_callback,
                 callback_on_step_end_tensor_inputs=[]
             ).frames[0]
