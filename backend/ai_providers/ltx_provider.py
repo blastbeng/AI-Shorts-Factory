@@ -34,17 +34,9 @@ class LtxProvider(BaseAIProvider):
         target_duration = kwargs.get("target_duration")
         
         preferred_backend = self.model_info.get("backend")
-        gpu = self.gm.get_gpu_for_task("video_generation", self.get_gpu_requirements().get("vram_required_gb", 0), preferred_backend=preferred_backend)
+        gpu = self.gm.get_gpu_for_task_ignore_vram("video_generation", preferred_backend=preferred_backend)
         if not gpu:
-            logger.warning("Nessuna GPU con VRAM sufficiente per LTX Video. Uso GPU con offload su RAM.")
-            gpu = self.gm.get_gpu_for_task_ignore_vram("video_generation", preferred_backend=preferred_backend)
-            if not gpu:
-                raise RuntimeError("Nessuna GPU assegnata per la video generation.")
-            use_cpu_offload = True
-        else:
-            use_cpu_offload = False
-            
-        device = self.gm.get_device_string(gpu['id'], preferred_backend=self.model_info.get("backend"))
+            raise RuntimeError("Nessuna GPU assegnata per la video generation.")
         
         if self.pipeline is None:
             logger.info("Caricamento pipeline LTX Video (Img2Video)...")
@@ -69,10 +61,7 @@ class LtxProvider(BaseAIProvider):
                 self.pipeline.vae.enable_slicing()
                 self.pipeline.vae.enable_tiling()
                 self.pipeline.enable_attention_slicing("max")
-                if use_cpu_offload:
-                    self.pipeline.enable_sequential_cpu_offload()
-                else:
-                    self.pipeline.to(device)
+                self.pipeline.enable_sequential_cpu_offload()
             except Exception as e:
                 logger.exception(f"Errore nel caricamento del modello su GPU. Fallback con offload su RAM.")
                 if self.pipeline is not None:
