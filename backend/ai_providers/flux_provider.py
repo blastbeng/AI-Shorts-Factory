@@ -45,7 +45,7 @@ class FluxProvider(BaseAIProvider):
                 self.pipeline.enable_vae_tiling()
                 self.pipeline.enable_vae_slicing()
                 self.pipeline.enable_attention_slicing()
-                self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
+                self.pipeline.to(device)
             except Exception as e:
                 logger.exception(f"Errore nel caricamento del modello su GPU. Fallback con offload su RAM.")
                 if self.pipeline is not None:
@@ -68,13 +68,32 @@ class FluxProvider(BaseAIProvider):
                 self.pipeline.enable_sequential_cpu_offload(gpu_id=gpu['device_index'])
             
         logger.info(f"Generazione immagine per prompt: {prompt}")
-        image = self.pipeline(
-            prompt, 
-            num_inference_steps=4,
-            guidance_scale=0.0,
-            height=960, 
-            width=544
-        ).images[0]
+        try:
+            image = self.pipeline(
+                prompt, 
+                num_inference_steps=4,
+                guidance_scale=0.0,
+                height=960, 
+                width=544
+            ).images[0]
+        except RuntimeError as e:
+            if "out of memory" in str(e).lower():
+                logger.warning("OOM rilevato durante la generazione Flux. Attivazione CPU offload e riprovando...")
+                self.pipeline.to("cpu")
+                import gc
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
+                image = self.pipeline(
+                    prompt, 
+                    num_inference_steps=4,
+                    guidance_scale=0.0,
+                    height=960, 
+                    width=544
+                ).images[0]
+            else:
+                raise e
         
         image.save(output_path)
         logger.info(f"Immagine salvata in {output_path}")
