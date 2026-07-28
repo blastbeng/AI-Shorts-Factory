@@ -28,6 +28,7 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 # Nasconde la GPU integrata (gfx1036) e mappa la 7800 XT come cuda:0
 export HIP_VISIBLE_DEVICES=0
 export ROCR_VISIBLE_DEVICES=0
+export HSA_OVERRIDE_GFX_VERSION=11.0.0
 
 # Imposta valori predefiniti se non presenti nel .env
 BACKEND_HOST=${BACKEND_HOST:-"0.0.0.0"}
