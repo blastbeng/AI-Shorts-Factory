@@ -51,20 +51,25 @@ class LtxProvider(BaseAIProvider):
             model_path = self.model_info.get("path")
             try:
                 model_path = os.path.abspath(self.model_info.get("path"))
+                config_path = os.path.abspath(self.model_info.get("config_path"))
                 dtype = torch.float16
+                
+                if not os.path.exists(config_path):
+                    raise FileNotFoundError(f"LTX config non trovata: {config_path}")
+                
                 text_encoder = T5EncoderModel.from_pretrained(
-                    "Lightricks/LTX-Video",
-                    subfolder="text_encoder",
+                    "google/t5-v1_1-xxl",
                     torch_dtype=dtype
                 )
                 text_encoder.eval()
                 text_encoder.to("cpu")
-                config_path = os.path.abspath(self.model_info.get("config_path"))
+                
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
                     text_encoder=text_encoder,
                     torch_dtype=dtype,
-                    original_config_file=config_path
+                    original_config_file=config_path,
+                    low_cpu_mem_usage=False
                 )
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):
@@ -91,20 +96,25 @@ class LtxProvider(BaseAIProvider):
                 
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso sequential CPU offload per evitare OOM.")
                 model_path = os.path.abspath(self.model_info.get("path"))
+                config_path = os.path.abspath(self.model_info.get("config_path"))
                 dtype = torch.float16
+                
+                if not os.path.exists(config_path):
+                    raise FileNotFoundError(f"LTX config non trovata: {config_path}")
+                
                 text_encoder = T5EncoderModel.from_pretrained(
-                    "Lightricks/LTX-Video",
-                    subfolder="text_encoder",
+                    "google/t5-v1_1-xxl",
                     torch_dtype=dtype
                 )
                 text_encoder.eval()
                 text_encoder.to("cpu")
-                config_path = os.path.abspath(self.model_info.get("config_path"))
+                
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
                     text_encoder=text_encoder,
                     torch_dtype=dtype,
-                    original_config_file=config_path
+                    original_config_file=config_path,
+                    low_cpu_mem_usage=False
                 )
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):
