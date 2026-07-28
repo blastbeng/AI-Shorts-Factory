@@ -13,8 +13,8 @@ class FluxProvider(BaseAIProvider):
         with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
             self.models_config = yaml.safe_load(f)
         self.model_info = self.models_config.get("image", {}).get("flux", {})
-        self.flux_gguf_path = self.model_info.get("model_path")
-        self.t5_gguf_path = self.model_info.get("t5_encoder_path")
+        self.flux_gguf_path = os.path.abspath(self.model_info.get("model_path"))
+        self.t5_gguf_path = os.path.abspath(self.model_info.get("t5_encoder_path"))
         self.gm = GPUManager()
         self.pipeline = None
 
