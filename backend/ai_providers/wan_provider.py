@@ -23,7 +23,7 @@ class WanProvider(BaseAIProvider):
     def health_check(self):
         return self.install_status() == "installed"
 
-    def generate(self, prompt: str, output_path: str, *args, **kwargs):
+    def generate(self, prompts: list, output_path: str, *args, **kwargs):
         if not self.health_check():
             raise RuntimeError("Modello Wan 2.2 non installato.")
 
@@ -94,38 +94,60 @@ class WanProvider(BaseAIProvider):
                 self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
 
         import gc
-        logger.info("Pulizia VRAM prima della generazione (incluso VAE decode)...")
-        gc.collect()
-        torch.cuda.empty_cache()
-        torch.cuda.ipc_collect()
-        
-        logger.info(f"Generazione video per prompt: {prompt}")
-        
-        def progress_callback(pipe, step, timestep, callback_kwargs):
-            logger.info(f"Wan generation progress: step {step + 1}/20")
-            return callback_kwargs
-
-        # Aggiungi parametri per video verticale (Shorts)
-        video = self.pipeline(
-            prompt, 
-            num_inference_steps=20, 
-            height=384, 
-            width=672,
-            num_frames=33,
-            guidance_scale=4.5,
-            callback_on_step_end=progress_callback,
-            callback_on_step_end_tensor_inputs=[]
-        ).frames[0]
-
-        if isinstance(video, torch.Tensor):
-            video = video.cpu().numpy()
-
-        # Converti da [0, 1] float32 a [0, 255] uint8
-        video = (video * 255).round().astype("uint8")
-
         import imageio
-        imageio.mimsave(output_path, video, fps=24)
-        logger.info(f"Video salvato in {output_path}")
+        import os
+        
+        temp_clips = []
+        for i, prompt in enumerate(prompts):
+            logger.info(f"Pulizia VRAM prima della generazione clip {i+1}/{len(prompts)} (incluso VAE decode)...")
+            gc.collect()
+            torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()
+            
+            logger.info(f"Generazione clip {i+1}/{len(prompts)} per prompt: {prompt}")
+            
+            def progress_callback(pipe, step, timestep, callback_kwargs):
+                logger.info(f"Wan generation progress (clip {i+1}): step {step + 1}/20")
+                return callback_kwargs
+
+            # Aggiungi parametri per video verticale (Shorts)
+            video = self.pipeline(
+                prompt, 
+                num_inference_steps=20, 
+                height=384, 
+                width=672,
+                num_frames=33,
+                guidance_scale=4.5,
+                callback_on_step_end=progress_callback,
+                callback_on_step_end_tensor_inputs=[]
+            ).frames[0]
+
+            if isinstance(video, torch.Tensor):
+                video = video.cpu().numpy()
+
+            # Converti da [0, 1] float32 a [0, 255] uint8
+            video = (video * 255).round().astype("uint8")
+
+            temp_clip_path = output_path.replace(".mp4", f"_clip_{i}.mp4")
+            imageio.mimsave(temp_clip_path, video, fps=24)
+            temp_clips.append(temp_clip_path)
+            logger.info(f"Clip {i+1} salvata in {temp_clip_path}")
+
+        logger.info(f"Concatenazione di {len(temp_clips)} clip in {output_path}...")
+        writer = imageio.get_writer(output_path, fps=24, codec='libx264')
+        for temp_clip_path in temp_clips:
+            reader = imageio.get_reader(temp_clip_path)
+            for frame in reader:
+                writer.append_data(frame)
+            reader.close()
+        writer.close()
+        
+        # Cleanup temp clips
+        for temp_clip_path in temp_clips:
+            if os.path.exists(temp_clip_path):
+                os.remove(temp_clip_path)
+                
+        logger.info(f"Video finale salvato in {output_path}")
         return output_path
 
     def get_capabilities(self):

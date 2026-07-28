@@ -216,12 +216,17 @@ class PipelineOrchestrator:
                     wan = WanProvider()
                     try:
                         video_path = f"output/video_{self.job_id}.mp4"
-                        video_prompt = f"Video short verticale basato su questo script: {script}. Il video deve essere coerente con la lingua: {self.profile.language}. IMPORTANT: The video must NOT contain any text, letters, or words."
+                        # Split storyboard into individual scenes
+                        scenes = [s.strip() for s in storyboard.split('\n') if s.strip()]
+                        if not scenes:
+                            scenes = [storyboard]
+                        video_prompts = [f"Video short verticale basato su questa scena: {scene}. Il video deve essere coerente con la lingua: {self.profile.language}. IMPORTANT: The video must NOT contain any text, letters, or words." for scene in scenes]
+                        
                         if not wan.health_check():
                             logger.warning("Wan 2.2 non installato. Uso video dummy.")
                             self._generate_dummy_media("video", video_path)
                         else:
-                            wan.generate(video_prompt, video_path)
+                            wan.generate(video_prompts, video_path)
                     finally:
                         wan.cleanup()
                     self._update_stage(stage, "completed", video_path)
