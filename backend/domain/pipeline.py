@@ -206,7 +206,7 @@ class PipelineOrchestrator:
                             logger.warning("Flux non installato. Uso immagine dummy.")
                             self._generate_dummy_media("image", image_path)
                         else:
-                            flux.generate(image_prompt, image_path)
+                            flux.generate(image_prompt, image_path, job_id=self.job_id)
                     finally:
                         flux.cleanup()
                     self._update_stage(stage, "completed", image_path)
@@ -226,7 +226,7 @@ class PipelineOrchestrator:
                             logger.warning("Wan 2.2 non installato. Uso video dummy.")
                             self._generate_dummy_media("video", video_path)
                         else:
-                            wan.generate(video_prompts, video_path)
+                            wan.generate(video_prompts, video_path, job_id=self.job_id)
                     finally:
                         wan.cleanup()
                     self._update_stage(stage, "completed", video_path)

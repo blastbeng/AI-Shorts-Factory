@@ -275,6 +275,12 @@ def publish_video(video_id: int, platform: str, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/jobs/{job_id}/progress")
+def get_job_progress(job_id: str):
+    from backend.services.progress_tracker import ProgressTracker
+    tracker = ProgressTracker()
+    return tracker.get(job_id) or {"stage": None, "current_step": 0, "total_steps": 0, "message": ""}
+
 @app.get("/jobs/{job_id}")
 def get_job_details(job_id: str, db: Session = Depends(get_db)):
     job = db.query(Job).filter(Job.id == job_id).first()

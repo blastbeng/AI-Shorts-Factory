@@ -23,6 +23,8 @@ class FluxProvider(BaseAIProvider):
     def generate(self, prompt: str, output_path: str, *args, **kwargs):
         if not self.health_check():
             raise RuntimeError("Modello Flux non installato.")
+
+        job_id = kwargs.get("job_id")
             
         preferred_backend = self.model_info.get("backend")
         gpu = self.gm.get_gpu_for_task("image_generation", self.get_gpu_requirements().get("vram_required_gb", 0), preferred_backend=preferred_backend)
@@ -68,6 +70,9 @@ class FluxProvider(BaseAIProvider):
             
         def progress_callback(pipe, step, timestep, callback_kwargs):
             logger.info(f"Flux generation progress: step {step + 1}/4")
+            if job_id:
+                from backend.services.progress_tracker import ProgressTracker
+                ProgressTracker().update(job_id, "image_generation", step + 1, 4, f"Flux generation progress: step {step + 1}/4")
             return callback_kwargs
 
         logger.info(f"Generazione immagine per prompt: {prompt}")

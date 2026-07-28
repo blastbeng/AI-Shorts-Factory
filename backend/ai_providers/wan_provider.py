@@ -27,6 +27,8 @@ class WanProvider(BaseAIProvider):
         if not self.health_check():
             raise RuntimeError("Modello Wan 2.2 non installato.")
 
+        job_id = kwargs.get("job_id")
+
         torch.backends.cudnn.benchmark = True
 
         # Log PyTorch's view of the GPUs
@@ -108,6 +110,9 @@ class WanProvider(BaseAIProvider):
             
             def progress_callback(pipe, step, timestep, callback_kwargs):
                 logger.info(f"Wan generation progress (clip {i+1}): step {step + 1}/15")
+                if job_id:
+                    from backend.services.progress_tracker import ProgressTracker
+                    ProgressTracker().update(job_id, "video_generation", step + 1, 15, f"Generazione clip {i+1}/{len(prompts)}: step {step + 1}/15")
                 return callback_kwargs
 
             # Aggiungi parametri per video verticale (Shorts)
