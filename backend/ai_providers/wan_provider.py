@@ -134,7 +134,10 @@ class WanProvider(BaseAIProvider):
             video = (video * 255).round().astype("uint8")
 
             temp_clip_path = output_path.replace(".mp4", f"_clip_{i}.mp4")
-            imageio.mimsave(temp_clip_path, video, fps=24)
+            writer = imageio.get_writer(temp_clip_path, fps=24, codec='libx264')
+            for frame in video:
+                writer.append_data(frame)
+            writer.close()
             temp_clips.append(temp_clip_path)
             logger.info(f"Clip {i+1} salvata in {temp_clip_path}")
 
