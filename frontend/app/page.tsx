@@ -308,6 +308,11 @@ export default function Home() {
                           )}
                         </div>
                       </div>
+                      {progress[j.id] && progress[j.id].stage && (
+                        <p className="text-xs text-blue-400 mb-2 truncate">
+                          {progress[j.id].message} ({progress[j.id].current_step}/{progress[j.id].total_steps})
+                        </p>
+                      )}
                       {j.progress.total > 0 ? (
                         <div className="w-full bg-gray-600 rounded-full h-1.5">
                           <div className="bg-blue-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${progressPercent}%` }}></div>
