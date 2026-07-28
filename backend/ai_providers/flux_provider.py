@@ -1,7 +1,7 @@
 import os
 import yaml
 import torch
-from diffusers import FluxPipeline
+from diffusers import FluxPipeline, FluxTransformer2DModel
 from diffusers.quantizers import GGUFQuantizationConfig
 from transformers import T5EncoderModel
 from backend.ai_providers.base_provider import BaseAIProvider
@@ -46,14 +46,20 @@ class FluxProvider(BaseAIProvider):
         if self.pipeline is None:
             logger.info("Caricamento pipeline Flux GGUF...")
             try:
-                text_encoder = T5EncoderModel.from_single_file(
-                    self.t5_gguf_path,
-                    quantization_config=GGUFQuantizationConfig()
-                )
-                self.pipeline = FluxPipeline.from_single_file(
+                transformer = FluxTransformer2DModel.from_single_file(
                     self.flux_gguf_path,
+                    quantization_config=GGUFQuantizationConfig(compute_dtype=torch.bfloat16),
+                    torch_dtype=torch.bfloat16
+                )
+                text_encoder = T5EncoderModel.from_pretrained(
+                    os.path.dirname(self.t5_gguf_path),
+                    gguf_file=os.path.basename(self.t5_gguf_path),
+                    torch_dtype=torch.bfloat16
+                )
+                self.pipeline = FluxPipeline.from_pretrained(
+                    "black-forest-labs/FLUX.1-schnell",
+                    transformer=transformer,
                     text_encoder=text_encoder,
-                    quantization_config=GGUFQuantizationConfig(),
                     torch_dtype=torch.bfloat16
                 )
                 self.pipeline.enable_vae_tiling()
@@ -76,14 +82,20 @@ class FluxProvider(BaseAIProvider):
                     raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Flux richiede circa 24GB di RAM. Operazione annullata per evitare il blocco del sistema.")
                 
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso model CPU offload per evitare OOM.")
-                text_encoder = T5EncoderModel.from_single_file(
-                    self.t5_gguf_path,
-                    quantization_config=GGUFQuantizationConfig()
-                )
-                self.pipeline = FluxPipeline.from_single_file(
+                transformer = FluxTransformer2DModel.from_single_file(
                     self.flux_gguf_path,
+                    quantization_config=GGUFQuantizationConfig(compute_dtype=torch.bfloat16),
+                    torch_dtype=torch.bfloat16
+                )
+                text_encoder = T5EncoderModel.from_pretrained(
+                    os.path.dirname(self.t5_gguf_path),
+                    gguf_file=os.path.basename(self.t5_gguf_path),
+                    torch_dtype=torch.bfloat16
+                )
+                self.pipeline = FluxPipeline.from_pretrained(
+                    "black-forest-labs/FLUX.1-schnell",
+                    transformer=transformer,
                     text_encoder=text_encoder,
-                    quantization_config=GGUFQuantizationConfig(),
                     torch_dtype=torch.bfloat16
                 )
                 self.pipeline.enable_vae_tiling()
@@ -130,14 +142,20 @@ class FluxProvider(BaseAIProvider):
                 
                 # 3. Re-inizializza la pipeline da zero con sequential CPU offload
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Re-inizializzazione pipeline con sequential CPU offload.")
-                text_encoder = T5EncoderModel.from_single_file(
-                    self.t5_gguf_path,
-                    quantization_config=GGUFQuantizationConfig()
-                )
-                self.pipeline = FluxPipeline.from_single_file(
+                transformer = FluxTransformer2DModel.from_single_file(
                     self.flux_gguf_path,
+                    quantization_config=GGUFQuantizationConfig(compute_dtype=torch.bfloat16),
+                    torch_dtype=torch.bfloat16
+                )
+                text_encoder = T5EncoderModel.from_pretrained(
+                    os.path.dirname(self.t5_gguf_path),
+                    gguf_file=os.path.basename(self.t5_gguf_path),
+                    torch_dtype=torch.bfloat16
+                )
+                self.pipeline = FluxPipeline.from_pretrained(
+                    "black-forest-labs/FLUX.1-schnell",
+                    transformer=transformer,
                     text_encoder=text_encoder,
-                    quantization_config=GGUFQuantizationConfig(),
                     torch_dtype=torch.bfloat16
                 )
                 self.pipeline.enable_vae_tiling()
