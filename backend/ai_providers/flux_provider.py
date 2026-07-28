@@ -73,8 +73,8 @@ class FluxProvider(BaseAIProvider):
                 prompt, 
                 num_inference_steps=4,
                 guidance_scale=0.0,
-                height=960, 
-                width=544
+                height=768, 
+                width=432
             ).images[0]
         except RuntimeError as e:
             if "out of memory" in str(e).lower():
@@ -89,8 +89,8 @@ class FluxProvider(BaseAIProvider):
                     prompt, 
                     num_inference_steps=4,
                     guidance_scale=0.0,
-                    height=960, 
-                    width=544
+                    height=768, 
+                    width=432
                 ).images[0]
             else:
                 raise e
