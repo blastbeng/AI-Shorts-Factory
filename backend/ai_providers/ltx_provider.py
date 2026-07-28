@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import cv2
 from PIL import Image
-from diffusers import LTXVideoImg2VideoPipeline
+from diffusers import LTXImageToVideoPipeline
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger
@@ -48,7 +48,7 @@ class LtxProvider(BaseAIProvider):
             logger.info("Caricamento pipeline LTX Video (Img2Video)...")
             model_path = self.model_info.get("path")
             try:
-                self.pipeline = LTXVideoImg2VideoPipeline.from_single_file(model_path, torch_dtype=torch.float16)
+                self.pipeline = LTXImageToVideoPipeline.from_single_file(model_path, torch_dtype=torch.float16)
                 self.pipeline.enable_attention_slicing()
                 if use_cpu_offload:
                     self.pipeline.enable_model_cpu_offload(device=device)
@@ -70,7 +70,7 @@ class LtxProvider(BaseAIProvider):
                     raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Operazione annullata per evitare il blocco del sistema.")
                 
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso sequential CPU offload per evitare OOM.")
-                self.pipeline = LTXVideoImg2VideoPipeline.from_single_file(model_path, torch_dtype=torch.float16)
+                self.pipeline = LTXImageToVideoPipeline.from_single_file(model_path, torch_dtype=torch.float16)
                 self.pipeline.enable_attention_slicing()
                 self.pipeline.enable_sequential_cpu_offload(device=device)
 
