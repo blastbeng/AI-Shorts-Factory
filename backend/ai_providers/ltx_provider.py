@@ -107,6 +107,7 @@ class LtxProvider(BaseAIProvider):
         import gc
         
         temp_clips = []
+        last_frame = None
         for i, prompt in enumerate(prompts):
             logger.info(f"Pulizia VRAM prima della generazione clip {i+1}/{len(prompts)}...")
             gc.collect()
@@ -124,19 +125,9 @@ class LtxProvider(BaseAIProvider):
                 init_image = Image.open(image_path).convert("RGB")
                 init_image = init_image.resize((target_width, target_height), Image.LANCZOS)
                 current_image = init_image
-            elif temp_clips:
-                # Extract a frame slightly before the end of the previous clip to avoid drift
-                prev_cap = cv2.VideoCapture(temp_clips[-1])
-                total_frames = int(prev_cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                prev_cap.set(cv2.CAP_PROP_POS_FRAMES, max(0, total_frames - 6))
-                ret, frame_bgr = prev_cap.read()
-                prev_cap.release()
-                if ret:
-                    frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-                    current_image = Image.fromarray(frame_rgb)
-                else:
-                    logger.warning("Impossibile estrarre l'ultimo frame. Uso immagine nera.")
-                    current_image = Image.new("RGB", (target_width, target_height), color="black")
+            elif i > 0 and last_frame is not None:
+                # Use the high-quality last frame from the previous clip in memory
+                current_image = Image.fromarray(last_frame)
             else:
                 logger.warning("Nessuna immagine iniziale fornita. Uso immagine nera.")
                 current_image = Image.new("RGB", (target_width, target_height), color="black")
@@ -203,6 +194,9 @@ Professional movie cinematography, high quality.
                     video = (video * 255).round()
 
                 video = video.astype("uint8")
+
+            # Keep the last frame in memory for the next clip to avoid lossy compression artifacts
+            last_frame = video[-1]
 
             temp_clip_path = output_path.replace(".mp4", f"_clip_{i}.mp4")
             frame_height, frame_width = video.shape[1], video.shape[2]
