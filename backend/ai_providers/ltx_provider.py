@@ -59,7 +59,8 @@ class LtxProvider(BaseAIProvider):
                 
                 text_encoder = T5EncoderModel.from_pretrained(
                     "google/t5-v1_1-xxl",
-                    torch_dtype=dtype
+                    torch_dtype=dtype,
+                    local_files_only=False
                 )
                 text_encoder.eval()
                 text_encoder.to("cpu")
@@ -104,7 +105,8 @@ class LtxProvider(BaseAIProvider):
                 
                 text_encoder = T5EncoderModel.from_pretrained(
                     "google/t5-v1_1-xxl",
-                    torch_dtype=dtype
+                    torch_dtype=dtype,
+                    local_files_only=False
                 )
                 text_encoder.eval()
                 text_encoder.to("cpu")
