@@ -84,8 +84,8 @@ class FluxProvider(BaseAIProvider):
                 # Determine if we need CPU offload based on VRAM
                 use_offload = gpu['vram_gb'] < 20
                 if use_offload:
-                    logger.info(f"VRAM {gpu['vram_gb']}GB < 20GB, abilitazione sequential CPU offload.")
-                    self.pipeline.enable_sequential_cpu_offload(gpu_id=gpu['device_index'])
+                    logger.info(f"VRAM {gpu['vram_gb']}GB < 20GB, abilitazione model CPU offload.")
+                    self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
                 else:
                     logger.info(f"VRAM {gpu['vram_gb']}GB >= 20GB, caricamento su GPU.")
                     self.pipeline.to(f"cuda:{gpu['device_index']}")
