@@ -53,17 +53,18 @@ class LtxProvider(BaseAIProvider):
                 model_path = os.path.abspath(self.model_info.get("path"))
                 dtype = torch.float16
                 text_encoder = T5EncoderModel.from_pretrained(
-                    "google/t5-v1_1-xxl",
-                    torch_dtype=torch.float16
+                    "Lightricks/LTX-Video",
+                    subfolder="text_encoder",
+                    torch_dtype=dtype
                 )
                 text_encoder.eval()
                 text_encoder.to("cpu")
+                config_path = "/opt/models/LTX-Video/ltxv-13b-0.9.8-distilled-fp8.yaml"
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
                     text_encoder=text_encoder,
-                    torch_dtype=torch.float16,
-                    config="Lightricks/LTX-Video",
-                    original_config_file="ltxv-13b-0.9.8-distilled-fp8.yaml"
+                    torch_dtype=dtype,
+                    original_config_file=config_path
                 )
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):
@@ -92,17 +93,18 @@ class LtxProvider(BaseAIProvider):
                 model_path = os.path.abspath(self.model_info.get("path"))
                 dtype = torch.float16
                 text_encoder = T5EncoderModel.from_pretrained(
-                    "google/t5-v1_1-xxl",
-                    torch_dtype=torch.float16
+                    "Lightricks/LTX-Video",
+                    subfolder="text_encoder",
+                    torch_dtype=dtype
                 )
                 text_encoder.eval()
                 text_encoder.to("cpu")
+                config_path = "/opt/models/LTX-Video/ltxv-13b-0.9.8-distilled-fp8.yaml"
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
                     text_encoder=text_encoder,
-                    torch_dtype=torch.float16,
-                    config="Lightricks/LTX-Video",
-                    original_config_file="ltxv-13b-0.9.8-distilled-fp8.yaml"
+                    torch_dtype=dtype,
+                    original_config_file=config_path
                 )
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):
