@@ -119,8 +119,8 @@ class WanProvider(BaseAIProvider):
             video = self.pipeline(
                 prompt, 
                 num_inference_steps=15, 
-                height=320, 
-                width=576,
+                height=576, 
+                width=320,
                 num_frames=25,
                 guidance_scale=4.0,
                 callback_on_step_end=progress_callback,
