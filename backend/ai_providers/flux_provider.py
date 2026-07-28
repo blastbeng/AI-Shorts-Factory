@@ -37,11 +37,11 @@ class FluxProvider(BaseAIProvider):
             gpu = self.gm.get_gpu_for_task_ignore_vram("image_generation", preferred_backend=preferred_backend)
             if not gpu:
                 raise RuntimeError("Nessuna GPU assegnata per l'image generation.")
-            use_cpu_offload = True
-        else:
-            use_cpu_offload = False
-            
-        device = self.gm.get_device_string(gpu['id'], preferred_backend=self.model_info.get("backend"))
+        
+        # Check system RAM before attempting CPU offload
+        available_ram = self.gm.get_available_system_ram_gb()
+        if available_ram < 20.0:
+            raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Flux richiede circa 20GB di RAM. Operazione annullata per evitare il blocco del sistema.")
         
         if self.pipeline is None:
             logger.info("Caricamento pipeline Flux GGUF...")
@@ -56,6 +56,9 @@ class FluxProvider(BaseAIProvider):
                     gguf_file=os.path.basename(self.t5_gguf_path),
                     torch_dtype=torch.float16
                 )
+                # Keep T5 encoder on CPU to save VRAM
+                text_encoder = text_encoder.to(dtype=torch.float16, device="cpu")
+                
                 self.pipeline = FluxPipeline.from_pretrained(
                     "black-forest-labs/FLUX.1-schnell",
                     transformer=transformer,
@@ -64,43 +67,12 @@ class FluxProvider(BaseAIProvider):
                 )
                 self.pipeline.enable_vae_tiling()
                 self.pipeline.vae.enable_slicing()
-                self.pipeline.enable_attention_slicing()
-                self.pipeline.to(device)
+                
+                # Use sequential CPU offload directly for 16GB VRAM GPUs
+                self.pipeline.enable_sequential_cpu_offload(gpu_id=gpu['device_index'])
             except Exception as e:
-                logger.exception(f"Errore nel caricamento del modello su GPU. Fallback con offload su RAM.")
-                if self.pipeline is not None:
-                    del self.pipeline
-                    self.pipeline = None
-                    import gc
-                    gc.collect()
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
-                
-                # Check system RAM before attempting CPU offload
-                available_ram = self.gm.get_available_system_ram_gb()
-                if available_ram < 24.0:
-                    raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Flux richiede circa 24GB di RAM. Operazione annullata per evitare il blocco del sistema.")
-                
-                logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso model CPU offload per evitare OOM.")
-                transformer = FluxTransformer2DModel.from_single_file(
-                    self.flux_gguf_path,
-                    quantization_config=GGUFQuantizationConfig(),
-                    torch_dtype=torch.float16
-                )
-                text_encoder = T5EncoderModel.from_pretrained(
-                    os.path.dirname(self.t5_gguf_path),
-                    gguf_file=os.path.basename(self.t5_gguf_path),
-                    torch_dtype=torch.float16
-                )
-                self.pipeline = FluxPipeline.from_pretrained(
-                    "black-forest-labs/FLUX.1-schnell",
-                    transformer=transformer,
-                    text_encoder=text_encoder,
-                    torch_dtype=torch.float16
-                )
-                self.pipeline.enable_vae_tiling()
-                self.pipeline.enable_vae_slicing()
-                self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
+                logger.exception("Errore nel caricamento del modello Flux.")
+                raise e
             
         def progress_callback(pipe, step, timestep, callback_kwargs):
             logger.info(f"Flux generation progress: step {step + 1}/4")
@@ -110,70 +82,15 @@ class FluxProvider(BaseAIProvider):
             return callback_kwargs
 
         logger.info(f"Generazione immagine per prompt: {prompt}")
-        try:
-            image = self.pipeline(
-                prompt, 
-                num_inference_steps=4,
-                guidance_scale=0.0,
-                height=640, 
-                width=360,
-                callback_on_step_end=progress_callback,
-                callback_on_step_end_tensor_inputs=[]
-            ).images[0]
-        except RuntimeError as e:
-            if "out of memory" in str(e).lower():
-                logger.warning("OOM rilevato durante la generazione Flux. Pulizia completa e re-inizializzazione con sequential CPU offload...")
-                
-                # 1. Distruggi completamente la pipeline attuale per liberare VRAM e RAM
-                if self.pipeline is not None:
-                    del self.pipeline
-                    self.pipeline = None
-                
-                import gc
-                gc.collect()
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-                    torch.cuda.ipc_collect()
-                
-                # 2. Verifica RAM disponibile
-                available_ram = self.gm.get_available_system_ram_gb()
-                if available_ram < 24.0:
-                    raise RuntimeError(f"OOM su GPU, ma RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Operazione annullata per evitare il blocco del sistema.")
-                
-                # 3. Re-inizializza la pipeline da zero con sequential CPU offload
-                logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Re-inizializzazione pipeline con sequential CPU offload.")
-                transformer = FluxTransformer2DModel.from_single_file(
-                    self.flux_gguf_path,
-                    quantization_config=GGUFQuantizationConfig(),
-                    torch_dtype=torch.float16
-                )
-                text_encoder = T5EncoderModel.from_pretrained(
-                    os.path.dirname(self.t5_gguf_path),
-                    gguf_file=os.path.basename(self.t5_gguf_path),
-                    torch_dtype=torch.float16
-                )
-                self.pipeline = FluxPipeline.from_pretrained(
-                    "black-forest-labs/FLUX.1-schnell",
-                    transformer=transformer,
-                    text_encoder=text_encoder,
-                    torch_dtype=torch.float16
-                )
-                self.pipeline.enable_vae_tiling()
-                self.pipeline.enable_vae_slicing()
-                self.pipeline.enable_sequential_cpu_offload(gpu_id=gpu['device_index'])
-                
-                # 4. Riprova la generazione
-                image = self.pipeline(
-                    prompt, 
-                    num_inference_steps=4,
-                    guidance_scale=0.0,
-                    height=640, 
-                    width=360,
-                    callback_on_step_end=progress_callback,
-                    callback_on_step_end_tensor_inputs=[]
-                ).images[0]
-            else:
-                raise e
+        image = self.pipeline(
+            prompt, 
+            num_inference_steps=4,
+            guidance_scale=0.0,
+            height=640, 
+            width=360,
+            callback_on_step_end=progress_callback,
+            callback_on_step_end_tensor_inputs=[]
+        ).images[0]
         
         image.save(output_path)
         logger.info(f"Immagine salvata in {output_path}")
