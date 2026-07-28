@@ -112,10 +112,12 @@ class LtxProvider(BaseAIProvider):
             logger.info(f"Generazione clip {i+1}/{len(prompts)} per prompt: {prompt}")
             
             # Determine the conditioning image for this clip
+            target_width = 432
+            target_height = 768
             if i == 0 and image_path and os.path.exists(image_path):
-                # Load and resize the initial Flux image to match video dimensions (320x576)
+                # Load and resize the initial Flux image to match video dimensions
                 init_image = Image.open(image_path).convert("RGB")
-                init_image = init_image.resize((432, 768), Image.LANCZOS)
+                init_image = init_image.resize((target_width, target_height), Image.LANCZOS)
                 current_image = init_image
             elif temp_clips:
                 # Extract a frame slightly before the end of the previous clip to avoid drift
@@ -129,10 +131,10 @@ class LtxProvider(BaseAIProvider):
                     current_image = Image.fromarray(frame_rgb)
                 else:
                     logger.warning("Impossibile estrarre l'ultimo frame. Uso immagine nera.")
-                    current_image = Image.new("RGB", (432, 768), color="black")
+                    current_image = Image.new("RGB", (target_width, target_height), color="black")
             else:
                 logger.warning("Nessuna immagine iniziale fornita. Uso immagine nera.")
-                current_image = Image.new("RGB", (432, 768), color="black")
+                current_image = Image.new("RGB", (target_width, target_height), color="black")
 
             # Add continuity prompt for subsequent clips
             if i > 0:
@@ -144,22 +146,25 @@ Smooth camera continuity.
 {prompt}
 """
             motion_prefix = """
-Cinematic action video.
+Cinematic video shot.
 Dynamic camera movement.
-The camera follows the subject.
-Realistic physics.
-Continuous motion.
-Objects move naturally.
-No static image.
+The camera follows the main subject.
+Natural realistic motion.
+Objects move with realistic physics.
+Smooth continuous action.
+Professional movie cinematography.
 """
 
             prompt = motion_prefix + prompt
 
+            steps = 12
+            generator = torch.Generator(device="cpu").manual_seed(42)
+
             def progress_callback(pipe, step, timestep, callback_kwargs):
-                logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/12")
+                logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/{steps}")
                 if job_id:
                     from backend.services.progress_tracker import ProgressTracker
-                    ProgressTracker().update(job_id, "video_generation", step + 1, 12, f"Generazione clip {i+1}/{len(prompts)}: step {step + 1}/12")
+                    ProgressTracker().update(job_id, "video_generation", step + 1, steps, f"Generazione clip {i+1}/{len(prompts)}: step {step + 1}/{steps}")
                 return callback_kwargs
 
             # Always generate 49 frames per clip to ensure consistent motion and audio sync
@@ -168,11 +173,12 @@ No static image.
             video = self.pipeline(
                 image=current_image,
                 prompt=prompt,
-                num_inference_steps=12,
+                num_inference_steps=steps,
                 num_frames=49,
-                height=768,
-                width=432,
-                guidance_scale=1.5,
+                height=target_height,
+                width=target_width,
+                guidance_scale=2.0,
+                generator=generator,
                 callback_on_step_end=progress_callback,
                 callback_on_step_end_tensor_inputs=[]
             ).frames[0]
