@@ -125,10 +125,10 @@ class LtxProvider(BaseAIProvider):
                 prompt = f"Continue the previous scene. Same character, same clothing, same environment. Maintain visual consistency. {prompt}"
 
             def progress_callback(pipe, step, timestep, callback_kwargs):
-                logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/30")
+                logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/12")
                 if job_id:
                     from backend.services.progress_tracker import ProgressTracker
-                    ProgressTracker().update(job_id, "video_generation", step + 1, 30, f"Generazione clip {i+1}/{len(prompts)}: step {step + 1}/30")
+                    ProgressTracker().update(job_id, "video_generation", step + 1, 12, f"Generazione clip {i+1}/{len(prompts)}: step {step + 1}/12")
                 return callback_kwargs
 
             # Always generate 49 frames per clip to ensure consistent motion and audio sync
@@ -137,11 +137,11 @@ class LtxProvider(BaseAIProvider):
             video = self.pipeline(
                 image=current_image,
                 prompt=prompt,
-                num_inference_steps=30,
+                num_inference_steps=12,
                 height=576,
                 width=320,
                 num_frames=num_frames,
-                guidance_scale=3.0,
+                guidance_scale=1.0,
                 callback_on_step_end=progress_callback,
                 callback_on_step_end_tensor_inputs=[]
             ).frames[0]
