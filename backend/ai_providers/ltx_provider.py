@@ -45,9 +45,18 @@ class LtxProvider(BaseAIProvider):
                 model_path = os.path.abspath(self.model_info.get("path"))
                 dtype = torch.float16
                 
+                text_encoder = T5EncoderModel.from_pretrained(
+                    "google/t5-v1_1-xxl",
+                    torch_dtype=torch.float16,
+                    device_map="cpu",
+                    low_cpu_mem_usage=True
+                )
+                text_encoder.eval()
+                text_encoder.to("cpu")
+                
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
-                    text_encoder="text_encoder",
+                    text_encoder=text_encoder,
                     torch_dtype=dtype,
                     low_cpu_mem_usage=True
                 )
@@ -73,9 +82,18 @@ class LtxProvider(BaseAIProvider):
                 model_path = os.path.abspath(self.model_info.get("path"))
                 dtype = torch.float16
                 
+                text_encoder = T5EncoderModel.from_pretrained(
+                    "google/t5-v1_1-xxl",
+                    torch_dtype=torch.float16,
+                    device_map="cpu",
+                    low_cpu_mem_usage=True
+                )
+                text_encoder.eval()
+                text_encoder.to("cpu")
+                
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
-                    text_encoder="text_encoder",
+                    text_encoder=text_encoder,
                     torch_dtype=dtype,
                     low_cpu_mem_usage=True
                 )
