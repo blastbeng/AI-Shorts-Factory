@@ -49,14 +49,15 @@ class LtxProvider(BaseAIProvider):
             logger.info("Caricamento pipeline LTX Video (Img2Video)...")
             model_path = self.model_info.get("path")
             try:
-                text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=torch.float16)
+                text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=torch.bfloat16)
                 text_encoder.to("cpu")
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(model_path, text_encoder=text_encoder, torch_dtype=torch.float16)
                 self.pipeline.enable_attention_slicing()
-                if use_cpu_offload:
-                    self.pipeline.enable_model_cpu_offload(device=device)
-                else:
-                    self.pipeline.to(device)
+                if hasattr(self.pipeline.vae, "enable_slicing"):
+                    self.pipeline.vae.enable_slicing()
+                if hasattr(self.pipeline.vae, "enable_tiling"):
+                    self.pipeline.vae.enable_tiling()
+                self.pipeline.enable_sequential_cpu_offload()
             except Exception as e:
                 logger.exception(f"Errore nel caricamento del modello su GPU. Fallback con offload su RAM.")
                 if self.pipeline is not None:
@@ -72,11 +73,15 @@ class LtxProvider(BaseAIProvider):
                     raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Operazione annullata per evitare il blocco del sistema.")
                 
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso sequential CPU offload per evitare OOM.")
-                text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=torch.float16)
+                text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=torch.bfloat16)
                 text_encoder.to("cpu")
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(model_path, text_encoder=text_encoder, torch_dtype=torch.float16)
                 self.pipeline.enable_attention_slicing()
-                self.pipeline.enable_sequential_cpu_offload(device=device)
+                if hasattr(self.pipeline.vae, "enable_slicing"):
+                    self.pipeline.vae.enable_slicing()
+                if hasattr(self.pipeline.vae, "enable_tiling"):
+                    self.pipeline.vae.enable_tiling()
+                self.pipeline.enable_sequential_cpu_offload()
 
         import gc
         import os
@@ -115,20 +120,20 @@ class LtxProvider(BaseAIProvider):
                 current_image = Image.new("RGB", (320, 576), color="black")
 
             def progress_callback(pipe, step, timestep, callback_kwargs):
-                logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/25")
+                logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/8")
                 if job_id:
                     from backend.services.progress_tracker import ProgressTracker
-                    ProgressTracker().update(job_id, "video_generation", step + 1, 25, f"Generazione clip {i+1}/{len(prompts)}: step {step + 1}/25")
+                    ProgressTracker().update(job_id, "video_generation", step + 1, 8, f"Generazione clip {i+1}/{len(prompts)}: step {step + 1}/8")
                 return callback_kwargs
 
             video = self.pipeline(
                 image=current_image,
                 prompt=prompt,
-                num_inference_steps=25,
-                height=576,
-                width=320,
-                num_frames=49,
-                guidance_scale=4.0,
+                num_inference_steps=8,
+                height=512,
+                width=288,
+                num_frames=25,
+                guidance_scale=1.0,
                 callback_on_step_end=progress_callback,
                 callback_on_step_end_tensor_inputs=[]
             ).frames[0]
@@ -157,7 +162,7 @@ class LtxProvider(BaseAIProvider):
         cap.release()
         
         target_duration = kwargs.get("target_duration")
-        total_frames = len(temp_clips) * 49  # 49 frames per clip
+        total_frames = len(temp_clips) * 25  # 25 frames per clip
         if target_duration and total_frames > 0:
             fps = total_frames / target_duration
             logger.info(f"Adattamento FPS a {fps:.2f} per matchare la durata audio di {target_duration:.2f}s.")
@@ -187,7 +192,10 @@ class LtxProvider(BaseAIProvider):
         return {"type": "video", "model": "ltx_video"}
 
     def get_gpu_requirements(self):
-        return {"vram_required_gb": 16, "backend": self.model_info.get("backend")}
+        return {
+            "vram_required_gb": self.model_info.get("vram_required_gb", 12),
+            "backend": self.model_info.get("backend")
+        }
 
     def cleanup(self):
         if self.pipeline is not None:
