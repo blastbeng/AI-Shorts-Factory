@@ -344,6 +344,39 @@ class PipelineOrchestrator:
                     video_path = upscaled_video_path # Update video_path for assembly
                     self._update_stage(stage, "completed", video_path)
 
+                elif stage == "video_analysis":
+                    from backend.ai_providers.video_analysis_provider import VideoAnalysisProvider
+                    analyzer = VideoAnalysisProvider()
+                    try:
+                        if not analyzer.health_check():
+                            logger.warning("VideoAnalysisProvider non installato. Uso storyboard come fallback.")
+                            video_description = storyboard
+                        else:
+                            video_description = analyzer.generate(video_path)
+                    finally:
+                        analyzer.cleanup()
+                    self._update_stage(stage, "completed", video_description)
+
+                elif stage == "narration_generation":
+                    from backend.ai_providers.llm_provider import LLMProvider
+                    llm = LLMProvider()
+                    try:
+                        narration_prompt = (
+                            f"Based on the following video description, write an engaging narration for a short video. "
+                            f"The narration should match what's happening in the video and be suitable for YouTube/Instagram Reels. "
+                            f"Duration: {self.profile.duration_seconds} seconds. "
+                            f"Language: {self.profile.language}. "
+                            f"Video description: {video_description}. "
+                            f"Original topic for context: {expanded_topic}. "
+                            f"Output ONLY the narration text, without any meta-text, instructions, or formatting."
+                        )
+                        narration = llm.generate(narration_prompt, max_length=600, is_interrupted=self._is_interrupted)
+                        if self._is_interrupted():
+                            return "interrupted"
+                    finally:
+                        llm.cleanup()
+                    self._update_stage(stage, "completed", narration)
+
                 elif stage == "audio_generation":
                     from backend.ai_providers.mmaudio_provider import MMAudioProvider
                     mmaudio = MMAudioProvider()
