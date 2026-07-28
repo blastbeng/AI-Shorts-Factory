@@ -53,6 +53,7 @@ trap cleanup SIGINT SIGTERM
 # Avvia il backend
 echo "Avvio del backend (FastAPI) su ${BACKEND_HOST}:${BACKEND_PORT}..."
 source venv/bin/activate
+export TORCH_BLAS_PREFER_HIPBLAS=1
 uvicorn backend.api.main:app --host $BACKEND_HOST --port $BACKEND_PORT &
 BACKEND_PID=$!
 

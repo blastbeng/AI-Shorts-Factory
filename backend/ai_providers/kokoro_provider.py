@@ -8,6 +8,8 @@ from kokoro import KModel, KPipeline
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger
+import threading
+KOKORO_LOCK = threading.Lock()
 
 torch.set_num_threads(1)
 
@@ -78,7 +80,7 @@ class KokoroProvider(BaseAIProvider):
             logger.info("Kokoro: spostamento GPU...")
             self.model = self.model.to(
                 device=torch.device(device),
-                dtype=torch.float32
+                dtype=torch.float16
             )
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
@@ -150,11 +152,12 @@ class KokoroProvider(BaseAIProvider):
         import threading
         logger.info(f"Kokoro generate thread: {threading.current_thread().name}")
         with torch.no_grad():
-            audio_chunks = []
-            for i, (graphemes, phonemes, audio) in enumerate(self.pipeline(text, voice=voice_name, speed=speed)):
-                logger.info(f"Kokoro: Chunk {i} generato.")
-                audio_chunks.append(audio.cpu().numpy().squeeze())
-            logger.info("Kokoro: Generazione audio completata.")
+            with KOKORO_LOCK:
+                audio_chunks = []
+                for i, (graphemes, phonemes, audio) in enumerate(self.pipeline(text, voice=voice_name, speed=speed)):
+                    logger.info(f"Kokoro: Chunk {i} generato.")
+                    audio_chunks.append(audio.cpu().numpy().squeeze())
+                logger.info("Kokoro: Generazione audio completata.")
                 
         if not audio_chunks:
             raise RuntimeError("Kokoro non ha generato alcun audio.")
