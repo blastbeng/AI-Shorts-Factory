@@ -163,7 +163,7 @@ Professional movie cinematography.
             prompt = motion_prefix + prompt
 
             steps = 12
-            generator = torch.Generator(device="cuda").manual_seed(42)
+            generator = torch.Generator(device="cpu").manual_seed(42)
 
             def progress_callback(pipe, step, timestep, callback_kwargs):
                 logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/{steps}")
@@ -178,12 +178,14 @@ Professional movie cinematography.
             video = self.pipeline(
                 image=current_image,
                 prompt=prompt,
-                num_inference_steps=20,
+                num_inference_steps=steps,
                 num_frames=49,
-                height=672,
-                width=384,
-                guidance_scale=2.0,
-                generator=generator
+                height=target_height,
+                width=target_width,
+                guidance_scale=1.0,
+                generator=generator,
+                callback_on_step_end=progress_callback,
+                callback_on_step_end_tensor_inputs=[]
             ).frames[0]
 
             if isinstance(video, torch.Tensor):
