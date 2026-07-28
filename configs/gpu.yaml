@@ -12,6 +12,8 @@ gpus:
       - "voice_generation"
       - "speech_recognition"
       - "audio_generation"
+      - "video_upscaling"
+      - "video_upscaling"
   - id: 1
     name: "NVIDIA RTX 3060"
     vram_gb: 12
