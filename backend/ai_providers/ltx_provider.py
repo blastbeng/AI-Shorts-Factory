@@ -162,7 +162,7 @@ Professional movie cinematography.
 
             prompt = motion_prefix + prompt
 
-            steps = 12
+            steps = 20
             generator = torch.Generator(device="cuda").manual_seed(42)
 
             def progress_callback(pipe, step, timestep, callback_kwargs):
