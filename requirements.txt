@@ -27,3 +27,4 @@ facexlib
 gfpgan
 opencv-python
 gguf
+imageio[ffmpeg]
