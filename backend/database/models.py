@@ -14,7 +14,11 @@ class Job(Base):
     __tablename__ = "jobs"
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     status = Column(String, default="pending")  # pending, running, completed, failed
-    profile_id = Column(Integer, ForeignKey("generation_profiles.id"))
+    genre = Column(String, default="random")
+    custom_prompt = Column(String, nullable=True)
+    language = Column(String, default="italian")
+    style = Column(String, default="default")
+    duration_seconds = Column(Integer, default=30)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     videos = relationship("Video", backref="job")
@@ -39,18 +43,6 @@ class ModelInfo(Base):
     vram_required = Column(Integer, nullable=True)
     backend = Column(String, nullable=True)
     status = Column(String, default="not_installed")
-
-class GenerationProfile(Base):
-    __tablename__ = "generation_profiles"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    genre = Column(String, default="random")
-    custom_prompt = Column(String, nullable=True)
-    language = Column(String, default="italian")
-    topic = Column(String, nullable=True) # Make topic nullable since it might be generated
-    style = Column(String, default="default")
-    duration_seconds = Column(Integer, default=30)
-    created_at = Column(DateTime, default=datetime.utcnow)
 
 class PipelineStage(Base):
     __tablename__ = "pipeline_stages"
