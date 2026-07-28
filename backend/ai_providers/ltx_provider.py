@@ -51,20 +51,24 @@ class LtxProvider(BaseAIProvider):
             logger.info("Caricamento pipeline LTX Video (Img2Video)...")
             model_path = self.model_info.get("path")
             try:
-                text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=torch.bfloat16)
+                dtype = torch.float16
+                text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=dtype)
                 text_encoder.to("cpu")
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
                     vae=self.vae_path,
                     text_encoder=text_encoder,
-                    torch_dtype=torch.bfloat16
+                    torch_dtype=dtype
                 )
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):
                     self.pipeline.vae.enable_slicing()
                 if hasattr(self.pipeline.vae, "enable_tiling"):
                     self.pipeline.vae.enable_tiling()
-                self.pipeline.enable_sequential_cpu_offload()
+                if use_cpu_offload:
+                    self.pipeline.enable_sequential_cpu_offload()
+                else:
+                    self.pipeline.to(device)
             except Exception as e:
                 logger.exception(f"Errore nel caricamento del modello su GPU. Fallback con offload su RAM.")
                 if self.pipeline is not None:
@@ -80,13 +84,14 @@ class LtxProvider(BaseAIProvider):
                     raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Operazione annullata per evitare il blocco del sistema.")
                 
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso sequential CPU offload per evitare OOM.")
-                text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=torch.bfloat16)
+                dtype = torch.float16
+                text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=dtype)
                 text_encoder.to("cpu")
                 self.pipeline = LTXImageToVideoPipeline.from_single_file(
                     model_path,
                     vae=self.vae_path,
                     text_encoder=text_encoder,
-                    torch_dtype=torch.bfloat16
+                    torch_dtype=dtype
                 )
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):
@@ -133,7 +138,15 @@ class LtxProvider(BaseAIProvider):
 
             # Add continuity prompt for subsequent clips
             if i > 0:
-                prompt = f"Continue the previous scene. Same character, same clothing, same environment. Maintain visual consistency. {prompt}"
+                prompt = f"""
+Continue the previous shot.
+Same character, same clothes, same environment.
+The scene continues naturally from the previous frame.
+Maintain identity and visual consistency.
+Camera movement continues smoothly.
+
+{prompt}
+"""
 
             def progress_callback(pipe, step, timestep, callback_kwargs):
                 logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/12")
@@ -152,7 +165,7 @@ class LtxProvider(BaseAIProvider):
                 height=576,
                 width=320,
                 num_frames=num_frames,
-                guidance_scale=1.0,
+                guidance_scale=1.5,
                 callback_on_step_end=progress_callback,
                 callback_on_step_end_tensor_inputs=[]
             ).frames[0]
