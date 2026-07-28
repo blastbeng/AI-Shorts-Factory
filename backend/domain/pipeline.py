@@ -5,6 +5,19 @@ from backend.media.ffmpeg_utils import FFmpegUtils
 import os
 import random
 import yaml
+import subprocess
+import json
+
+def get_media_duration(path):
+    if not os.path.exists(path):
+        return 0.0
+    try:
+        cmd = ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", path]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        data = json.loads(result.stdout)
+        return float(data.get("format", {}).get("duration", 0.0))
+    except Exception:
+        return 0.0
 
 def clear_vram():
     import gc
@@ -238,6 +251,12 @@ class PipelineOrchestrator:
                     ltx = LtxProvider()
                     try:
                         video_path = f"output/video_{self.job_id}.mp4"
+                        
+                        # Get actual voice duration to match video length
+                        voice_duration = get_media_duration(voice_path)
+                        if voice_duration <= 0:
+                            voice_duration = float(self.profile.duration_seconds)
+                            
                         # Parse storyboard into individual scenes and strip numbering
                         import re
                         raw_scenes = [s.strip() for s in storyboard.split('\n') if s.strip()]
@@ -249,13 +268,26 @@ class PipelineOrchestrator:
                                 scenes.append(cleaned)
                         if not scenes:
                             scenes = [storyboard]
+                            
+                        # Calculate required clips based on audio duration
+                        # Each clip is 49 frames at 24fps = ~2.04 seconds
+                        clip_duration = 49 / 24.0
+                        required_clips = max(1, int(voice_duration // clip_duration) + (1 if voice_duration % clip_duration > 0 else 0))
+                        
+                        # Adjust scenes to match required_clips
+                        if len(scenes) > required_clips:
+                            scenes = scenes[:required_clips]
+                        elif len(scenes) < required_clips:
+                            while len(scenes) < required_clips:
+                                scenes.append(scenes[-1])
+                                
                         video_prompts = [f"Vertical short video based on this scene: {scene}. IMPORTANT: The video must NOT contain any text, letters, or words." for scene in scenes]
                         
                         if not ltx.health_check():
                             logger.warning("LTX Video non installato. Uso video dummy.")
                             self._generate_dummy_media("video", video_path)
                         else:
-                            ltx.generate(video_prompts, video_path, job_id=self.job_id, image_path=image_path)
+                            ltx.generate(video_prompts, video_path, job_id=self.job_id, image_path=image_path, target_duration=voice_duration)
                     finally:
                         ltx.cleanup()
                     self._update_stage(stage, "completed", video_path)

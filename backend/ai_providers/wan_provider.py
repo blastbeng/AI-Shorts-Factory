@@ -153,8 +153,16 @@ class WanProvider(BaseAIProvider):
         frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         cap.release()
         
+        target_duration = kwargs.get("target_duration")
+        total_frames = len(temp_clips) * 49  # 49 frames per clip
+        if target_duration and total_frames > 0:
+            fps = total_frames / target_duration
+            logger.info(f"Adattamento FPS a {fps:.2f} per matchare la durata audio di {target_duration:.2f}s.")
+        else:
+            fps = 24.0
+        
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        final_writer = cv2.VideoWriter(output_path, fourcc, 24.0, (frame_width, frame_height))
+        final_writer = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
         for temp_clip_path in temp_clips:
             cap = cv2.VideoCapture(temp_clip_path)
             while True:
