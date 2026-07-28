@@ -52,7 +52,7 @@ class LtxProvider(BaseAIProvider):
             try:
                 text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=torch.float16)
                 text_encoder.to("cpu")
-                self.pipeline = LTXImageToVideoPipeline.from_single_file(model_path, text_encoder=text_encoder, torch_dtype=torch.float16)
+                self.pipeline = LTXImageToVideoPipeline.from_pretrained(model_path, text_encoder=text_encoder, torch_dtype=torch.float16)
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):
                     self.pipeline.vae.enable_slicing()
@@ -76,7 +76,7 @@ class LtxProvider(BaseAIProvider):
                 logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso sequential CPU offload per evitare OOM.")
                 text_encoder = T5EncoderModel.from_pretrained("google/t5-v1_1-xxl", torch_dtype=torch.float16)
                 text_encoder.to("cpu")
-                self.pipeline = LTXImageToVideoPipeline.from_single_file(model_path, text_encoder=text_encoder, torch_dtype=torch.float16)
+                self.pipeline = LTXImageToVideoPipeline.from_pretrained(model_path, text_encoder=text_encoder, torch_dtype=torch.float16)
                 self.pipeline.enable_attention_slicing()
                 if hasattr(self.pipeline.vae, "enable_slicing"):
                     self.pipeline.vae.enable_slicing()
@@ -125,10 +125,10 @@ class LtxProvider(BaseAIProvider):
                 prompt = f"Continue the previous scene. Same character, same clothing, same environment. Maintain visual consistency. {prompt}"
 
             def progress_callback(pipe, step, timestep, callback_kwargs):
-                logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/12")
+                logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/30")
                 if job_id:
                     from backend.services.progress_tracker import ProgressTracker
-                    ProgressTracker().update(job_id, "video_generation", step + 1, 12, f"Generazione clip {i+1}/{len(prompts)}: step {step + 1}/12")
+                    ProgressTracker().update(job_id, "video_generation", step + 1, 30, f"Generazione clip {i+1}/{len(prompts)}: step {step + 1}/30")
                 return callback_kwargs
 
             # Always generate 49 frames per clip to ensure consistent motion and audio sync
@@ -137,11 +137,11 @@ class LtxProvider(BaseAIProvider):
             video = self.pipeline(
                 image=current_image,
                 prompt=prompt,
-                num_inference_steps=12,
+                num_inference_steps=30,
                 height=576,
                 width=320,
                 num_frames=num_frames,
-                guidance_scale=1.2,
+                guidance_scale=3.0,
                 callback_on_step_end=progress_callback,
                 callback_on_step_end_tensor_inputs=[]
             ).frames[0]

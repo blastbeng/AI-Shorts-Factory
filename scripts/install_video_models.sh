@@ -15,11 +15,9 @@ else
     echo "[OK] Modello wan_2_1_1_3b già installato."
 fi
 
-LTX_FILE="./models/video/ltxv-13b-0.9.8-distilled-fp8.safetensors"
-if [ ! -f "$LTX_FILE" ]; then
-    echo "[INFO] Downloading LTX Video 13b FP8 model..."
-    mkdir -p "./models/video"
-    wget -O "$LTX_FILE" "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltxv-13b-0.9.8-distilled-fp8.safetensors"
+LTX_DIR="./models/video/ltx_video"
+if [ ! -d "$LTX_DIR" ] || [ ! -f "$LTX_DIR/.download_complete" ]; then
+    ./scripts/download_models.sh "ltx_video" "Lightricks/LTX-Video-0.9.8" "$LTX_DIR" "video" "ltx_video"
 else
     echo "[OK] Modello ltx_video già installato."
 fi
