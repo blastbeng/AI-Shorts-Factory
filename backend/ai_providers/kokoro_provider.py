@@ -124,9 +124,13 @@ class KokoroProvider(BaseAIProvider):
         
         import numpy as np
         
+        logger.info("Kokoro: Avvio generazione audio (pipeline)...")
+        self.model.eval()
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+            
         with torch.no_grad():
             audio_chunks = []
-            logger.info("Kokoro: Avvio generazione audio (pipeline)...")
             for i, (graphemes, phonemes, audio) in enumerate(self.pipeline(text, voice=voice_name, speed=speed)):
                 logger.info(f"Kokoro: Chunk {i} generato.")
                 audio_chunks.append(audio.cpu().numpy().squeeze())
