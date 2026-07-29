@@ -17,9 +17,6 @@ pip install --upgrade pip
 echo "Installazione di MMAudio e dipendenze (numpy<2.1) prima di PyTorch..."
 pip install git+https://github.com/hkchengrex/MMAudio.git
 
-echo "Installazione di PyTorch con supporto ROCm per GPU AMD (sovrascrive torch di mmaudio)..."
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.4 --force-reinstall
-
 echo "Installazione delle librerie Python di base..."
 pip install -r requirements.txt
 
