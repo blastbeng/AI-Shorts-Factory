@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import cv2
 from PIL import Image
-from diffusers import LTXImageToVideoPipeline, EulerDiscreteScheduler
+from diffusers import LTXImageToVideoPipeline
 from transformers import T5EncoderModel
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
@@ -62,9 +62,6 @@ class LtxProvider(BaseAIProvider):
             self.pipeline.vae.enable_tiling()
             self.pipeline.enable_attention_slicing("max")
             self.pipeline.enable_sequential_cpu_offload()
-            
-            # Imposta lo scheduler Euler per risultati consigliati
-            self.pipeline.scheduler = EulerDiscreteScheduler.from_config(self.pipeline.scheduler.config)
 
         import gc
         
