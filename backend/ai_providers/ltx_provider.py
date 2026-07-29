@@ -67,7 +67,7 @@ class LtxProvider(BaseAIProvider):
             gc.collect()
             self.pipeline.vae.enable_tiling()
             self.pipeline.vae.enable_slicing()
-            self.pipeline.enable_model_cpu_offload(gpu_id=gpu_id)
+            self.pipeline.enable_sequential_cpu_offload(device=device)
 
         import gc
         
