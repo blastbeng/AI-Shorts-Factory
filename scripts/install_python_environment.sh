@@ -15,7 +15,6 @@ echo "Aggiornamento di pip..."
 pip install --upgrade pip
 
 echo "Installazione di MMAudio e dipendenze (numpy<2.1) prima di PyTorch..."
-pip install "numpy<2.1,>=1.21"
 pip install git+https://github.com/hkchengrex/MMAudio.git
 
 echo "Installazione di PyTorch con supporto ROCm per GPU AMD (sovrascrive torch di mmaudio)..."
@@ -40,10 +39,13 @@ for model in en_core_web_sm it_core_news_sm es_core_news_sm fr_core_news_sm de_c
     fi
 done
 
+echo "Installazione dipendenze (numpy<2.1 pillow<12.0)..."
+pip install "numpy<2.1,>=1.21" "pillow<12.0"
+
 echo "Verifica di llama-cpp-python con backend Vulkan..."
 if ! python -c "import llama_cpp" 2>/dev/null; then
     echo "Installazione di llama-cpp-python con backend Vulkan..."
-    CMAKE_ARGS="-DGGML_VULKAN=on" CMAKE_BUILD_PARALLEL_LEVEL=$(nproc) pip install llama-cpp-python "numpy<2.1,>=1.21" --upgrade --force-reinstall --no-cache-dir -v
+    CMAKE_ARGS="-DGGML_VULKAN=on" CMAKE_BUILD_PARALLEL_LEVEL=$(nproc) pip install llama-cpp-python --upgrade --force-reinstall --no-cache-dir -v
 else
     echo "[OK] llama-cpp-python già installato."
 fi
