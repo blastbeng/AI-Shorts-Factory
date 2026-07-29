@@ -131,7 +131,7 @@ class LLMProvider(BaseAIProvider):
                 system_prompt = f"You are a professional scriptwriter. Follow the user's instructions exactly. Do not output any thinking process, reasoning, meta-text, prompt analysis, or step-by-step breakdowns. Output ONLY a valid JSON object with a single key 'content' containing the final text. The output MUST be in the language requested by the user. Do not include any introductory or concluding remarks. Do not output the prompt or any part of it. Never output your internal thoughts or translate the prompt. Example: {{\"content\": \"The generated text here.\"}}"
                 import threading
                 import random as random_module
-                dynamic_temp = random_module.uniform(0.9, 1.3)
+                dynamic_temp = random_module.uniform(0.7, 0.85)
                 logger.info(f"LLM Thread corrente: {threading.current_thread().name}")
                 logger.info(f"PRIMA create_chat_completion (Dynamic Temp: {dynamic_temp})")
                 response = self.llm.create_chat_completion(

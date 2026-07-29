@@ -37,15 +37,6 @@ class LtxProvider(BaseAIProvider):
         frames_per_clip = 49
         seconds_per_clip = frames_per_clip / fps  # ~2.04 seconds
 
-        if target_duration and target_duration > 0:
-            num_clips_needed = max(1, int(np.ceil(target_duration / seconds_per_clip)))
-            # Extend or trim prompts to match needed clip count
-            if len(prompts) < num_clips_needed:
-                # Repeat last prompt for remaining clips
-                prompts = prompts + [prompts[-1]] * (num_clips_needed - len(prompts))
-            elif len(prompts) > num_clips_needed:
-                prompts = prompts[:num_clips_needed]
-        
         preferred_backend = self.model_info.get("backend")
         gpu = self.gm.get_gpu_for_task_ignore_vram("video_generation", preferred_backend=preferred_backend)
         if not gpu:
@@ -71,9 +62,7 @@ class LtxProvider(BaseAIProvider):
             del text_encoder
             import gc
             gc.collect()
-            self.pipeline.vae.enable_slicing()
             self.pipeline.vae.enable_tiling()
-            self.pipeline.enable_attention_slicing("max")
             self.pipeline.enable_sequential_cpu_offload()
 
         import gc
@@ -110,9 +99,8 @@ class LtxProvider(BaseAIProvider):
                 current_image = Image.new("RGB", (target_width, target_height), color="black")
 
             if i > 0:
-                prompt = f"{prompt}. Continue the previous scene seamlessly with the same character and environment. Natural motion, smooth camera continuity."
-            else:
-                prompt = f"{prompt}. Cinematic video, natural realistic motion, professional cinematography."
+                prompt = f"{prompt}. Continue previous scene seamlessly, same character and environment, natural motion."
+            # The first clip doesn't need extra text, the pipeline prompt is sufficient.
 
             import random
             steps = 40
@@ -135,7 +123,7 @@ class LtxProvider(BaseAIProvider):
                 num_frames=num_frames,
                 height=target_height,
                 width=target_width,
-                guidance_scale=1.5,
+                guidance_scale=2.0,
                 generator=generator,
                 callback_on_step_end=progress_callback,
                 callback_on_step_end_tensor_inputs=[]
