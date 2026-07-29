@@ -46,8 +46,8 @@ class MMAudioProvider(BaseAIProvider):
         if self.model is None:
             logger.info("Caricamento modello MMAudio...")
             model_path = self.model_info.get("path")
+            self.processor = MMAudioProcessor()
             try:
-                self.processor = MMAudioProcessor.from_pretrained(model_path)
                 if use_cpu_offload:
                     self.model = MMAudio.from_pretrained(model_path, torch_dtype=torch.bfloat16, device_map="auto")
                 else:
