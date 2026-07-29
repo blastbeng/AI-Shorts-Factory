@@ -42,6 +42,9 @@ class LtxProvider(BaseAIProvider):
         if not gpu:
             raise RuntimeError("Nessuna GPU assegnata per la video generation.")
         
+        device = self.gm.get_device_string(gpu['id'], preferred_backend=preferred_backend)
+        gpu_id = int(device.split(":")[-1]) if ":" in device else 0
+        
         if self.pipeline is None:
             logger.info("Caricamento pipeline LTX Video (Img2Video)...")
             model_path = os.path.abspath(self.model_info.get("path"))
@@ -63,7 +66,7 @@ class LtxProvider(BaseAIProvider):
             import gc
             gc.collect()
             self.pipeline.vae.enable_tiling()
-            self.pipeline.enable_sequential_cpu_offload()
+            self.pipeline.enable_model_cpu_offload(gpu_id=gpu_id)
 
         import gc
         
@@ -147,9 +150,10 @@ class LtxProvider(BaseAIProvider):
 
             logger.info(f"LTX output type={type(video)}, shape={getattr(video, 'shape', None)}, dtype={getattr(video, 'dtype', None)}")
 
-            # Se è float [0,1], converti
+            # Se è float [0,1] o [-1,1], converti
             if video.dtype != np.uint8:
-                if video.max() <= 1.0:
+                if video.max() <= 1.0 and video.min() >= -1.0:
+                    video = np.clip(video, 0, 1)
                     video = (video * 255).round()
 
                 video = video.astype("uint8")
