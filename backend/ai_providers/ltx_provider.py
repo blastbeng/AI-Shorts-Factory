@@ -74,7 +74,7 @@ class LtxProvider(BaseAIProvider):
         import random
         steps = 20
         # Use a single seed for all clips to maintain visual consistency
-        generator = torch.Generator(device="cpu").manual_seed(random.randint(0, 2**32 - 1))
+        generator = torch.Generator(device="cuda").manual_seed(random.randint(0, 2**32 - 1))
         
         temp_clips = []
         last_frame = None
