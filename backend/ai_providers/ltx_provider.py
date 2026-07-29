@@ -33,6 +33,19 @@ class LtxProvider(BaseAIProvider):
         image_path = kwargs.get("image_path")
         target_duration = kwargs.get("target_duration")
         
+        fps = 24.0
+        frames_per_clip = 49
+        seconds_per_clip = frames_per_clip / fps  # ~2.04 seconds
+
+        if target_duration and target_duration > 0:
+            num_clips_needed = max(1, int(np.ceil(target_duration / seconds_per_clip)))
+            # Extend or trim prompts to match needed clip count
+            if len(prompts) < num_clips_needed:
+                # Repeat last prompt for remaining clips
+                prompts = prompts + [prompts[-1]] * (num_clips_needed - len(prompts))
+            elif len(prompts) > num_clips_needed:
+                prompts = prompts[:num_clips_needed]
+        
         preferred_backend = self.model_info.get("backend")
         gpu = self.gm.get_gpu_for_task_ignore_vram("video_generation", preferred_backend=preferred_backend)
         if not gpu:
@@ -86,32 +99,28 @@ class LtxProvider(BaseAIProvider):
                 current_image = init_image
             elif i > 0 and last_frame is not None:
                 # Use the high-quality last frame from the previous clip in memory
-                current_image = Image.fromarray(last_frame)
+                frame = np.squeeze(last_frame)
+                if frame.ndim == 3:
+                    current_image = Image.fromarray(frame.astype(np.uint8))
+                else:
+                    logger.error(f"Last frame has unexpected shape: {frame.shape}")
+                    current_image = Image.new("RGB", (target_width, target_height), color="black")
             else:
                 logger.warning("Nessuna immagine iniziale fornita. Uso immagine nera.")
                 current_image = Image.new("RGB", (target_width, target_height), color="black")
 
             # Add continuity prompt for subsequent clips
             if i > 0:
-                prompt = f"""
-Continue the previous scene seamlessly.
-Keep the same character and environment.
-Maintain dynamic camera continuity and motion.
-Focus on the specific action for this clip: {prompt}
-"""
-            motion_prefix = """
-Cinematic video shot with dynamic camera movement.
-The camera actively follows the main subject.
-Natural realistic motion with objects moving realistically.
-Smooth continuous action, no static frames.
-Professional movie cinematography, high quality.
-"""
+                prompt = f"""Continue the previous scene seamlessly. Keep the same character and environment.
+Focus on this specific action: {prompt}
+Maintain dynamic camera continuity and natural motion."""
 
-            prompt = motion_prefix + prompt
+            prompt = f"""{prompt}
+Cinematic video, dynamic camera following subject, natural realistic motion, smooth continuous action, professional cinematography."""
 
             import random
             steps = 40
-            generator = torch.Generator(device="cuda").manual_seed(random.randint(0, 2**32 - 1))
+            generator = torch.Generator(device="cpu").manual_seed(random.randint(0, 2**32 - 1))
 
             def progress_callback(pipe, step, timestep, callback_kwargs):
                 logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/{steps}")
@@ -127,10 +136,10 @@ Professional movie cinematography, high quality.
                 image=current_image,
                 prompt=prompt,
                 num_inference_steps=steps,
-                num_frames=49,
+                num_frames=num_frames,
                 height=target_height,
                 width=target_width,
-                guidance_scale=3.0,
+                guidance_scale=20.0,
                 generator=generator,
                 callback_on_step_end=progress_callback,
                 callback_on_step_end_tensor_inputs=[]
@@ -157,13 +166,10 @@ Professional movie cinematography, high quality.
             last_frame = video[-1]
 
             temp_clip_path = output_path.replace(".mp4", f"_clip_{i}.mp4")
-            frame_height, frame_width = video.shape[1], video.shape[2]
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            video_writer = cv2.VideoWriter(temp_clip_path, fourcc, 24.0, (frame_width, frame_height))
+            writer = imageio.get_writer(temp_clip_path, fps=24.0, codec='libx264', quality=8, macro_block_size=1)
             for frame in video:
-                frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                video_writer.write(frame_bgr)
-            video_writer.release()
+                writer.append_data(frame)
+            writer.close()
             temp_clips.append(temp_clip_path)
             logger.info(f"Clip {i+1} salvata in {temp_clip_path}")
             
@@ -178,26 +184,18 @@ Professional movie cinematography, high quality.
                 torch.cuda.ipc_collect()
 
         logger.info(f"Concatenazione di {len(temp_clips)} clip in {output_path}...")
-        cap = cv2.VideoCapture(temp_clips[0])
-        frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        cap.release()
         
         # Keep a constant 24 FPS to ensure MMAudio syncs correctly.
         # The final duration mismatch is handled by FFmpeg's -shortest flag during assembly.
         fps = 24.0
         
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        final_writer = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
+        final_writer = imageio.get_writer(output_path, fps=fps, codec='libx264', quality=8, macro_block_size=1)
         for temp_clip_path in temp_clips:
-            cap = cv2.VideoCapture(temp_clip_path)
-            while True:
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                final_writer.write(frame)
-            cap.release()
-        final_writer.release()
+            reader = imageio.get_reader(temp_clip_path)
+            for frame in reader:
+                final_writer.append_data(frame)
+            reader.close()
+        final_writer.close()
         
         for temp_clip_path in temp_clips:
             if os.path.exists(temp_clip_path):
