@@ -66,6 +66,7 @@ class LtxProvider(BaseAIProvider):
             import gc
             gc.collect()
             self.pipeline.vae.enable_tiling()
+            self.pipeline.vae.enable_slicing()
             self.pipeline.enable_model_cpu_offload(gpu_id=gpu_id)
 
         import gc
@@ -93,8 +94,8 @@ class LtxProvider(BaseAIProvider):
             logger.info(f"Generazione clip {i+1}/{len(prompts)} per prompt: {prompt}")
             
             # Determine the conditioning image for this clip
-            target_width = 384
-            target_height = 672
+            target_width = 320
+            target_height = 576
             if i == 0 and image_path and os.path.exists(image_path):
                 # Load and resize the initial Flux image to match video dimensions
                 init_image = Image.open(image_path).convert("RGB")
