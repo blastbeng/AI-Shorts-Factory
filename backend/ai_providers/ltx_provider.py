@@ -99,7 +99,7 @@ class LtxProvider(BaseAIProvider):
                 current_image = Image.new("RGB", (target_width, target_height), color="black")
 
             if i > 0:
-                prompt = f"{prompt}. Continue previous scene seamlessly, same character and environment, natural motion."
+                prompt = f"{prompt}. Continue previous scene seamlessly, same character and environment, natural motion, no sudden cuts or scene changes."
             # The first clip doesn't need extra text, the pipeline prompt is sufficient.
 
             import random
@@ -123,7 +123,7 @@ class LtxProvider(BaseAIProvider):
                 num_frames=num_frames,
                 height=target_height,
                 width=target_width,
-                guidance_scale=2.0,
+                guidance_scale=3.5,
                 generator=generator,
                 callback_on_step_end=progress_callback,
                 callback_on_step_end_tensor_inputs=[]

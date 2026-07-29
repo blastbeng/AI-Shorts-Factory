@@ -320,9 +320,9 @@ class PipelineOrchestrator:
                                 # Split by pipe and take the second part (ltx_prompt)
                                 parts = cleaned.split('|', 1)
                                 if len(parts) == 2:
-                                    scenes.append(parts[1].strip())
+                                    scenes.append((parts[0].strip(), parts[1].strip()))
                                 else:
-                                    scenes.append(cleaned) # Fallback if no pipe is found
+                                    scenes.append((cleaned, cleaned)) # Fallback if no pipe is found
                         if not scenes:
                             scenes = [storyboard]
                             
@@ -335,14 +335,14 @@ class PipelineOrchestrator:
                         if len(scenes) > required_clips:
                             # Merge consecutive scenes to avoid losing story content
                             while len(scenes) > required_clips:
-                                scenes[-2] = f"{scenes[-2]} {scenes[-1]}"
+                                scenes[-2] = (f"{scenes[-2][0]} {scenes[-1][0]}", f"{scenes[-2][1]} {scenes[-1][1]}")
                                 scenes.pop()
                         elif len(scenes) < required_clips:
                             while len(scenes) < required_clips:
                                 # Instead of duplicating the last scene, add a dynamic continuation prompt
-                                scenes.append("The action continues smoothly with dynamic camera movement. Maintain the same characters and environment.")
+                                scenes.append(("The action continues smoothly", "The action continues smoothly with dynamic camera movement. Maintain the same characters and environment."))
                                 
-                        video_prompts = [f"{scene}. Cinematic vertical short, dynamic camera motion, realistic physics." for scene in scenes]
+                        video_prompts = [f"{img_prompt}. {vid_prompt}. Cinematic vertical short, dynamic camera motion, realistic physics." for img_prompt, vid_prompt in scenes]
                         
                         if not ltx.health_check():
                             logger.warning("LTX Video non installato. Uso video dummy.")
