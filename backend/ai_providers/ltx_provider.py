@@ -109,14 +109,10 @@ class LtxProvider(BaseAIProvider):
                 logger.warning("Nessuna immagine iniziale fornita. Uso immagine nera.")
                 current_image = Image.new("RGB", (target_width, target_height), color="black")
 
-            # Add continuity prompt for subsequent clips
             if i > 0:
-                prompt = f"""Continue the previous scene seamlessly. Keep the same character and environment.
-Focus on this specific action: {prompt}
-Maintain dynamic camera continuity and natural motion."""
-
-            prompt = f"""{prompt}
-Cinematic video, dynamic camera following subject, natural realistic motion, smooth continuous action, professional cinematography."""
+                prompt = f"{prompt}. Continue the previous scene seamlessly with the same character and environment. Natural motion, smooth camera continuity."
+            else:
+                prompt = f"{prompt}. Cinematic video, natural realistic motion, professional cinematography."
 
             import random
             steps = 40
@@ -139,7 +135,7 @@ Cinematic video, dynamic camera following subject, natural realistic motion, smo
                 num_frames=num_frames,
                 height=target_height,
                 width=target_width,
-                guidance_scale=20.0,
+                guidance_scale=1.5,
                 generator=generator,
                 callback_on_step_end=progress_callback,
                 callback_on_step_end_tensor_inputs=[]
