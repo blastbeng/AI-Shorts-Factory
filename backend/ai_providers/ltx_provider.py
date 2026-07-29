@@ -67,6 +67,11 @@ class LtxProvider(BaseAIProvider):
 
         import gc
         
+        import random
+        steps = 20
+        # Use a single seed for all clips to maintain visual consistency
+        generator = torch.Generator(device="cpu").manual_seed(random.randint(0, 2**32 - 1))
+        
         temp_clips = []
         last_frame = None
         for i, prompt in enumerate(prompts):
@@ -79,8 +84,8 @@ class LtxProvider(BaseAIProvider):
             logger.info(f"Generazione clip {i+1}/{len(prompts)} per prompt: {prompt}")
             
             # Determine the conditioning image for this clip
-            target_width = 448
-            target_height = 800
+            target_width = 512
+            target_height = 896
             if i == 0 and image_path and os.path.exists(image_path):
                 # Load and resize the initial Flux image to match video dimensions
                 init_image = Image.open(image_path).convert("RGB")
@@ -102,10 +107,6 @@ class LtxProvider(BaseAIProvider):
                 prompt = f"{prompt}. Continue previous scene seamlessly, same character and environment, natural motion, no sudden cuts or scene changes."
             # The first clip doesn't need extra text, the pipeline prompt is sufficient.
 
-            import random
-            steps = 40
-            generator = torch.Generator(device="cpu").manual_seed(random.randint(0, 2**32 - 1))
-
             def progress_callback(pipe, step, timestep, callback_kwargs):
                 logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/{steps}")
                 if job_id:
@@ -123,7 +124,7 @@ class LtxProvider(BaseAIProvider):
                 num_frames=num_frames,
                 height=target_height,
                 width=target_width,
-                guidance_scale=3.5,
+                guidance_scale=2.0,
                 generator=generator,
                 callback_on_step_end=progress_callback,
                 callback_on_step_end_tensor_inputs=[]
