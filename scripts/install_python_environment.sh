@@ -29,6 +29,9 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 echo "Installazione di torchcodec 0.9.1 (CPU) per compatibilità ROCm..."
 pip install torchcodec==0.9.1 --index-url https://download.pytorch.org/whl/cpu --force-reinstall
 
+echo "Installazione dipendenze (numpy<2.1 pillow<12.0)..."
+pip install "numpy<2.1,>=1.21" "pillow<12.0"
+
 echo "Verifica dei modelli linguistici SpaCy per Kokoro TTS..."
 for model in en_core_web_sm it_core_news_sm es_core_news_sm fr_core_news_sm de_core_news_sm; do
     if ! python -c "import spacy; spacy.load('$model')" 2>/dev/null; then
@@ -38,9 +41,6 @@ for model in en_core_web_sm it_core_news_sm es_core_news_sm fr_core_news_sm de_c
         echo "[OK] Modello SpaCy $model già installato."
     fi
 done
-
-echo "Installazione dipendenze (numpy<2.1 pillow<12.0)..."
-pip install "numpy<2.1,>=1.21" "pillow<12.0"
 
 echo "Verifica di llama-cpp-python con backend Vulkan..."
 if ! python -c "import llama_cpp" 2>/dev/null; then
