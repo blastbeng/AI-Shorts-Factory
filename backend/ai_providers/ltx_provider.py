@@ -48,7 +48,7 @@ class LtxProvider(BaseAIProvider):
             
             text_encoder = T5EncoderModel.from_pretrained(
                 "google/t5-v1_1-xxl",
-                torch_dtype=torch.float16,
+                torch_dtype=torch.bfloat16,
                 low_cpu_mem_usage=True
             )
             text_encoder.eval()
@@ -56,7 +56,7 @@ class LtxProvider(BaseAIProvider):
             self.pipeline = LTXImageToVideoPipeline.from_single_file(
                 model_path,
                 text_encoder=text_encoder,
-                torch_dtype=torch.float16,
+                torch_dtype=torch.bfloat16,
                 low_cpu_mem_usage=True
             )
             del text_encoder
@@ -132,6 +132,9 @@ class LtxProvider(BaseAIProvider):
 
             if isinstance(video, torch.Tensor):
                 video = video.cpu().numpy()
+                # Diffusers video tensors are usually (frames, C, H, W), transpose to (frames, H, W, C)
+                if video.ndim == 4 and video.shape[1] == 3:
+                    video = np.transpose(video, (0, 2, 3, 1))
             elif isinstance(video, list):
                 video = np.stack([
                     np.array(frame)
