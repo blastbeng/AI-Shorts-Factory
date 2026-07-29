@@ -342,7 +342,7 @@ class PipelineOrchestrator:
                                 # Instead of duplicating the last scene, add a dynamic continuation prompt
                                 scenes.append(("The action continues smoothly", "The action continues smoothly with dynamic camera movement. Maintain the same characters and environment."))
                                 
-                        video_prompts = [f"{img_prompt}. {vid_prompt}. Cinematic vertical short, dynamic camera motion, realistic physics." for img_prompt, vid_prompt in scenes]
+                        video_prompts = scenes
                         
                         if not ltx.health_check():
                             logger.warning("LTX Video non installato. Uso video dummy.")

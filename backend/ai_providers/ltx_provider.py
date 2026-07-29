@@ -74,7 +74,13 @@ class LtxProvider(BaseAIProvider):
         
         temp_clips = []
         last_frame = None
-        for i, prompt in enumerate(prompts):
+        for i, prompt_data in enumerate(prompts):
+            img_prompt, vid_prompt = prompt_data
+            if i == 0:
+                prompt = f"{img_prompt}. {vid_prompt}. Cinematic vertical short, dynamic camera motion, realistic physics."
+            else:
+                prompt = f"{vid_prompt}. Continue previous scene seamlessly, same character and environment, natural motion, no sudden cuts or scene changes."
+
             logger.info(f"Pulizia VRAM prima della generazione clip {i+1}/{len(prompts)}...")
             gc.collect()
             if torch.cuda.is_available():
@@ -103,9 +109,7 @@ class LtxProvider(BaseAIProvider):
                 logger.warning("Nessuna immagine iniziale fornita. Uso immagine nera.")
                 current_image = Image.new("RGB", (target_width, target_height), color="black")
 
-            if i > 0:
-                prompt = f"{prompt}. Continue previous scene seamlessly, same character and environment, natural motion, no sudden cuts or scene changes."
-            # The first clip doesn't need extra text, the pipeline prompt is sufficient.
+            # Prompt is already constructed above based on clip index
 
             def progress_callback(pipe, step, timestep, callback_kwargs):
                 logger.info(f"LTX generation progress (clip {i+1}): step {step + 1}/{steps}")
