@@ -15,7 +15,7 @@ diffusers
 kokoro
 spacy
 huggingface_hub
-numpy<2.5
+numpy<2.1,>=1.21
 sentencepiece
 tiktoken
 psutil
@@ -29,3 +29,4 @@ opencv-python
 gguf
 imageio[ffmpeg]
 imageio-ffmpeg
+pillow<12.0
