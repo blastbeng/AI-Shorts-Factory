@@ -126,7 +126,7 @@ class FluxProvider(BaseAIProvider):
         image = self.pipeline(
             prompt, 
             num_inference_steps=steps,
-            guidance_scale=1.0,
+            guidance_scale=0.0,
             width=width,
             height=height, 
             callback_on_step_end=progress_callback,
