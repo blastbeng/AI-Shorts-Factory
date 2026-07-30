@@ -327,8 +327,8 @@ class PipelineOrchestrator:
                             scenes = [storyboard]
                             
                         # Calculate required clips based on audio duration
-                        # Each clip is 81 frames at 24fps = ~3.375 seconds (Wan 2.2 5B)
-                        clip_duration = 81 / 24.0
+                        # Each clip is 49 frames at 24fps = ~3.375 seconds (Wan 2.2 5B)
+                        clip_duration = 49 / 24.0
                         required_clips = max(1, int(voice_duration // clip_duration) + (1 if voice_duration % clip_duration > 0 else 0))
                         
                         # Adjust scenes to match required_clips without truncation

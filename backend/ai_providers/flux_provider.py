@@ -129,8 +129,8 @@ class FluxProvider(BaseAIProvider):
             prompt, 
             num_inference_steps=steps,
             guidance_scale=1.0,
-            height=896, 
-            width=512,
+            height=768, 
+            width=432,
             callback_on_step_end=progress_callback,
             callback_on_step_end_tensor_inputs=[]
         ).images[0]

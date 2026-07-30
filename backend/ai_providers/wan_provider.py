@@ -41,7 +41,7 @@ class WanProvider(BaseAIProvider):
         target_duration = kwargs.get("target_duration")
         
         fps = 24.0
-        frames_per_clip = 81  # Wan 2.2 5B supports up to 81 frames
+        frames_per_clip = 49  # Wan 2.2 5B supports up to 49 frames
         seconds_per_clip = frames_per_clip / fps
 
         preferred_backend = self.model_info.get("backend")
@@ -62,10 +62,18 @@ class WanProvider(BaseAIProvider):
                 low_cpu_mem_usage=True
             )
             
+            # VAE memory optimizations
             self.pipeline.vae.enable_tiling()
             self.pipeline.vae.enable_slicing()
             self.pipeline.vae.to(dtype=torch.float16)
-            self.pipeline.enable_attention_slicing()
+
+            # Keep VAE on CPU until needed
+            self.pipeline.vae.to("cpu")
+
+            # Attention memory optimization
+            self.pipeline.enable_attention_slicing("max")
+
+            # Offload transformer/text encoder automatically
             self.pipeline.enable_model_cpu_offload(gpu_id=gpu_id)
 
             logger.info(f"Transformer dtype {self.pipeline.transformer.dtype}")
@@ -117,8 +125,8 @@ class WanProvider(BaseAIProvider):
             generator = torch.Generator(device=device).manual_seed(seed)
             
             # Determine the conditioning image for this clip
-            target_width = 832
-            target_height = 480
+            target_width = 768
+            target_height = 432
             if i == 0 and image_path and os.path.exists(image_path):
                 init_image = Image.open(image_path).convert("RGB")
                 init_image = init_image.resize((target_width, target_height), Image.LANCZOS)
