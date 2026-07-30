@@ -1,13 +1,14 @@
 import os
 os.environ["TORCH_BLAS_PREFER_HIPBLASLT"] = "0"
 os.environ["TORCH_BLAS_PREFER_HIPBLAS"] = "1"
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
-os.environ["PYTORCH_HIP_ALLOC_CONF"] = "expandable_segments:True"
-os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8,max_split_size_mb:512"
+os.environ["PYTORCH_HIP_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8,max_split_size_mb:512"
+os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8,max_split_size_mb:512"
 
 import yaml
 import torch
 torch.backends.cuda.matmul.allow_tf32 = False
+torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = True
 import numpy as np
 import cv2
 from PIL import Image
@@ -63,8 +64,8 @@ class WanProvider(BaseAIProvider):
             
             # VAE memory optimizations
             self.pipeline.vae.enable_tiling(
-                tile_sample_min_height=256,
-                tile_sample_min_width=256
+                tile_sample_min_height=128,
+                tile_sample_min_width=128
             )
             self.pipeline.vae.enable_slicing()
             self.pipeline.vae.to(dtype=torch.float16)
@@ -72,10 +73,8 @@ class WanProvider(BaseAIProvider):
             # Attention memory optimization
             self.pipeline.enable_attention_slicing("max")
 
-            # Offload transformer/text encoder automatically
-            self.pipeline.enable_model_cpu_offload(
-                gpu_id=gpu_id
-            )
+            # Use sequential CPU offload for lower VRAM usage
+            self.pipeline.enable_sequential_cpu_offload(gpu_id=gpu_id)
 
             logger.info(f"Transformer dtype {self.pipeline.transformer.dtype}")
 
