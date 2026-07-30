@@ -42,8 +42,8 @@ export default function Home() {
   const [genWidth, setGenWidth] = useState(256);
   const [genHeight, setGenHeight] = useState(448);
   const [genFrames, setGenFrames] = useState(49);
-  const [genFluxSteps, setGenFluxSteps] = useState(20);
-  const [genWanSteps, setGenWanSteps] = useState(60);
+  const [genFluxSteps, setGenFluxSteps] = useState(4);
+  const [genWanSteps, setGenWanSteps] = useState(30);
   const [genLtxSteps, setGenLtxSteps] = useState(50);
   const [resolutionIndex, setResolutionIndex] = useState(0);
   const resolutions = [
