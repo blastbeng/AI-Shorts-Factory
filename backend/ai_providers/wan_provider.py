@@ -1,5 +1,7 @@
 import os
 os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
 import yaml
 import torch
 torch.backends.cuda.matmul.allow_tf32 = False
@@ -61,14 +63,13 @@ class WanProvider(BaseAIProvider):
             self.pipeline.vae.enable_slicing()
             self.pipeline.vae.to(dtype=torch.float16)
             self.pipeline.enable_attention_slicing()
-            self.pipeline.to(device)
             self.pipeline.enable_model_cpu_offload(gpu_id=gpu_id)
 
             logger.info(f"Transformer dtype {self.pipeline.transformer.dtype}")
 
         import gc
         import random
-        steps = 50
+        steps = 60
         
         temp_clips = []
         last_frame = None
@@ -149,7 +150,7 @@ class WanProvider(BaseAIProvider):
                 num_frames=frames_per_clip,
                 height=target_height,
                 width=target_width,
-                guidance_scale=3.5,
+                guidance_scale=4.0,
                 generator=generator,
                 callback_on_step_end=progress_callback,
                 callback_on_step_end_tensor_inputs=[]
@@ -171,7 +172,17 @@ class WanProvider(BaseAIProvider):
             last_frame = video[-1].copy()
 
             temp_clip_path = output_path.replace(".mp4", f"_clip_{i}.mp4")
-            writer = imageio.get_writer(temp_clip_path, fps=24.0, codec='libx264', quality=8, macro_block_size=1)
+            writer = imageio.get_writer(
+                temp_clip_path,
+                fps=24.0,
+                codec="libx264",
+                macro_block_size=1,
+                ffmpeg_params=[
+                    "-crf", "16",
+                    "-preset", "slow",
+                    "-pix_fmt", "yuv420p"
+                ]
+            )
             for frame in video:
                 writer.append_data(frame)
             writer.close()
