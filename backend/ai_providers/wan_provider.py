@@ -12,7 +12,8 @@ torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = True
 import numpy as np
 import cv2
 from PIL import Image
-from diffusers import WanImageToVideoPipeline
+from diffusers import WanImageToVideoPipeline, AutoencoderKLWan
+from transformers import T5EncoderModel, T5Tokenizer
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger
@@ -58,9 +59,24 @@ class WanProvider(BaseAIProvider):
         if self.pipeline is None:
             logger.info("Caricamento pipeline Wan 2.2 5B (Img2Video)...")
             model_path = os.path.abspath(self.model_info.get("path"))
+            model_dir = os.path.dirname(model_path)
+            
+            logger.info("Caricamento VAE e Text Encoder locali...")
+            vae = AutoencoderKLWan.from_single_file(
+                os.path.join(model_dir, "wan_2.1_vae.safetensors"),
+                torch_dtype=torch.float16
+            )
+            text_encoder = T5EncoderModel.from_single_file(
+                os.path.join(model_dir, "umt5_xxl.safetensors"),
+                torch_dtype=torch.float16
+            )
+            tokenizer = T5Tokenizer.from_pretrained(os.path.join(model_dir, "tokenizer"))
             
             self.pipeline = WanImageToVideoPipeline.from_single_file(
                 model_path,
+                vae=vae,
+                text_encoder=text_encoder,
+                tokenizer=tokenizer,
                 torch_dtype=torch.float16,
                 low_cpu_mem_usage=True
             )
