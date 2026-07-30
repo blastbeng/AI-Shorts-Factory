@@ -166,8 +166,8 @@ class LLMProvider(BaseAIProvider):
                         generated_text = re.sub(r'<reasoning>.*?</reasoning>', '', generated_text, flags=re.DOTALL).strip()
                         generated_text = re.sub(r'^.*?(Here\'s a thinking process:|Thinking Process:).*?\n', '', generated_text, flags=re.IGNORECASE).strip()
                         generated_text = re.sub(r'^(Sure, here is|Here is|Here\'s|This is|Il seguente è|Ecco).*?:\s*', '', generated_text, flags=re.IGNORECASE).strip()
-                        # Remove CONTENT: or Content: prefix
-                        generated_text = re.sub(r'^\s*CONTENT:\s*', '', generated_text, flags=re.IGNORECASE).strip()
+                        # Remove common prefixes like CONTENT:, TEXT:, NARRATION:, etc.
+                        generated_text = re.sub(r'^\s*[A-Z_]+:\s*', '', generated_text).strip()
                         generated_text = re.sub(r'\*+', '', generated_text).strip()
                         generated_text = re.sub(r'#+', '', generated_text).strip()
                 
