@@ -8,7 +8,18 @@ from backend.services.logger import logger
 import librosa
 
 class WhisperProvider(BaseAIProvider):
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(WhisperProvider, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self):
+        if hasattr(self, '_initialized') and self._initialized:
+            return
+        self._initialized = True
+        
         with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
             self.models_config = yaml.safe_load(f)
         self.model_info = self.models_config.get("speech", {}).get("whisper", {})
@@ -22,9 +33,9 @@ class WhisperProvider(BaseAIProvider):
     def health_check(self):
         return self.install_status() == "installed"
 
-    def generate(self, audio_path: str, *args, **kwargs):
-        if not self.health_check():
-            raise RuntimeError("Modello Whisper non installato.")
+    def _load_model(self):
+        if self.model is not None:
+            return
             
         preferred_backend = self.model_info.get("backend")
         gpu = self.gm.get_gpu_for_task("speech_recognition", self.get_gpu_requirements().get("vram_required_gb", 0), preferred_backend=preferred_backend)
@@ -39,25 +50,30 @@ class WhisperProvider(BaseAIProvider):
             
         device = self.gm.get_device_string(gpu['id'], preferred_backend=self.model_info.get("backend"))
         
-        if self.model is None:
-            logger.info("Caricamento modello Whisper...")
-            model_path = self.model_info.get("path")
-            try:
-                self.processor = WhisperProcessor.from_pretrained(model_path)
-                if use_cpu_offload:
-                    self.model = WhisperForConditionalGeneration.from_pretrained(model_path, torch_dtype=torch.float16, device_map="auto")
-                else:
-                    self.model = WhisperForConditionalGeneration.from_pretrained(model_path, torch_dtype=torch.float16).to(device)
-            except Exception as e:
-                logger.exception(f"Errore nel caricamento del modello su GPU. Fallback con offload su RAM.")
-                if self.model is not None:
-                    del self.model
-                    self.model = None
-                    import gc
-                    gc.collect()
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
+        logger.info("Caricamento modello Whisper...")
+        model_path = self.model_info.get("path")
+        try:
+            self.processor = WhisperProcessor.from_pretrained(model_path)
+            if use_cpu_offload:
                 self.model = WhisperForConditionalGeneration.from_pretrained(model_path, torch_dtype=torch.float16, device_map="auto")
+            else:
+                self.model = WhisperForConditionalGeneration.from_pretrained(model_path, torch_dtype=torch.float16).to(device)
+        except Exception as e:
+            logger.exception(f"Errore nel caricamento del modello su GPU. Fallback con offload su RAM.")
+            if self.model is not None:
+                del self.model
+                self.model = None
+                import gc
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            self.model = WhisperForConditionalGeneration.from_pretrained(model_path, torch_dtype=torch.float16, device_map="auto")
+
+    def generate(self, audio_path: str, *args, **kwargs):
+        if not self.health_check():
+            raise RuntimeError("Modello Whisper non installato.")
+        
+        self._load_model()
             
         logger.info(f"Trascrizione audio da: {audio_path}")
         audio, sampling_rate = librosa.load(audio_path, sr=16000)
@@ -78,39 +94,8 @@ class WhisperProvider(BaseAIProvider):
     def generate_srt(self, audio_path: str, output_srt_path: str, *args, **kwargs):
         if not self.health_check():
             raise RuntimeError("Modello Whisper non installato.")
-            
-        preferred_backend = self.model_info.get("backend")
-        gpu = self.gm.get_gpu_for_task("speech_recognition", self.get_gpu_requirements().get("vram_required_gb", 0), preferred_backend=preferred_backend)
-        if not gpu:
-            logger.warning("Nessuna GPU con VRAM sufficiente per Whisper. Uso GPU con offload su RAM.")
-            gpu = self.gm.get_gpu_for_task_ignore_vram("speech_recognition", preferred_backend=preferred_backend)
-            if not gpu:
-                raise RuntimeError("Nessuna GPU assegnata per lo speech recognition.")
-            use_cpu_offload = True
-        else:
-            use_cpu_offload = False
-            
-        device = self.gm.get_device_string(gpu['id'], preferred_backend=self.model_info.get("backend"))
         
-        if self.model is None:
-            logger.info("Caricamento modello Whisper...")
-            model_path = self.model_info.get("path")
-            try:
-                self.processor = WhisperProcessor.from_pretrained(model_path)
-                if use_cpu_offload:
-                    self.model = WhisperForConditionalGeneration.from_pretrained(model_path, torch_dtype=torch.float16, device_map="auto")
-                else:
-                    self.model = WhisperForConditionalGeneration.from_pretrained(model_path, torch_dtype=torch.float16).to(device)
-            except Exception as e:
-                logger.exception(f"Errore nel caricamento del modello su GPU. Fallback con offload su RAM.")
-                if self.model is not None:
-                    del self.model
-                    self.model = None
-                    import gc
-                    gc.collect()
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
-                self.model = WhisperForConditionalGeneration.from_pretrained(model_path, torch_dtype=torch.float16, device_map="auto")
+        self._load_model()
             
         logger.info(f"Trascrizione audio per sottotitoli da: {audio_path}")
         audio, sampling_rate = librosa.load(audio_path, sr=16000)
