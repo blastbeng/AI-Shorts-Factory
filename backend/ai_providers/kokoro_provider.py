@@ -127,8 +127,8 @@ class KokoroProvider(BaseAIProvider):
         
         import re
         # Pulizia del testo da markdown, asterischi e processi di pensiero residui
-        # Remove common prefixes like CONTENT:, TEXT:, NARRATION:, etc.
-        text = re.sub(r'^\s*[A-Z_]+:\s*', '', text).strip()
+        # Remove common meta-text prefixes like CONTENT:, TEXT:, NARRATION:, etc.
+        text = re.sub(r'^\s*(CONTENT|TEXT|NARRATION|OUTPUT|RESPONSE|RESULT|SCRIPT)\s*:\s*', '', text, flags=re.IGNORECASE).strip()
         text = re.sub(r'\<think\>.*?\<\/think\>', '', text, flags=re.DOTALL).strip()
         text = re.sub(r'^.*?(Here\'s a thinking process:|Thinking Process:).*?\n', '', text, flags=re.IGNORECASE).strip()
         text = re.sub(r'\*+', '', text).strip()
