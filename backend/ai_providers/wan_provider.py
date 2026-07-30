@@ -1,5 +1,5 @@
 import os
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
 import yaml
 import torch
 torch.backends.cuda.matmul.allow_tf32 = False
@@ -60,8 +60,9 @@ class WanProvider(BaseAIProvider):
             self.pipeline.vae.enable_tiling()
             self.pipeline.vae.enable_slicing()
             self.pipeline.vae.to(dtype=torch.float16)
-            self.pipeline.enable_attention_slicing("max")
-            self.pipeline.enable_sequential_cpu_offload(device=device)
+            self.pipeline.enable_attention_slicing()
+            self.pipeline.to(device)
+            self.pipeline.enable_model_cpu_offload(gpu_id=gpu_id)
 
             logger.info(f"Transformer dtype {self.pipeline.transformer.dtype}")
 
@@ -105,12 +106,11 @@ class WanProvider(BaseAIProvider):
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
-                torch.cuda.ipc_collect()
             
             logger.info(f"Generazione clip {i+1}/{len(prompts)} per prompt: {prompt}")
             
-            self.base_seed = self.base_seed + i
-            generator = torch.Generator(device="cuda").manual_seed(self.base_seed)
+            seed = self.base_seed + i
+            generator = torch.Generator(device=device).manual_seed(seed)
             
             # Determine the conditioning image for this clip
             target_width = 832
@@ -168,7 +168,7 @@ class WanProvider(BaseAIProvider):
                     video = (video * 255).round()
                 video = video.astype("uint8")
 
-            last_frame = video[-2].copy()
+            last_frame = video[-1].copy()
 
             temp_clip_path = output_path.replace(".mp4", f"_clip_{i}.mp4")
             writer = imageio.get_writer(temp_clip_path, fps=24.0, codec='libx264', quality=8, macro_block_size=1)
@@ -185,7 +185,6 @@ class WanProvider(BaseAIProvider):
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
-                torch.cuda.ipc_collect()
 
         logger.info(f"Concatenazione di {len(temp_clips)} clip in {output_path}...")
         
