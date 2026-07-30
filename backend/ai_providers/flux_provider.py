@@ -106,7 +106,7 @@ class FluxProvider(BaseAIProvider):
                 logger.exception("Errore nel caricamento del modello Flux.")
                 raise e
             
-        steps = 12
+        steps = 20
         
         def progress_callback(pipe, step, timestep, callback_kwargs):
             logger.info(f"Flux generation progress: step {step + 1}/{steps}")
@@ -128,7 +128,7 @@ class FluxProvider(BaseAIProvider):
         image = self.pipeline(
             prompt, 
             num_inference_steps=steps,
-            guidance_scale=0.0,
+            guidance_scale=1.0,
             height=896, 
             width=512,
             callback_on_step_end=progress_callback,

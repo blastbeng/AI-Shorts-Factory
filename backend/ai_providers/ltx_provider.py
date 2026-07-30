@@ -18,6 +18,7 @@ class LtxProvider(BaseAIProvider):
         self.model_info = self.models_config.get("video", {}).get("ltx_video", {})
         self.gm = GPUManager()
         self.pipeline = None
+        self.base_seed = 42
 
     def install_status(self):
         return self.model_info.get("status", "not_installed")
@@ -34,7 +35,7 @@ class LtxProvider(BaseAIProvider):
         target_duration = kwargs.get("target_duration")
         
         fps = 24.0
-        frames_per_clip = 49
+        frames_per_clip = 65
         seconds_per_clip = frames_per_clip / fps  # ~2.04 seconds
 
         preferred_backend = self.model_info.get("backend")
@@ -51,7 +52,7 @@ class LtxProvider(BaseAIProvider):
             
             text_encoder = T5EncoderModel.from_pretrained(
                 "google/t5-v1_1-xxl",
-                torch_dtype=torch.bfloat16,
+                torch_dtype=torch.float16,
                 low_cpu_mem_usage=True
             )
             text_encoder.eval()
@@ -59,7 +60,7 @@ class LtxProvider(BaseAIProvider):
             self.pipeline = LTXImageToVideoPipeline.from_single_file(
                 model_path,
                 text_encoder=text_encoder,
-                torch_dtype=torch.bfloat16,
+                torch_dtype=torch.float16,
                 low_cpu_mem_usage=True
             )
             del text_encoder
@@ -67,23 +68,54 @@ class LtxProvider(BaseAIProvider):
             gc.collect()
             self.pipeline.vae.enable_tiling()
             self.pipeline.vae.enable_slicing()
+            self.pipeline.vae.to(dtype=torch.float16)
+            self.pipeline.enable_attention_slicing("max")
             self.pipeline.enable_sequential_cpu_offload(device=device)
+
+            print()
+            print(self.pipeline.transformer.dtype)
+            print()
+            logger.info(f"Transformer dtype {self.pipeline.transformer.dtype}")
+            logger.info(f"Cuda Memory {torch.cuda.memory_summary()}")
 
         import gc
         
         import random
-        steps = 20
-        # Use a single seed for all clips to maintain visual consistency
-        generator = torch.Generator(device="cuda").manual_seed(random.randint(0, 2**32 - 1))
+        steps = 50
+        
+        generator = torch.Generator(device="cuda").manual_seed(base_seed + i)
         
         temp_clips = []
         last_frame = None
         for i, prompt_data in enumerate(prompts):
             img_prompt, vid_prompt = prompt_data
             if i == 0:
-                prompt = f"{img_prompt}. {vid_prompt}. Cinematic vertical short, dynamic camera motion, realistic physics."
+                prompt = (
+                    f"{img_prompt}. "
+                    f"{vid_prompt}. "
+                    "consistent character identity, "
+                    "natural body movement, "
+                    "realistic motion, "
+                    "stable camera, "
+                    "realistic physics"
+                )
             else:
-                prompt = f"{vid_prompt}. Continue previous scene seamlessly, same character and environment, natural motion, no sudden cuts or scene changes."
+                prompt = (
+                    f"{img_prompt}. "
+                    f"{vid_prompt}. "
+                    "Continue the exact same shot from the previous frame. "
+                    "Do not change character identity. "
+                    "Do not redesign the scene. "
+                    "Maintain identical face, clothes, lighting and environment. "
+                    "same character appearance, "
+                    "same clothing, "
+                    "same environment, "
+                    "consistent character identity, "
+                    "natural body movement, "
+                    "realistic motion, "
+                    "stable camera, "
+                    "realistic physics"
+                )
 
             logger.info(f"Pulizia VRAM prima della generazione clip {i+1}/{len(prompts)}...")
             gc.collect()
@@ -94,8 +126,8 @@ class LtxProvider(BaseAIProvider):
             logger.info(f"Generazione clip {i+1}/{len(prompts)} per prompt: {prompt}")
             
             # Determine the conditioning image for this clip
-            target_width = 320
-            target_height = 576
+            target_width = 512
+            target_height = 896
             if i == 0 and image_path and os.path.exists(image_path):
                 # Load and resize the initial Flux image to match video dimensions
                 init_image = Image.open(image_path).convert("RGB")
@@ -103,15 +135,36 @@ class LtxProvider(BaseAIProvider):
                 current_image = init_image
             elif i > 0 and last_frame is not None:
                 # Use the high-quality last frame from the previous clip in memory
-                frame = np.squeeze(last_frame)
+                frame = last_frame
                 if frame.ndim == 3:
-                    current_image = Image.fromarray(frame.astype(np.uint8))
+                    frame = cv2.resize(
+                        frame,
+                        (target_width, target_height),
+                        interpolation=cv2.INTER_CUBIC
+                    )
+
+                    current_image = Image.fromarray(frame)
                 else:
                     logger.error(f"Last frame has unexpected shape: {frame.shape}")
                     current_image = Image.new("RGB", (target_width, target_height), color="black")
             else:
                 logger.warning("Nessuna immagine iniziale fornita. Uso immagine nera.")
                 current_image = Image.new("RGB", (target_width, target_height), color="black")
+
+            debug_image = cv2.cvtColor(
+                np.array(current_image),
+                cv2.COLOR_RGB2BGR
+            )
+
+            cv2.imwrite(
+                f"/tmp/ltx_input_clip_{i}.png",
+                debug_image
+            )
+
+            logger.info(
+                f"DEBUG: salvata immagine input LTX /tmp/ltx_input_clip_{i}.png"
+            )
+
 
             # Prompt is already constructed above based on clip index
 
@@ -123,7 +176,7 @@ class LtxProvider(BaseAIProvider):
                 return callback_kwargs
 
             # Always generate 49 frames per clip to ensure consistent motion and audio sync
-            num_frames = 49
+            num_frames = 65
 
             video = self.pipeline(
                 image=current_image,
@@ -132,7 +185,7 @@ class LtxProvider(BaseAIProvider):
                 num_frames=num_frames,
                 height=target_height,
                 width=target_width,
-                guidance_scale=2.0,
+                guidance_scale=3.5,
                 generator=generator,
                 callback_on_step_end=progress_callback,
                 callback_on_step_end_tensor_inputs=[]
@@ -160,7 +213,7 @@ class LtxProvider(BaseAIProvider):
                 video = video.astype("uint8")
 
             # Keep the last frame in memory for the next clip to avoid lossy compression artifacts
-            last_frame = video[-1]
+            last_frame = video[-2].copy()
 
             temp_clip_path = output_path.replace(".mp4", f"_clip_{i}.mp4")
             writer = imageio.get_writer(temp_clip_path, fps=24.0, codec='libx264', quality=8, macro_block_size=1)
