@@ -47,11 +47,11 @@ export default function Home() {
   const [genLtxSteps, setGenLtxSteps] = useState(50);
   const [resolutionIndex, setResolutionIndex] = useState(0);
   const resolutions = [
-    { w: 240, h: 426 },
-    { w: 360, h: 640 },
+    { w: 240, h: 432 },
+    { w: 336, h: 640 },
     { w: 480, h: 832 },
     { w: 720, h: 1280 },
-    { w: 1080, h: 1920 }
+    { w: 1088, h: 1920 }
   ];
 
   const handleResolutionChange = (index: number) => {
