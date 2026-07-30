@@ -39,18 +39,18 @@ export default function Home() {
   const [logs, setLogs] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [genParams, setGenParams] = useState({ genre: "random", custom_prompt: "", language: "italian", duration_seconds: 16 });
-  const [genWidth, setGenWidth] = useState(240);
-  const [genHeight, setGenHeight] = useState(432);
+  const [genWidth, setGenWidth] = useState(256);
+  const [genHeight, setGenHeight] = useState(448);
   const [genFrames, setGenFrames] = useState(49);
   const [genFluxSteps, setGenFluxSteps] = useState(20);
   const [genWanSteps, setGenWanSteps] = useState(60);
   const [genLtxSteps, setGenLtxSteps] = useState(50);
   const [resolutionIndex, setResolutionIndex] = useState(0);
   const resolutions = [
-    { w: 240, h: 432 },
-    { w: 336, h: 640 },
+    { w: 256, h: 448 },
+    { w: 352, h: 640 },
     { w: 480, h: 832 },
-    { w: 720, h: 1280 },
+    { w: 704, h: 1280 },
     { w: 1088, h: 1920 }
   ];
 
