@@ -58,12 +58,17 @@ class QwenImageProvider(BaseAIProvider):
                 self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.float16)
                 self.pipeline.enable_model_cpu_offload(device=device)
             
-        logger.info(f"Generazione immagine Qwen per prompt: {prompt}")
+        # Extract width and height from kwargs, defaulting to 1080x1920 if not provided
+        width = kwargs.get("width", 1080)
+        height = kwargs.get("height", 1920)
+        steps = kwargs.get("steps", 30)
+
+        logger.info(f"Generazione immagine Qwen per prompt: {prompt} con risoluzione {width}x{height}")
         image = self.pipeline(
             prompt, 
-            num_inference_steps=30, 
-            height=1920, 
-            width=1080
+            num_inference_steps=steps, 
+            height=height, 
+            width=width
         ).images[0]
         
         image.save(output_path)
