@@ -1,6 +1,9 @@
 import os
-os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
+os.environ["TORCH_BLAS_PREFER_HIPBLASLT"] = "0"
+os.environ["TORCH_BLAS_PREFER_HIPBLAS"] = "1"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+os.environ["PYTORCH_HIP_ALLOC_CONF"] = "expandable_segments:True"
+os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
 
 import yaml
 import torch
