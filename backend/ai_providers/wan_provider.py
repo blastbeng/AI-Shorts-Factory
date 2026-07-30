@@ -129,7 +129,7 @@ class WanProvider(BaseAIProvider):
             
             # Determine the conditioning image for this clip
             target_width = 640
-            target_height = 360
+            target_height = 352
             if i == 0 and image_path and os.path.exists(image_path):
                 init_image = Image.open(image_path).convert("RGB")
                 init_image = init_image.resize((target_width, target_height), Image.LANCZOS)
