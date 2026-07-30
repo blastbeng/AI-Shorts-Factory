@@ -46,7 +46,16 @@ export default function Home() {
   const logContainerRef = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState<{ [key: string]: any }>({});
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || `http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8000`;
+  const getApiUrl = () => {
+    const envUrl = process.env.NEXT_PUBLIC_API_URL;
+    const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+    // If accessing via IP and the env URL is localhost, use the current host dynamically
+    if (currentHost !== 'localhost' && envUrl && envUrl.includes('localhost')) {
+      return `http://${currentHost}:8000`;
+    }
+    return envUrl || `http://${currentHost}:8000`;
+  };
+  const apiUrl = getApiUrl();
 
   const fetchData = async () => {
     try {

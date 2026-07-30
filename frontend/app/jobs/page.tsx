@@ -36,7 +36,16 @@ export default function JobsPage() {
   const [progress, setProgress] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || `http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8000`;
+  const getApiUrl = () => {
+    const envUrl = process.env.NEXT_PUBLIC_API_URL;
+    const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+    // If accessing via IP and the env URL is localhost, use the current host dynamically
+    if (currentHost !== 'localhost' && envUrl && envUrl.includes('localhost')) {
+      return `http://${currentHost}:8000`;
+    }
+    return envUrl || `http://${currentHost}:8000`;
+  };
+  const apiUrl = getApiUrl();
 
   const fetchJobs = async () => {
     try {
