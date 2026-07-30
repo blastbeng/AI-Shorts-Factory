@@ -5,18 +5,21 @@ import torch
 torch.backends.cuda.matmul.allow_tf32 = False
 import numpy as np
 import cv2
-from diffusers import DiffusionPipeline
+from PIL import Image
+from diffusers import WanImageToVideoPipeline
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger
+import imageio
 
 class WanProvider(BaseAIProvider):
     def __init__(self):
         with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
             self.models_config = yaml.safe_load(f)
-        self.model_info = self.models_config.get("video", {}).get("wan_2_1_1_3b", {})
+        self.model_info = self.models_config.get("video", {}).get("wan_2_2_5b", {})
         self.gm = GPUManager()
         self.pipeline = None
+        self.base_seed = 42
 
     def install_status(self):
         return self.model_info.get("status", "not_installed")
@@ -26,150 +29,173 @@ class WanProvider(BaseAIProvider):
 
     def generate(self, prompts: list, output_path: str, *args, **kwargs):
         if not self.health_check():
-            raise RuntimeError("Modello Wan 2.2 non installato.")
-
+            raise RuntimeError("Modello Wan 2.2 5B non installato.")
+            
         job_id = kwargs.get("job_id")
+        image_path = kwargs.get("image_path")
+        target_duration = kwargs.get("target_duration")
+        
+        fps = 24.0
+        frames_per_clip = 81  # Wan 2.2 5B supports up to 81 frames
+        seconds_per_clip = frames_per_clip / fps
 
-        torch.backends.cudnn.benchmark = True
-
-        # Log PyTorch's view of the GPUs
-        if torch.cuda.is_available():
-            logger.info(f"PyTorch vede {torch.cuda.device_count()} dispositivi CUDA:")
-            for i in range(torch.cuda.device_count()):
-                logger.info(f"  cuda:{i} -> {torch.cuda.get_device_name(i)}")
-        else:
-            logger.warning("PyTorch non rileva dispositivi CUDA. Verifica l'installazione di PyTorch con supporto ROCm.")
-
-        preferred_backend = self.model_info.get("backend", "rocm")
-        gpu = self.gm.get_gpu_for_task("video_generation", self.get_gpu_requirements().get("vram_required_gb", 0), preferred_backend=preferred_backend)
+        preferred_backend = self.model_info.get("backend")
+        gpu = self.gm.get_gpu_for_task_ignore_vram("video_generation", preferred_backend=preferred_backend)
         if not gpu:
-            logger.warning("Nessuna GPU con VRAM sufficiente per Wan 2.2. Uso GPU con offload su RAM.")
-            gpu = self.gm.get_gpu_for_task_ignore_vram("video_generation", preferred_backend=preferred_backend)
-            if not gpu:
-                raise RuntimeError("Nessuna GPU assegnata per la video generation.")
-            use_cpu_offload = True
-        else:
-            use_cpu_offload = False
-
-        device = self.gm.get_device_string(gpu['id'], preferred_backend=self.model_info.get("backend"))
-
+            raise RuntimeError("Nessuna GPU assegnata per la video generation.")
+        
+        device = self.gm.get_device_string(gpu['id'], preferred_backend=preferred_backend)
+        gpu_id = int(device.split(":")[-1]) if ":" in device else 0
+        
         if self.pipeline is None:
-            logger.info("Caricamento pipeline Wan 2.2...")
-            model_path = self.model_info.get("path")
-            try:
-                try:
-                    logger.info("Caricamento pipeline Wan 2.2 con PyTorch SDPA (Flash Attention nativo)...")
-                    self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16, attn_implementation="sdpa")
-                except Exception as attn_e:
-                    logger.warning(f"SDPA non disponibile, caricamento standard: {attn_e}")
-                    self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16)
-                # Rimuoviamo enable_attention_slicing() per velocizzare, se va in OOM il fallback lo riattiverà
-                if hasattr(self.pipeline, "enable_vae_tiling"):
-                    self.pipeline.enable_vae_tiling()
-                if hasattr(self.pipeline, "enable_vae_slicing"):
-                    self.pipeline.enable_vae_slicing()
-                self.pipeline.enable_attention_slicing()
-                
-                logger.info("Torch compile disabilitato per VRAM limitata")
-                logger.info("Uso model CPU offload per evitare OOM (più veloce del sequential).")
-                self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
-            except Exception as e:
-                logger.exception(f"Errore nel caricamento del modello su GPU. Fallback con offload su RAM.")
-                if self.pipeline is not None:
-                    self.pipeline.to("cpu")
-                    import gc
-                    gc.collect()
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
-                
-                available_ram = self.gm.get_available_system_ram_gb()
-                if available_ram < 8.0:
-                    raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Operazione annullata per evitare il blocco del sistema.")
-                
-                logger.warning(f"RAM disponibile: {available_ram:.2f}GB. Uso model CPU offload per evitare OOM (più veloce del sequential).")
-                try:
-                    self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16, attn_implementation="sdpa")
-                except Exception:
-                    self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.bfloat16)
-                self.pipeline.enable_attention_slicing()
-                if hasattr(self.pipeline, "enable_vae_slicing"):
-                    self.pipeline.enable_vae_slicing()
-                self.pipeline.enable_model_cpu_offload(gpu_id=gpu['device_index'])
+            logger.info("Caricamento pipeline Wan 2.2 5B (Img2Video)...")
+            model_path = os.path.abspath(self.model_info.get("path"))
+            
+            self.pipeline = WanImageToVideoPipeline.from_pretrained(
+                model_path,
+                torch_dtype=torch.float16,
+                low_cpu_mem_usage=True
+            )
+            
+            self.pipeline.vae.enable_tiling()
+            self.pipeline.vae.enable_slicing()
+            self.pipeline.vae.to(dtype=torch.float16)
+            self.pipeline.enable_attention_slicing("max")
+            self.pipeline.enable_sequential_cpu_offload(device=device)
+
+            logger.info(f"Transformer dtype {self.pipeline.transformer.dtype}")
 
         import gc
-        import os
+        import random
+        steps = 50
         
         temp_clips = []
-        for i, prompt in enumerate(prompts):
-            logger.info(f"Pulizia VRAM prima della generazione clip {i+1}/{len(prompts)} (incluso VAE decode)...")
+        last_frame = None
+        for i, prompt_data in enumerate(prompts):
+            img_prompt, vid_prompt = prompt_data
+            if i == 0:
+                prompt = (
+                    f"{img_prompt}. "
+                    f"{vid_prompt}. "
+                    "consistent character identity, "
+                    "natural body movement, "
+                    "realistic motion, "
+                    "stable camera, "
+                    "realistic physics"
+                )
+            else:
+                prompt = (
+                    f"{img_prompt}. "
+                    f"{vid_prompt}. "
+                    "Continue the exact same shot from the previous frame. "
+                    "Do not change character identity. "
+                    "Do not redesign the scene. "
+                    "Maintain identical face, clothes, lighting and environment. "
+                    "same character appearance, "
+                    "same clothing, "
+                    "same environment, "
+                    "consistent character identity, "
+                    "natural body movement, "
+                    "realistic motion, "
+                    "stable camera, "
+                    "realistic physics"
+                )
+
+            logger.info(f"Pulizia VRAM prima della generazione clip {i+1}/{len(prompts)}...")
             gc.collect()
-            torch.cuda.empty_cache()
-            torch.cuda.ipc_collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                torch.cuda.ipc_collect()
             
             logger.info(f"Generazione clip {i+1}/{len(prompts)} per prompt: {prompt}")
             
+            generator = torch.Generator(device="cuda").manual_seed(self.base_seed + i)
+            
+            # Determine the conditioning image for this clip
+            target_width = 832
+            target_height = 480
+            if i == 0 and image_path and os.path.exists(image_path):
+                init_image = Image.open(image_path).convert("RGB")
+                init_image = init_image.resize((target_width, target_height), Image.LANCZOS)
+                current_image = init_image
+            elif i > 0 and last_frame is not None:
+                frame = last_frame
+                if frame.ndim == 3:
+                    frame = cv2.resize(
+                        frame,
+                        (target_width, target_height),
+                        interpolation=cv2.INTER_CUBIC
+                    )
+                    current_image = Image.fromarray(frame)
+                else:
+                    logger.error(f"Last frame has unexpected shape: {frame.shape}")
+                    current_image = Image.new("RGB", (target_width, target_height), color="black")
+            else:
+                logger.warning("Nessuna immagine iniziale fornita. Uso immagine nera.")
+                current_image = Image.new("RGB", (target_width, target_height), color="black")
+
             def progress_callback(pipe, step, timestep, callback_kwargs):
-                logger.info(f"Wan generation progress (clip {i+1}): step {step + 1}/15")
+                logger.info(f"Wan generation progress (clip {i+1}): step {step + 1}/{steps}")
                 if job_id:
                     from backend.services.progress_tracker import ProgressTracker
-                    ProgressTracker().update(job_id, "video_generation", step + 1, 15, f"Generazione clip {i+1}/{len(prompts)}: step {step + 1}/15")
+                    ProgressTracker().update(job_id, "video_generation", step + 1, steps, f"Generazione clip {i+1}/{len(prompts)}: step {step + 1}/{steps}")
                 return callback_kwargs
 
-            generate_kwargs = {
-                "prompt": prompt,
-                "num_inference_steps": 15,
-                "height": 576,
-                "width": 320,
-                "num_frames": 49,
-                "guidance_scale": 4.0,
-                "callback_on_step_end": progress_callback,
-                "callback_on_step_end_tensor_inputs": []
-            }
-
-            video = self.pipeline(**generate_kwargs).frames[0]
+            video = self.pipeline(
+                image=current_image,
+                prompt=prompt,
+                num_inference_steps=steps,
+                num_frames=frames_per_clip,
+                height=target_height,
+                width=target_width,
+                guidance_scale=3.5,
+                generator=generator,
+                callback_on_step_end=progress_callback,
+                callback_on_step_end_tensor_inputs=[]
+            ).frames[0]
 
             if isinstance(video, torch.Tensor):
                 video = video.cpu().numpy()
+                if video.ndim == 4 and video.shape[1] == 3:
+                    video = np.transpose(video, (0, 2, 3, 1))
+            elif isinstance(video, list):
+                video = np.stack([np.array(frame) for frame in video])
 
-            # Converti da [0, 1] float32 a [0, 255] uint8
-            video = (video * 255).round().astype("uint8")
+            if video.dtype != np.uint8:
+                if video.max() <= 1.0 and video.min() >= -1.0:
+                    video = np.clip(video, 0, 1)
+                    video = (video * 255).round()
+                video = video.astype("uint8")
+
+            last_frame = video[-2].copy()
 
             temp_clip_path = output_path.replace(".mp4", f"_clip_{i}.mp4")
-            frame_height, frame_width = video.shape[1], video.shape[2]
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            video_writer = cv2.VideoWriter(temp_clip_path, fourcc, 24.0, (frame_width, frame_height))
+            writer = imageio.get_writer(temp_clip_path, fps=24.0, codec='libx264', quality=8, macro_block_size=1)
             for frame in video:
-                # imageio/diffusers frames are RGB, cv2 expects BGR
-                frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                video_writer.write(frame_bgr)
-            video_writer.release()
+                writer.append_data(frame)
+            writer.close()
             temp_clips.append(temp_clip_path)
             logger.info(f"Clip {i+1} salvata in {temp_clip_path}")
+            
+            del video
+            del current_image
+            if 'init_image' in locals():
+                del init_image
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                torch.cuda.ipc_collect()
 
         logger.info(f"Concatenazione di {len(temp_clips)} clip in {output_path}...")
-        # Determine output size from the first clip
-        cap = cv2.VideoCapture(temp_clips[0])
-        frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        cap.release()
         
-        # Keep a constant 24 FPS to ensure MMAudio syncs correctly.
-        # The final duration mismatch is handled by FFmpeg's -shortest flag during assembly.
-        fps = 24.0
-        
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        final_writer = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
+        final_writer = imageio.get_writer(output_path, fps=fps, codec='libx264', quality=8, macro_block_size=1)
         for temp_clip_path in temp_clips:
-            cap = cv2.VideoCapture(temp_clip_path)
-            while True:
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                final_writer.write(frame)
-            cap.release()
-        final_writer.release()
+            reader = imageio.get_reader(temp_clip_path)
+            for frame in reader:
+                final_writer.append_data(frame)
+            reader.close()
+        final_writer.close()
         
-        # Cleanup temp clips
         for temp_clip_path in temp_clips:
             if os.path.exists(temp_clip_path):
                 os.remove(temp_clip_path)
@@ -178,10 +204,13 @@ class WanProvider(BaseAIProvider):
         return output_path
 
     def get_capabilities(self):
-        return {"type": "video", "model": "wan_2_1_1_3b"}
+        return {"type": "video", "model": "wan_2_2_5b"}
 
     def get_gpu_requirements(self):
-        return {"vram_required_gb": self.model_info.get("vram_required_gb"), "backend": self.model_info.get("backend")}
+        return {
+            "vram_required_gb": self.model_info.get("vram_required_gb", 12),
+            "backend": self.model_info.get("backend")
+        }
 
     def cleanup(self):
         if self.pipeline is not None:
@@ -193,7 +222,6 @@ class WanProvider(BaseAIProvider):
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         
-        # Force glibc to release unused memory back to the OS
         try:
             import ctypes
             ctypes.CDLL("libc.so.6").malloc_trim(0)

@@ -40,6 +40,11 @@ video:
     path: ./models/video/wan_2_1_1_3b
     status: installed
     vram_required_gb: 8
+  wan_2_2_5b:
+    backend: rocm
+    path: ./models/video/wan_2_2_5b
+    status: installed
+    vram_required_gb: 12
 voice:
   kokoro_tts:
     backend: rocm
