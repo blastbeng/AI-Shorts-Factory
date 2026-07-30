@@ -8,13 +8,6 @@ if [ ! -f "$PYTHON_BIN" ]; then
     PYTHON_BIN="python3"
 fi
 
-WAN_DIR="./models/video/wan_2_1_1_3b"
-if [ ! -d "$WAN_DIR" ] || [ ! -f "$WAN_DIR/.download_complete" ]; then
-    ./scripts/download_models.sh "wan_2_1_1_3b" "Wan-AI/Wan2.1-T2V-1.3B-Diffusers" "$WAN_DIR" "video" "wan_2_1_1_3b"
-else
-    echo "[OK] Modello wan_2_1_1_3b già installato."
-fi
-
 LTX_DIR="./models/video/ltx_video"
 LTX_MODEL="$LTX_DIR/ltxv-13b-0.9.8-dev-fp8.safetensors"
 
@@ -28,8 +21,13 @@ else
 fi
 
 WAN_2_2_5B_DIR="./models/video/wan_2_2_5b"
-if [ ! -d "$WAN_2_2_5B_DIR" ] || [ ! -f "$WAN_2_2_5B_DIR/.download_complete" ]; then
-    ./scripts/download_models.sh "wan_2_2_5b" "Wan-AI/Wan2.2-TI2V-5B-Diffusers" "$WAN_2_2_5B_DIR" "video" "wan_2_2_5b"
+WAN_2_2_5B_MODEL="$WAN_2_2_5B_DIR/Wan2_2-TI2V-5B_fp8_e4m3fn_scaled_KJ.safetensors"
+
+if [ ! -f "$WAN_2_2_5B_MODEL" ]; then
+    mkdir -p "$WAN_2_2_5B_DIR"
+    echo "Downloading Wan2_2-TI2V-5B_fp8_e4m3fn_scaled_KJ.safetensors..."
+    wget -q --show-progress -O "$WAN_2_2_5B_MODEL" "https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/TI2V/Wan2_2-TI2V-5B_fp8_e4m3fn_scaled_KJ.safetensors"
+    touch "$WAN_2_2_5B_DIR/.download_complete"
 else
     echo "[OK] Modello wan_2_2_5b già installato."
 fi

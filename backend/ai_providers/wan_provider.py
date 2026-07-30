@@ -59,7 +59,7 @@ class WanProvider(BaseAIProvider):
             logger.info("Caricamento pipeline Wan 2.2 5B (Img2Video)...")
             model_path = os.path.abspath(self.model_info.get("path"))
             
-            self.pipeline = WanImageToVideoPipeline.from_pretrained(
+            self.pipeline = WanImageToVideoPipeline.from_single_file(
                 model_path,
                 torch_dtype=torch.float16,
                 low_cpu_mem_usage=True
