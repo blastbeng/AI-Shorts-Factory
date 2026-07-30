@@ -23,7 +23,7 @@ fi
 WAN_2_2_5B_DIR="./models/video/wan_2_2_5b"
 WAN_2_2_5B_MODEL="$WAN_2_2_5B_DIR/Wan2_2-TI2V-5B_fp8_e4m3fn_scaled_KJ.safetensors"
 
-if [ ! -f "$WAN_2_2_5B_MODEL" ]; then
+if [ ! -f "$WAN_2_2_5B_DIR/.download_complete" ]; then
     mkdir -p "$WAN_2_2_5B_DIR/tokenizer"
     echo "Downloading Wan2_2-TI2V-5B_fp8_e4m3fn_scaled_KJ.safetensors..."
     wget -q --show-progress -O "$WAN_2_2_5B_MODEL" "https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/TI2V/Wan2_2-TI2V-5B_fp8_e4m3fn_scaled_KJ.safetensors"
