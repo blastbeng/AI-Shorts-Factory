@@ -127,8 +127,8 @@ class LtxProvider(BaseAIProvider):
             logger.info(f"Generazione clip {i+1}/{len(prompts)} per prompt: {prompt}")
             
             # Determine the conditioning image for this clip
-            target_width = 512
-            target_height = 896
+            target_width = 480
+            target_height = 832
             if i == 0 and image_path and os.path.exists(image_path):
                 # Load and resize the initial Flux image to match video dimensions
                 init_image = Image.open(image_path).convert("RGB")

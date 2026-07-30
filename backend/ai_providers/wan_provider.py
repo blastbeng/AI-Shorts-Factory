@@ -64,8 +64,8 @@ class WanProvider(BaseAIProvider):
             
             # VAE memory optimizations
             self.pipeline.vae.enable_tiling(
-                tile_sample_min_height=128,
-                tile_sample_min_width=128
+                tile_sample_min_height=256,
+                tile_sample_min_width=256
             )
             self.pipeline.vae.enable_slicing()
             self.pipeline.vae.to(dtype=torch.float16)
@@ -82,7 +82,7 @@ class WanProvider(BaseAIProvider):
 
         import gc
         import random
-        steps = 40
+        steps = 60
         
         temp_clips = []
         last_frame = None
@@ -127,8 +127,8 @@ class WanProvider(BaseAIProvider):
             generator = torch.Generator(device="cuda").manual_seed(seed)
             
             # Determine the conditioning image for this clip
-            target_width = 512
-            target_height = 288
+            target_width = 480
+            target_height = 832
             if i == 0 and image_path and os.path.exists(image_path):
                 init_image = Image.open(image_path).convert("RGB")
                 init_image = init_image.resize((target_width, target_height), Image.LANCZOS)

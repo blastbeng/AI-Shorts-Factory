@@ -37,8 +37,8 @@ class LLMProvider(BaseAIProvider):
             self.n_gpu_layers = 0
             self.n_ctx = 4096
             self.n_threads = 8
-            self.n_batch = 512
-            self.n_ubatch = 512
+            self.n_batch = 544
+            self.n_ubatch = 544
             self.tensor_split = None
             self.flash_attn = False
             self.type_k = 0  # Default (F16)
