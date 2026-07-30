@@ -69,6 +69,38 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
+def migrate_database():
+    """Add missing columns to existing tables for backward compatibility."""
+    from sqlalchemy import text
+    db = SessionLocal()
+    try:
+        result = db.execute(text("PRAGMA table_info(jobs)"))
+        existing_columns = {row[1] for row in result}
+
+        new_columns = {
+            "gen_width": "INTEGER DEFAULT 480",
+            "gen_height": "INTEGER DEFAULT 832",
+            "gen_frames": "INTEGER DEFAULT 49",
+            "gen_flux_steps": "INTEGER DEFAULT 20",
+            "gen_wan_steps": "INTEGER DEFAULT 60",
+            "gen_ltx_steps": "INTEGER DEFAULT 50",
+        }
+
+        for col_name, col_def in new_columns.items():
+            if col_name not in existing_columns:
+                logger.info(f"Migration: adding column '{col_name}' to jobs table.")
+                db.execute(text(f"ALTER TABLE jobs ADD COLUMN {col_name} {col_def}"))
+
+        db.commit()
+        logger.info("Database migration completed.")
+    except Exception as e:
+        logger.error(f"Database migration error: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+migrate_database()
+
 # Reset running jobs to interrupted on startup
 db_startup = SessionLocal()
 running_jobs = db_startup.query(Job).filter(Job.status == "running").all()
