@@ -299,8 +299,8 @@ class PipelineOrchestrator:
                     self._update_stage(stage, "completed", image_path)
 
                 elif stage == "video_generation":
-                    from backend.ai_providers.ltx_provider import LtxProvider
-                    ltx = LtxProvider()
+                    from backend.ai_providers.wan_provider import WanProvider
+                    wan = WanProvider()
                     try:
                         video_path = f"output/video_{self.job_id}.mp4"
                         
@@ -327,8 +327,8 @@ class PipelineOrchestrator:
                             scenes = [storyboard]
                             
                         # Calculate required clips based on audio duration
-                        # Each clip is 49 frames at 24fps = ~2.04 seconds
-                        clip_duration = 49 / 24.0
+                        # Each clip is 81 frames at 24fps = ~3.375 seconds (Wan 2.2 5B)
+                        clip_duration = 81 / 24.0
                         required_clips = max(1, int(voice_duration // clip_duration) + (1 if voice_duration % clip_duration > 0 else 0))
                         
                         # Adjust scenes to match required_clips without truncation
@@ -344,13 +344,13 @@ class PipelineOrchestrator:
                                 
                         video_prompts = scenes
                         
-                        if not ltx.health_check():
-                            logger.warning("LTX Video non installato. Uso video dummy.")
+                        if not wan.health_check():
+                            logger.warning("Wan 2.2 5B non installato. Uso video dummy.")
                             self._generate_dummy_media("video", video_path)
                         else:
-                            ltx.generate(video_prompts, video_path, job_id=self.job_id, image_path=image_path, target_duration=voice_duration)
+                            wan.generate(video_prompts, video_path, job_id=self.job_id, image_path=image_path, target_duration=voice_duration)
                     finally:
-                        ltx.cleanup()
+                        wan.cleanup()
                     self._update_stage(stage, "completed", video_path)
 
                 elif stage == "video_upscaling":
