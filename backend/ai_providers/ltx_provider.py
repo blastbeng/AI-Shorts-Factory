@@ -81,12 +81,11 @@ class LtxProvider(BaseAIProvider):
         
         import random
         
-        self.base_seed = self.base_seed + i
-        generator = torch.Generator(device="cuda").manual_seed(self.base_seed)
-        
         temp_clips = []
         last_frame = None
         for i, prompt_data in enumerate(prompts):
+            seed = self.base_seed + i
+            generator = torch.Generator(device="cuda").manual_seed(seed)
             img_prompt, vid_prompt = prompt_data
             if i == 0:
                 prompt = (

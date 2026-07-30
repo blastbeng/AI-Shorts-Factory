@@ -46,7 +46,6 @@ export default function Home() {
   const [genWanSteps, setGenWanSteps] = useState(60);
   const [genLtxSteps, setGenLtxSteps] = useState(50);
   const [schedulerRunning, setSchedulerRunning] = useState(false);
-  const [models, setModels] = useState<{name: string, status: string}[]>([]);
   const [stats, setStats] = useState({total_videos: 0, approved_videos: 0, published_videos: 0, total_jobs: 0});
   const [health, setHealth] = useState<{status: string} | null>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
@@ -65,12 +64,11 @@ export default function Home() {
 
   const fetchData = async () => {
     try {
-      const [videosRes, jobsRes, gpusRes, logsRes, modelsRes, statsRes, healthRes] = await Promise.all([
+      const [videosRes, jobsRes, gpusRes, logsRes, statsRes, healthRes] = await Promise.all([
         fetch(`${apiUrl}/videos/`),
         fetch(`${apiUrl}/jobs/`),
         fetch(`${apiUrl}/gpus`),
         fetch(`${apiUrl}/logs`),
-        fetch(`${apiUrl}/models/status`),
         fetch(`${apiUrl}/stats`),
         fetch(`${apiUrl}/health`)
       ]);
@@ -97,8 +95,6 @@ export default function Home() {
       setGpus(await gpusRes.json());
       const logsData = await logsRes.json();
       setLogs(logsData.logs || []);
-      const modelsData = await modelsRes.json();
-      setModels(modelsData.models || []);
       setStats(await statsRes.json());
       setHealth(await healthRes.json());
     } catch (error) {
