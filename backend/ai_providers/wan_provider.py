@@ -63,12 +63,12 @@ class WanProvider(BaseAIProvider):
             
             logger.info("Caricamento VAE e Text Encoder locali...")
             vae = AutoencoderKLWan.from_single_file(
-                os.path.join(model_dir, "wan_2.1_vae.safetensors"),
+                os.path.join(model_dir, "Wan2.1_VAE.pth"),
                 torch_dtype=torch.float16
             )
             text_encoder = T5EncoderModel.from_single_file(
-                os.path.join(model_dir, "umt5_xxl.safetensors"),
-                torch_dtype=torch.float16
+                os.path.join(model_dir, "models_t5_umt5-xxl-enc-bf16.pth"),
+                torch_dtype=torch.bfloat16
             )
             tokenizer = T5Tokenizer.from_pretrained(os.path.join(model_dir, "tokenizer"))
             
