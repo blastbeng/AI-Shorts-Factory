@@ -26,7 +26,7 @@ class FluxProvider(BaseAIProvider):
     def health_check(self):
         return self.install_status() == "installed"
 
-    def generate(self, prompt: str, output_path: str, *args, width=int(os.getenv("GEN_WIDTH", 480)), height=int(os.getenv("GEN_HEIGHT", 832)), steps=int(os.getenv("GEN_FLUX_STEPS", 20)), **kwargs):
+    def generate(self, prompt: str, output_path: str, *args, width=int(os.getenv("GEN_WIDTH", 240)), height=int(os.getenv("GEN_HEIGHT", 432)), steps=int(os.getenv("GEN_FLUX_STEPS", 20)), **kwargs):
         if not self.health_check():
             raise RuntimeError("Modello Flux non installato.")
 

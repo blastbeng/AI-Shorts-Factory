@@ -33,7 +33,7 @@ class WanProvider(BaseAIProvider):
     def health_check(self):
         return self.install_status() == "installed"
 
-    def generate(self, prompts: list, output_path: str, *args, frames_per_clip=int(os.getenv("GEN_FRAMES", 49)), width=int(os.getenv("GEN_WIDTH", 480)), height=int(os.getenv("GEN_HEIGHT", 832)), steps=int(os.getenv("GEN_WAN_STEPS", 60)), **kwargs):
+    def generate(self, prompts: list, output_path: str, *args, frames_per_clip=int(os.getenv("GEN_FRAMES", 49)), width=int(os.getenv("GEN_WIDTH", 240)), height=int(os.getenv("GEN_HEIGHT", 432)), steps=int(os.getenv("GEN_WAN_STEPS", 60)), **kwargs):
         if not self.health_check():
             raise RuntimeError("Modello Wan 2.2 5B non installato.")
             

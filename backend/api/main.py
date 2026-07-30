@@ -78,8 +78,8 @@ def migrate_database():
         existing_columns = {row[1] for row in result}
 
         new_columns = {
-            "gen_width": "INTEGER DEFAULT 480",
-            "gen_height": "INTEGER DEFAULT 832",
+            "gen_width": "INTEGER DEFAULT 240",
+            "gen_height": "INTEGER DEFAULT 432",
             "gen_frames": "INTEGER DEFAULT 49",
             "gen_flux_steps": "INTEGER DEFAULT 20",
             "gen_wan_steps": "INTEGER DEFAULT 60",
@@ -149,8 +149,8 @@ class JobCreate(BaseModel):
     language: str = "italian"
     style: str = "default"
     duration_seconds: int = 16
-    gen_width: int = int(os.getenv("GEN_WIDTH", 480))
-    gen_height: int = int(os.getenv("GEN_HEIGHT", 832))
+    gen_width: int = int(os.getenv("GEN_WIDTH", 240))
+    gen_height: int = int(os.getenv("GEN_HEIGHT", 432))
     gen_frames: int = int(os.getenv("GEN_FRAMES", 49))
     gen_flux_steps: int = int(os.getenv("GEN_FLUX_STEPS", 20))
     gen_wan_steps: int = int(os.getenv("GEN_WAN_STEPS", 60))
