@@ -47,6 +47,8 @@ export default function Home() {
   const [genLtxSteps, setGenLtxSteps] = useState(50);
   const [resolutionIndex, setResolutionIndex] = useState(0);
   const resolutions = [
+    { w: 240, h: 426 },
+    { w: 360, h: 640 },
     { w: 480, h: 832 },
     { w: 720, h: 1280 },
     { w: 1080, h: 1920 }
@@ -333,7 +335,7 @@ export default function Home() {
                   <input
                     type="range"
                     min="0"
-                    max="2"
+                    max="4"
                     step="1"
                     value={resolutionIndex}
                     onChange={(e) => handleResolutionChange(parseInt(e.target.value))}
