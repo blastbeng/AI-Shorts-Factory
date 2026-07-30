@@ -83,7 +83,8 @@ class LtxProvider(BaseAIProvider):
         import random
         steps = 50
         
-        generator = torch.Generator(device="cuda").manual_seed(base_seed + i)
+        self.base_seed = self.base_seed + i
+        generator = torch.Generator(device="cuda").manual_seed(self.base_seed)
         
         temp_clips = []
         last_frame = None

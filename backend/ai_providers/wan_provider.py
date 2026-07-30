@@ -109,7 +109,8 @@ class WanProvider(BaseAIProvider):
             
             logger.info(f"Generazione clip {i+1}/{len(prompts)} per prompt: {prompt}")
             
-            generator = torch.Generator(device="cuda").manual_seed(self.base_seed + i)
+            self.base_seed = self.base_seed + i
+            generator = torch.Generator(device="cuda").manual_seed(self.base_seed)
             
             # Determine the conditioning image for this clip
             target_width = 832
