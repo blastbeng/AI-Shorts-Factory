@@ -81,10 +81,11 @@ class WanProvider(BaseAIProvider):
                 low_cpu_mem_usage=True
             )
             
-            # VAE memory optimizations
+            # VAE memory optimizations for RDNA3
             self.pipeline.vae.enable_tiling(
-                tile_sample_min_height=128,
-                tile_sample_min_width=128
+                tile_sample_min_height=256,
+                tile_sample_min_width=256,
+                tile_sample_min_num_frames=32
             )
             self.pipeline.vae.enable_slicing()
             self.pipeline.vae.to(dtype=torch.float16)
@@ -92,8 +93,8 @@ class WanProvider(BaseAIProvider):
             # Attention memory optimization
             self.pipeline.enable_attention_slicing("max")
 
-            # Use sequential CPU offload for lower VRAM usage
-            self.pipeline.enable_sequential_cpu_offload(gpu_id=gpu_id)
+            # Use model CPU offload for better performance on 16GB VRAM
+            self.pipeline.enable_model_cpu_offload(device=device)
 
             logger.info(f"Transformer dtype {self.pipeline.transformer.dtype}")
 
@@ -140,7 +141,7 @@ class WanProvider(BaseAIProvider):
             logger.info(f"Generazione clip {i+1}/{len(prompts)} per prompt: {prompt}")
             
             seed = self.base_seed + i
-            generator = torch.Generator(device="cuda").manual_seed(seed)
+            generator = torch.Generator(device=device).manual_seed(seed)
             
             # Determine the conditioning image for this clip
             target_width = width

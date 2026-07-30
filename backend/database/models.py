@@ -24,7 +24,7 @@ class Job(Base):
     gen_height = Column(Integer, default=lambda: int(os.getenv("GEN_HEIGHT", 832)))
     gen_frames = Column(Integer, default=lambda: int(os.getenv("GEN_FRAMES", 49)))
     gen_flux_steps = Column(Integer, default=lambda: int(os.getenv("GEN_FLUX_STEPS", 20)))
-    gen_wan_steps = Column(Integer, default=lambda: int(os.getenv("GEN_WAN_STEPS", 60)))
+    gen_wan_steps = Column(Integer, default=lambda: int(os.getenv("GEN_WAN_STEPS", 30)))
     gen_ltx_steps = Column(Integer, default=lambda: int(os.getenv("GEN_LTX_STEPS", 50)))
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
