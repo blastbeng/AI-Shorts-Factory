@@ -345,12 +345,18 @@ export default function Home() {
 
               {/* Frames */}
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Frames per clip</label>
+                <label className="flex justify-between text-sm text-gray-400 mb-2">
+                  <span>Frames per clip</span>
+                  <span className="text-white font-medium">{genFrames}</span>
+                </label>
                 <input
-                  type="number"
-                  className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  type="range"
+                  min="9"
+                  max="129"
+                  step="8"
                   value={genFrames}
-                  onChange={(e) => setGenFrames(parseInt(e.target.value) || 49)}
+                  onChange={(e) => setGenFrames(parseInt(e.target.value))}
+                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
                 />
               </div>
 
