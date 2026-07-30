@@ -35,14 +35,14 @@ from huggingface_hub import hf_hub_download
 token = os.getenv('HF_TOKEN')
 
 # VAE
-hf_hub_download(repo_id='Wan-AI/Wan2.1-T2V-1.3B', filename='vae/wan_2.1_vae.safetensors', local_dir='$WAN_2_2_5B_DIR', token=token)
+hf_hub_download(repo_id='Wan-AI/Wan2.1-T2V-14B', filename='vae/wan_2.1_vae.safetensors', local_dir='$WAN_2_2_5B_DIR', token=token)
 
 # Text Encoder
-hf_hub_download(repo_id='Wan-AI/Wan2.1-T2V-1.3B', filename='models/umt5_xxl.safetensors', local_dir='$WAN_2_2_5B_DIR', token=token)
+hf_hub_download(repo_id='Wan-AI/Wan2.1-T2V-14B', filename='models/umt5_xxl.safetensors', local_dir='$WAN_2_2_5B_DIR', token=token)
 
 # Tokenizer
 for f in ['tokenizer.json', 'spiece.model', 'tokenizer_config.json', 'special_tokens_map.json']:
-    hf_hub_download(repo_id='Wan-AI/Wan2.1-T2V-1.3B', filename=f'tokenizer/{f}', local_dir='$WAN_2_2_5B_DIR', token=token)
+    hf_hub_download(repo_id='Wan-AI/Wan2.1-T2V-14B', filename=f'tokenizer/{f}', local_dir='$WAN_2_2_5B_DIR', token=token)
 "
     
     touch "$WAN_2_2_5B_DIR/.download_complete"
