@@ -1,9 +1,9 @@
 import os
 os.environ["TORCH_BLAS_PREFER_HIPBLASLT"] = "0"
 os.environ["TORCH_BLAS_PREFER_HIPBLAS"] = "1"
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8,max_split_size_mb:512"
-os.environ["PYTORCH_HIP_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8,max_split_size_mb:512"
-os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8,max_split_size_mb:512"
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8,max_split_size_mb:512,roundup_power2_divisions:16"
+os.environ["PYTORCH_HIP_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8,max_split_size_mb:512,roundup_power2_divisions:16"
+os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8,max_split_size_mb:512,roundup_power2_divisions:16"
 
 import yaml
 import torch
@@ -52,6 +52,9 @@ class WanProvider(BaseAIProvider):
         device = self.gm.get_device_string(gpu['id'], preferred_backend=preferred_backend)
         gpu_id = int(device.split(":")[-1]) if ":" in device else 0
         
+        if torch.cuda.is_available():
+            torch.cuda.set_per_process_memory_fraction(0.95, gpu_id)
+
         if self.pipeline is None:
             logger.info("Caricamento pipeline Wan 2.2 5B (Img2Video)...")
             model_path = os.path.abspath(self.model_info.get("path"))
@@ -156,18 +159,19 @@ class WanProvider(BaseAIProvider):
             gc.collect()
             torch.cuda.empty_cache()
 
-            video = self.pipeline(
-                image=current_image,
-                prompt=prompt,
-                num_inference_steps=steps,
-                num_frames=frames_per_clip,
-                height=height,
-                width=width,
-                guidance_scale=4.0,
-                generator=generator,
-                callback_on_step_end=progress_callback,
-                callback_on_step_end_tensor_inputs=[]
-            ).frames[0]
+            with torch.inference_mode():
+                video = self.pipeline(
+                    image=current_image,
+                    prompt=prompt,
+                    num_inference_steps=steps,
+                    num_frames=frames_per_clip,
+                    height=height,
+                    width=width,
+                    guidance_scale=4.0,
+                    generator=generator,
+                    callback_on_step_end=progress_callback,
+                    callback_on_step_end_tensor_inputs=[]
+                ).frames[0]
 
             if isinstance(video, torch.Tensor):
                 video = video.cpu().numpy()
