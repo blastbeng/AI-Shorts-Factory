@@ -42,7 +42,7 @@ hf_hub_download(repo_id='Wan-AI/Wan2.1-T2V-14B', filename='models_t5_umt5-xxl-en
 
 # Tokenizer
 for f in ['tokenizer.json', 'spiece.model', 'tokenizer_config.json', 'special_tokens_map.json']:
-    hf_hub_download(repo_id='Wan-AI/Wan2.1-T2V-14B', filename=f'tokenizer/{f}', local_dir='$WAN_2_2_5B_DIR', token=token)
+    hf_hub_download(repo_id='Wan-AI/Wan2.1-T2V-14B-Diffusers', filename=f'tokenizer/{f}', local_dir='$WAN_2_2_5B_DIR', token=token)
 "
     
     touch "$WAN_2_2_5B_DIR/.download_complete"
