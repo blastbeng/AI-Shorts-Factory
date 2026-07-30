@@ -63,7 +63,10 @@ class WanProvider(BaseAIProvider):
             )
             
             # VAE memory optimizations
-            self.pipeline.vae.enable_tiling()
+            self.pipeline.vae.enable_tiling(
+                tile_sample_min_height=128,
+                tile_sample_min_width=128
+            )
             self.pipeline.vae.enable_slicing()
             self.pipeline.vae.to(dtype=torch.float16)
 
@@ -74,7 +77,7 @@ class WanProvider(BaseAIProvider):
             self.pipeline.enable_attention_slicing("max")
 
             # Offload transformer/text encoder automatically
-            self.pipeline.enable_model_cpu_offload(gpu_id=gpu_id)
+            self.pipeline.enable_sequential_cpu_offload(gpu_id=gpu_id)
 
             logger.info(f"Transformer dtype {self.pipeline.transformer.dtype}")
 
@@ -125,8 +128,8 @@ class WanProvider(BaseAIProvider):
             generator = torch.Generator(device=device).manual_seed(seed)
             
             # Determine the conditioning image for this clip
-            target_width = 768
-            target_height = 432
+            target_width = 640
+            target_height = 360
             if i == 0 and image_path and os.path.exists(image_path):
                 init_image = Image.open(image_path).convert("RGB")
                 init_image = init_image.resize((target_width, target_height), Image.LANCZOS)
@@ -153,6 +156,9 @@ class WanProvider(BaseAIProvider):
                     from backend.services.progress_tracker import ProgressTracker
                     ProgressTracker().update(job_id, "video_generation", step + 1, steps, f"Generazione clip {i+1}/{len(prompts)}: step {step + 1}/{steps}")
                 return callback_kwargs
+
+            gc.collect()
+            torch.cuda.empty_cache()
 
             video = self.pipeline(
                 image=current_image,
