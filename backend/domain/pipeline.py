@@ -274,8 +274,8 @@ class PipelineOrchestrator:
                     self._update_stage(stage, "completed", srt_path)
 
                 elif stage == "image_generation":
-                    from backend.ai_providers.qwen_image_provider import QwenImageProvider
-                    qwen = QwenImageProvider()
+                    from backend.ai_providers.flux_provider import FluxProvider
+                    flux = FluxProvider()
                     try:
                         # Extract first scene for a more dynamic initial image
                         import re
@@ -289,13 +289,13 @@ class PipelineOrchestrator:
                             
                         image_path = f"output/image_{self.job_id}.png"
                         image_prompt = f"High quality dynamic image capturing a moment of action. Scene: {first_scene}. Dynamic pose, motion blur, cinematic lighting. IMPORTANT: The image must NOT contain any text, letters, or words."
-                        if not qwen.health_check():
-                            logger.warning("Qwen Image non installato. Uso immagine dummy.")
+                        if not flux.health_check():
+                            logger.warning("Flux Image non installato. Uso immagine dummy.")
                             self._generate_dummy_media("image", image_path)
                         else:
-                            qwen.generate(image_prompt, image_path, job_id=self.job_id, width=self.job.gen_width, height=self.job.gen_height, steps=self.job.gen_flux_steps)
+                            flux.generate(image_prompt, image_path, job_id=self.job_id, width=self.job.gen_width, height=self.job.gen_height, steps=self.job.gen_flux_steps)
                     finally:
-                        qwen.cleanup()
+                        flux.cleanup()
                     self._update_stage(stage, "completed", image_path)
 
                 elif stage == "video_generation":
