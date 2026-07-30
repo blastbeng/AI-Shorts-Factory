@@ -117,6 +117,12 @@ class JobCreate(BaseModel):
     language: str = "italian"
     style: str = "default"
     duration_seconds: int = 16
+    gen_width: int = int(os.getenv("GEN_WIDTH", 480))
+    gen_height: int = int(os.getenv("GEN_HEIGHT", 832))
+    gen_frames: int = int(os.getenv("GEN_FRAMES", 49))
+    gen_flux_steps: int = int(os.getenv("GEN_FLUX_STEPS", 20))
+    gen_wan_steps: int = int(os.getenv("GEN_WAN_STEPS", 60))
+    gen_ltx_steps: int = int(os.getenv("GEN_LTX_STEPS", 50))
 
 @app.get("/health")
 def health():
@@ -166,7 +172,13 @@ def start_job(job_params: JobCreate, db: Session = Depends(get_db)):
         custom_prompt=job_params.custom_prompt,
         language=job_params.language,
         style=job_params.style,
-        duration_seconds=job_params.duration_seconds
+        duration_seconds=job_params.duration_seconds,
+        gen_width=job_params.gen_width,
+        gen_height=job_params.gen_height,
+        gen_frames=job_params.gen_frames,
+        gen_flux_steps=job_params.gen_flux_steps,
+        gen_wan_steps=job_params.gen_wan_steps,
+        gen_ltx_steps=job_params.gen_ltx_steps
     )
     db.add(job)
     db.commit()

@@ -293,7 +293,7 @@ class PipelineOrchestrator:
                             logger.warning("Flux non installato. Uso immagine dummy.")
                             self._generate_dummy_media("image", image_path)
                         else:
-                            flux.generate(image_prompt, image_path, job_id=self.job_id)
+                            flux.generate(image_prompt, image_path, job_id=self.job_id, width=self.job.gen_width, height=self.job.gen_height, steps=self.job.gen_flux_steps)
                     finally:
                         flux.cleanup()
                     self._update_stage(stage, "completed", image_path)
@@ -328,7 +328,7 @@ class PipelineOrchestrator:
                             
                         # Calculate required clips based on audio duration
                         # Each clip is 49 frames at 24fps = ~3.375 seconds (Wan 2.2 5B)
-                        clip_duration = 49 / 24.0
+                        clip_duration = self.job.gen_frames / 24.0
                         required_clips = max(1, int(voice_duration // clip_duration) + (1 if voice_duration % clip_duration > 0 else 0))
                         
                         # Adjust scenes to match required_clips without truncation
@@ -348,7 +348,7 @@ class PipelineOrchestrator:
                             logger.warning("Wan 2.2 5B non installato. Uso video dummy.")
                             self._generate_dummy_media("video", video_path)
                         else:
-                            wan.generate(video_prompts, video_path, job_id=self.job_id, image_path=image_path, target_duration=voice_duration)
+                            wan.generate(video_prompts, video_path, job_id=self.job_id, image_path=image_path, target_duration=voice_duration, frames_per_clip=self.job.gen_frames, width=self.job.gen_width, height=self.job.gen_height, steps=self.job.gen_wan_steps)
                     finally:
                         wan.cleanup()
                     self._update_stage(stage, "completed", video_path)

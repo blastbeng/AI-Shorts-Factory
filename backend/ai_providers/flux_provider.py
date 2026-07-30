@@ -26,7 +26,7 @@ class FluxProvider(BaseAIProvider):
     def health_check(self):
         return self.install_status() == "installed"
 
-    def generate(self, prompt: str, output_path: str, *args, **kwargs):
+    def generate(self, prompt: str, output_path: str, *args, width=int(os.getenv("GEN_WIDTH", 480)), height=int(os.getenv("GEN_HEIGHT", 832)), steps=int(os.getenv("GEN_FLUX_STEPS", 20)), **kwargs):
         if not self.health_check():
             raise RuntimeError("Modello Flux non installato.")
 
@@ -106,8 +106,6 @@ class FluxProvider(BaseAIProvider):
                 logger.exception("Errore nel caricamento del modello Flux.")
                 raise e
             
-        steps = 20
-        
         def progress_callback(pipe, step, timestep, callback_kwargs):
             logger.info(f"Flux generation progress: step {step + 1}/{steps}")
             if job_id:

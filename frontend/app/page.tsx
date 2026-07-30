@@ -39,6 +39,12 @@ export default function Home() {
   const [logs, setLogs] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [genParams, setGenParams] = useState({ genre: "random", custom_prompt: "", language: "italian", duration_seconds: 16 });
+  const [genWidth, setGenWidth] = useState(480);
+  const [genHeight, setGenHeight] = useState(832);
+  const [genFrames, setGenFrames] = useState(49);
+  const [genFluxSteps, setGenFluxSteps] = useState(20);
+  const [genWanSteps, setGenWanSteps] = useState(60);
+  const [genLtxSteps, setGenLtxSteps] = useState(50);
   const [schedulerRunning, setSchedulerRunning] = useState(false);
   const [models, setModels] = useState<{name: string, status: string}[]>([]);
   const [stats, setStats] = useState({total_videos: 0, approved_videos: 0, published_videos: 0, total_jobs: 0});
@@ -125,7 +131,15 @@ export default function Home() {
       await fetch(`${apiUrl}/jobs/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(genParams)
+        body: JSON.stringify({
+          ...genParams,
+          gen_width: genWidth,
+          gen_height: genHeight,
+          gen_frames: genFrames,
+          gen_flux_steps: genFluxSteps,
+          gen_wan_steps: genWanSteps,
+          gen_ltx_steps: genLtxSteps
+        })
       });
       setGenParams({ genre: "random", custom_prompt: "", language: "italian", duration_seconds: 16 });
       fetchData();
@@ -296,6 +310,73 @@ export default function Home() {
             </form>
           </div>
 
+          {/* Parametri di Generazione */}
+          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-lg h-[500px] flex flex-col">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 bg-orange-500 rounded-full"></span> Parametri di Generazione
+            </h2>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Larghezza</label>
+                  <input
+                    type="number"
+                    className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={genWidth}
+                    onChange={(e) => setGenWidth(parseInt(e.target.value) || 480)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Altezza</label>
+                  <input
+                    type="number"
+                    className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={genHeight}
+                    onChange={(e) => setGenHeight(parseInt(e.target.value) || 832)}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Frames per clip</label>
+                <input
+                  type="number"
+                  className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={genFrames}
+                  onChange={(e) => setGenFrames(parseInt(e.target.value) || 49)}
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Flux Steps</label>
+                  <input
+                    type="number"
+                    className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={genFluxSteps}
+                    onChange={(e) => setGenFluxSteps(parseInt(e.target.value) || 20)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Wan Steps</label>
+                  <input
+                    type="number"
+                    className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={genWanSteps}
+                    onChange={(e) => setGenWanSteps(parseInt(e.target.value) || 60)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">LTX Steps</label>
+                  <input
+                    type="number"
+                    className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={genLtxSteps}
+                    onChange={(e) => setGenLtxSteps(parseInt(e.target.value) || 50)}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Stato Generazioni */}
           <div className="bg-gray-800/50 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-lg h-[500px] flex flex-col">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
@@ -438,25 +519,6 @@ export default function Home() {
             <p className="text-xs text-gray-500 mt-2">Genera automaticamente nuovi video ogni 60 minuti per i profili esistenti.</p>
           </div>
 
-          {/* AI Models Status */}
-          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-lg">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 bg-red-500 rounded-full"></span> Stato Modelli AI
-            </h2>
-            {loading ? <p className="text-gray-400">Caricamento...</p> : (
-              <ul className="space-y-2">
-                {models.map((m, i) => (
-                  <li key={i} className="flex justify-between items-center text-sm">
-                    <span className="text-gray-300">{m.name}</span>
-                    <span className={`text-xs px-2 py-1 rounded-full ${m.status === 'installed' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                      {m.status === 'installed' ? 'Pronto' : 'Non Installato'}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
           {/* System Health */}
           <div className="bg-gray-800/50 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-lg">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
@@ -482,18 +544,6 @@ export default function Home() {
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Log Console */}
-          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-lg md:col-span-2 lg:col-span-3">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 bg-purple-500 rounded-full"></span> Log Console
-            </h2>
-            <div ref={logContainerRef} className="bg-black/50 p-4 rounded-lg h-96 overflow-y-auto font-mono text-xs text-gray-300 border border-gray-700">
-              {logs.length === 0 ? <p>Nessun log disponibile.</p> : logs.map((log, i) => (
-                <div key={i} className="py-0.5 border-b border-gray-800/50">{log}</div>
-              ))}
-            </div>
           </div>
 
           {/* Revisione Video */}
@@ -544,6 +594,18 @@ export default function Home() {
                 })}
               </div>
             )}
+          </div>
+
+          {/* Log Console */}
+          <div className="bg-gray-800/50 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-lg md:col-span-2 lg:col-span-3">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 bg-purple-500 rounded-full"></span> Log Console
+            </h2>
+            <div ref={logContainerRef} className="bg-black/50 p-4 rounded-lg h-96 overflow-y-auto font-mono text-xs text-gray-300 border border-gray-700">
+              {logs.length === 0 ? <p>Nessun log disponibile.</p> : logs.map((log, i) => (
+                <div key={i} className="py-0.5 border-b border-gray-800/50">{log}</div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

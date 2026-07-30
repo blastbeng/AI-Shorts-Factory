@@ -26,7 +26,7 @@ class LtxProvider(BaseAIProvider):
     def health_check(self):
         return self.install_status() == "installed"
 
-    def generate(self, prompts: list, output_path: str, *args, **kwargs):
+    def generate(self, prompts: list, output_path: str, *args, frames_per_clip=int(os.getenv("GEN_FRAMES", 49)), width=int(os.getenv("GEN_WIDTH", 480)), height=int(os.getenv("GEN_HEIGHT", 832)), steps=int(os.getenv("GEN_LTX_STEPS", 50)), **kwargs):
         if not self.health_check():
             raise RuntimeError("Modello LTX Video non installato.")
             
@@ -35,7 +35,6 @@ class LtxProvider(BaseAIProvider):
         target_duration = kwargs.get("target_duration")
         
         fps = 24.0
-        frames_per_clip = 65
         seconds_per_clip = frames_per_clip / fps  # ~2.04 seconds
 
         preferred_backend = self.model_info.get("backend")
@@ -81,7 +80,6 @@ class LtxProvider(BaseAIProvider):
         import gc
         
         import random
-        steps = 50
         
         self.base_seed = self.base_seed + i
         generator = torch.Generator(device="cuda").manual_seed(self.base_seed)
@@ -127,8 +125,8 @@ class LtxProvider(BaseAIProvider):
             logger.info(f"Generazione clip {i+1}/{len(prompts)} per prompt: {prompt}")
             
             # Determine the conditioning image for this clip
-            target_width = 480
-            target_height = 832
+            target_width = width
+            target_height = height
             if i == 0 and image_path and os.path.exists(image_path):
                 # Load and resize the initial Flux image to match video dimensions
                 init_image = Image.open(image_path).convert("RGB")
@@ -176,16 +174,13 @@ class LtxProvider(BaseAIProvider):
                     ProgressTracker().update(job_id, "video_generation", step + 1, steps, f"Generazione clip {i+1}/{len(prompts)}: step {step + 1}/{steps}")
                 return callback_kwargs
 
-            # Always generate 65 frames per clip to ensure consistent motion and audio sync
-            num_frames = 65
-
             video = self.pipeline(
                 image=current_image,
                 prompt=prompt,
                 num_inference_steps=steps,
-                num_frames=num_frames,
-                height=target_height,
-                width=target_width,
+                num_frames=frames_per_clip,
+                height=height,
+                width=width,
                 guidance_scale=3.5,
                 generator=generator,
                 callback_on_step_end=progress_callback,
