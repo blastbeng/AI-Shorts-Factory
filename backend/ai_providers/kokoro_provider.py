@@ -127,6 +127,7 @@ class KokoroProvider(BaseAIProvider):
         
         import re
         # Pulizia del testo da markdown, asterischi e processi di pensiero residui
+        text = re.sub(r'^\s*CONTENT:\s*', '', text, flags=re.IGNORECASE).strip()
         text = re.sub(r'\<think\>.*?\<\/think\>', '', text, flags=re.DOTALL).strip()
         text = re.sub(r'^.*?(Here\'s a thinking process:|Thinking Process:).*?\n', '', text, flags=re.IGNORECASE).strip()
         text = re.sub(r'\*+', '', text).strip()
