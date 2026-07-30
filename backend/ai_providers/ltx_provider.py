@@ -176,7 +176,7 @@ class LtxProvider(BaseAIProvider):
                     ProgressTracker().update(job_id, "video_generation", step + 1, steps, f"Generazione clip {i+1}/{len(prompts)}: step {step + 1}/{steps}")
                 return callback_kwargs
 
-            # Always generate 49 frames per clip to ensure consistent motion and audio sync
+            # Always generate 65 frames per clip to ensure consistent motion and audio sync
             num_frames = 65
 
             video = self.pipeline(

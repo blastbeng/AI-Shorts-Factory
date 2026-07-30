@@ -80,8 +80,8 @@ class MMAudioProvider(BaseAIProvider):
                 frames.append(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             cap.release()
             
-            # Process in chunks of 49 frames to match video generation and ensure sync
-            chunk_size = 49
+            # Process in chunks of 65 frames to match video generation and ensure sync
+            chunk_size = 65
             audio_chunks = []
             model_device = next(self.model.parameters()).device
             total_chunks = (len(frames) - 1) // chunk_size + 1
