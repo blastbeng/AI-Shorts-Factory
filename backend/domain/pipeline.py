@@ -274,8 +274,8 @@ class PipelineOrchestrator:
                     self._update_stage(stage, "completed", srt_path)
 
                 elif stage == "image_generation":
-                    from backend.ai_providers.flux_provider import FluxProvider
-                    flux = FluxProvider()
+                    from backend.ai_providers.qwen_image_provider import QwenImageProvider
+                    qwen = QwenImageProvider()
                     try:
                         # Extract first scene for a more dynamic initial image
                         import re
@@ -289,18 +289,18 @@ class PipelineOrchestrator:
                             
                         image_path = f"output/image_{self.job_id}.png"
                         image_prompt = f"High quality dynamic image capturing a moment of action. Scene: {first_scene}. Dynamic pose, motion blur, cinematic lighting. IMPORTANT: The image must NOT contain any text, letters, or words."
-                        if not flux.health_check():
-                            logger.warning("Flux non installato. Uso immagine dummy.")
+                        if not qwen.health_check():
+                            logger.warning("Qwen Image non installato. Uso immagine dummy.")
                             self._generate_dummy_media("image", image_path)
                         else:
-                            flux.generate(image_prompt, image_path, job_id=self.job_id, width=self.job.gen_width, height=self.job.gen_height, steps=self.job.gen_flux_steps)
+                            qwen.generate(image_prompt, image_path, job_id=self.job_id, width=self.job.gen_width, height=self.job.gen_height, steps=self.job.gen_flux_steps)
                     finally:
-                        flux.cleanup()
+                        qwen.cleanup()
                     self._update_stage(stage, "completed", image_path)
 
                 elif stage == "video_generation":
-                    from backend.ai_providers.wan_provider import WanProvider
-                    wan = WanProvider()
+                    from backend.ai_providers.ltx_provider import LtxProvider
+                    ltx = LtxProvider()
                     try:
                         video_path = f"output/video_{self.job_id}.mp4"
                         
@@ -344,13 +344,13 @@ class PipelineOrchestrator:
                                 
                         video_prompts = scenes
                         
-                        if not wan.health_check():
-                            logger.warning("Wan 2.2 5B non installato. Uso video dummy.")
+                        if not ltx.health_check():
+                            logger.warning("LTX Video non installato. Uso video dummy.")
                             self._generate_dummy_media("video", video_path)
                         else:
-                            wan.generate(video_prompts, video_path, job_id=self.job_id, image_path=image_path, target_duration=voice_duration, frames_per_clip=self.job.gen_frames, width=self.job.gen_width, height=self.job.gen_height, steps=self.job.gen_wan_steps)
+                            ltx.generate(video_prompts, video_path, job_id=self.job_id, image_path=image_path, target_duration=voice_duration, frames_per_clip=self.job.gen_frames, width=self.job.gen_width, height=self.job.gen_height, steps=self.job.gen_ltx_steps)
                     finally:
-                        wan.cleanup()
+                        ltx.cleanup()
                     self._update_stage(stage, "completed", video_path)
 
                 elif stage == "video_upscaling":
