@@ -261,17 +261,21 @@ class PipelineOrchestrator:
                     self._update_stage(stage, "completed", voice_path)
 
                 elif stage == "subtitle_generation":
-                    from backend.ai_providers.whisper_provider import WhisperProvider
-                    whisper = WhisperProvider()
-                    try:
-                        srt_path = f"output/subtitles_{self.job_id}.srt"
-                        if not whisper.health_check():
-                            logger.warning("Whisper non installato. Salto la generazione dei sottotitoli.")
-                        else:
-                            whisper.generate_srt(voice_path, srt_path)
-                    finally:
-                        whisper.cleanup()
-                    self._update_stage(stage, "completed", srt_path)
+                    if os.getenv("ENABLE_SRT_GENERATION", "true").lower() != "true":
+                        logger.info("Generazione sottotitoli disabilitata da configurazione. Salto lo stage.")
+                        self._update_stage(stage, "completed", "")
+                    else:
+                        from backend.ai_providers.whisper_provider import WhisperProvider
+                        whisper = WhisperProvider()
+                        try:
+                            srt_path = f"output/subtitles_{self.job_id}.srt"
+                            if not whisper.health_check():
+                                logger.warning("Whisper non installato. Salto la generazione dei sottotitoli.")
+                            else:
+                                whisper.generate_srt(voice_path, srt_path)
+                        finally:
+                            whisper.cleanup()
+                        self._update_stage(stage, "completed", srt_path)
 
                 elif stage == "image_generation":
                     from backend.ai_providers.flux_provider import FluxProvider
