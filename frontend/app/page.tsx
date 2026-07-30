@@ -45,6 +45,19 @@ export default function Home() {
   const [genFluxSteps, setGenFluxSteps] = useState(20);
   const [genWanSteps, setGenWanSteps] = useState(60);
   const [genLtxSteps, setGenLtxSteps] = useState(50);
+  const [resolutionIndex, setResolutionIndex] = useState(0);
+  const resolutions = [
+    { w: 480, h: 832 },
+    { w: 720, h: 1280 },
+    { w: 1080, h: 1920 }
+  ];
+
+  const handleResolutionChange = (index: number) => {
+    setResolutionIndex(index);
+    setGenWidth(resolutions[index].w);
+    setGenHeight(resolutions[index].h);
+  };
+
   const [schedulerRunning, setSchedulerRunning] = useState(false);
   const [stats, setStats] = useState({total_videos: 0, approved_videos: 0, published_videos: 0, total_jobs: 0});
   const [health, setHealth] = useState<{status: string} | null>(null);
@@ -311,29 +324,28 @@ export default function Home() {
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
               <span className="w-2 h-2 bg-orange-500 rounded-full"></span> Parametri di Generazione
             </h2>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Larghezza</label>
+            <div className="space-y-6 flex-1 overflow-y-auto pr-2">
+              {/* Risoluzione */}
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Risoluzione ({genWidth}x{genHeight})</label>
+                <div className="flex items-center gap-4">
+                  <span className="text-xs text-gray-500">480p</span>
                   <input
-                    type="number"
-                    className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                    value={genWidth}
-                    onChange={(e) => setGenWidth(parseInt(e.target.value) || 480)}
+                    type="range"
+                    min="0"
+                    max="2"
+                    step="1"
+                    value={resolutionIndex}
+                    onChange={(e) => handleResolutionChange(parseInt(e.target.value))}
+                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Altezza</label>
-                  <input
-                    type="number"
-                    className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                    value={genHeight}
-                    onChange={(e) => setGenHeight(parseInt(e.target.value) || 832)}
-                  />
+                  <span className="text-xs text-gray-500">1080p</span>
                 </div>
               </div>
+
+              {/* Frames */}
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Frames per clip</label>
+                <label className="block text-sm text-gray-400 mb-2">Frames per clip</label>
                 <input
                   type="number"
                   className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
@@ -341,32 +353,52 @@ export default function Home() {
                   onChange={(e) => setGenFrames(parseInt(e.target.value) || 49)}
                 />
               </div>
-              <div className="grid grid-cols-3 gap-4">
+
+              {/* Steps */}
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Flux Steps</label>
+                  <label className="flex justify-between text-sm text-gray-400 mb-2">
+                    <span>Flux Steps</span>
+                    <span className="text-white font-medium">{genFluxSteps}</span>
+                  </label>
                   <input
-                    type="number"
-                    className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    type="range"
+                    min="1"
+                    max="50"
+                    step="1"
                     value={genFluxSteps}
-                    onChange={(e) => setGenFluxSteps(parseInt(e.target.value) || 20)}
+                    onChange={(e) => setGenFluxSteps(parseInt(e.target.value))}
+                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Wan Steps</label>
+                  <label className="flex justify-between text-sm text-gray-400 mb-2">
+                    <span>Wan Steps</span>
+                    <span className="text-white font-medium">{genWanSteps}</span>
+                  </label>
                   <input
-                    type="number"
-                    className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    type="range"
+                    min="1"
+                    max="100"
+                    step="1"
                     value={genWanSteps}
-                    onChange={(e) => setGenWanSteps(parseInt(e.target.value) || 60)}
+                    onChange={(e) => setGenWanSteps(parseInt(e.target.value))}
+                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">LTX Steps</label>
+                  <label className="flex justify-between text-sm text-gray-400 mb-2">
+                    <span>LTX Steps</span>
+                    <span className="text-white font-medium">{genLtxSteps}</span>
+                  </label>
                   <input
-                    type="number"
-                    className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    type="range"
+                    min="1"
+                    max="100"
+                    step="1"
                     value={genLtxSteps}
-                    onChange={(e) => setGenLtxSteps(parseInt(e.target.value) || 50)}
+                    onChange={(e) => setGenLtxSteps(parseInt(e.target.value))}
+                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
                   />
                 </div>
               </div>
