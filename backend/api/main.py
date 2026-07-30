@@ -81,8 +81,8 @@ def migrate_database():
             "gen_width": "INTEGER DEFAULT 256",
             "gen_height": "INTEGER DEFAULT 448",
             "gen_frames": "INTEGER DEFAULT 49",
-            "gen_flux_steps": "INTEGER DEFAULT 20",
-            "gen_wan_steps": "INTEGER DEFAULT 60",
+            "gen_flux_steps": "INTEGER DEFAULT 4",
+            "gen_wan_steps": "INTEGER DEFAULT 30",
             "gen_ltx_steps": "INTEGER DEFAULT 50",
         }
 
@@ -152,8 +152,8 @@ class JobCreate(BaseModel):
     gen_width: int = int(os.getenv("GEN_WIDTH", 256))
     gen_height: int = int(os.getenv("GEN_HEIGHT", 448))
     gen_frames: int = int(os.getenv("GEN_FRAMES", 49))
-    gen_flux_steps: int = int(os.getenv("GEN_FLUX_STEPS", 20))
-    gen_wan_steps: int = int(os.getenv("GEN_WAN_STEPS", 60))
+    gen_flux_steps: int = int(os.getenv("GEN_FLUX_STEPS", 4))
+    gen_wan_steps: int = int(os.getenv("GEN_WAN_STEPS", 30))
     gen_ltx_steps: int = int(os.getenv("GEN_LTX_STEPS", 50))
 
 @app.get("/health")
