@@ -73,7 +73,8 @@ class WanProvider(BaseAIProvider):
             logger.info(f"Caricamento transformer GGUF da {model_path}...")
             transformer = WanTransformer3DModel.from_single_file(
                 model_path,
-                quantization_config=GGUFQuantizationConfig(compute_dtype=torch.float16)
+                quantization_config=GGUFQuantizationConfig(compute_dtype=torch.float16),
+                low_cpu_mem_usage=False
             )
             
             logger.info(f"Caricamento VAE da {base_model_path} in float32...")
