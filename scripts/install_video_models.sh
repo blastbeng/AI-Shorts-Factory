@@ -28,11 +28,19 @@ if [ ! -f "$WAN_2_2_5B_DIR/.download_complete" ]; then
     echo "Downloading Wan2_2-TI2V-5B_fp8_e4m3fn_scaled_KJ.safetensors..."
     wget -q --show-progress -O "$WAN_2_2_5B_MODEL" "https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/TI2V/Wan2_2-TI2V-5B_fp8_e4m3fn_scaled_KJ.safetensors"
     
+    if [ -z "$HF_TOKEN" ]; then
+        echo "Warning: HF_TOKEN environment variable is not set. Downloads will be unauthenticated and may be rate-limited."
+    else
+        echo "HF_TOKEN found. Using authenticated requests for Hugging Face Hub."
+    fi
+
     echo "Downloading VAE, Text Encoder, and Tokenizer using huggingface_hub..."
     "$PYTHON_BIN" -c "
 import os
 from huggingface_hub import hf_hub_download, snapshot_download
 token = os.getenv('HF_TOKEN')
+if not token:
+    print('Proceeding without HF_TOKEN. Unauthenticated requests may be rate-limited.')
 
 # VAE
 hf_hub_download(repo_id='Wan-AI/Wan2.1-T2V-14B', filename='Wan2.1_VAE.pth', local_dir='$WAN_2_2_5B_DIR', token=token)
