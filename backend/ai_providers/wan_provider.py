@@ -13,6 +13,7 @@ import numpy as np
 import cv2
 from PIL import Image
 from diffusers import WanImageToVideoPipeline, AutoencoderKLWan, WanTransformer3DModel
+from optimum.quanto import quantize, freeze, qfloat8
 from transformers import UMT5EncoderModel, AutoTokenizer, CLIPVisionModel, CLIPImageProcessor
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
@@ -82,9 +83,22 @@ class WanProvider(BaseAIProvider):
             )
             feature_extractor = CLIPImageProcessor.from_pretrained(image_encoder_path)
             
+            logger.info("Caricamento Transformer Wan 2.2 5B con config locale...")
+            transformer_config_path = os.path.abspath(self.model_info.get("transformer_config_path", os.path.join(os.path.dirname(model_path), "transformer_config")))
+            transformer = WanTransformer3DModel.from_single_file(
+                model_path,
+                config=transformer_config_path,
+                torch_dtype=torch.float16
+            )
+            
+            logger.info("Quantizzazione Transformer in FP8 con optimum.quanto...")
+            quantize(transformer, weights=qfloat8)
+            freeze(transformer)
+            
             logger.info("Caricamento pipeline Wan 2.2 5B (Img2Video) da single file...")
             self.pipeline = WanImageToVideoPipeline.from_single_file(
                 model_path,
+                transformer=transformer,
                 vae=vae,
                 text_encoder=text_encoder,
                 tokenizer=tokenizer,

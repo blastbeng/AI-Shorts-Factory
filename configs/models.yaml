@@ -42,6 +42,7 @@ video:
     text_encoder_path: ./models/video/wan_2_2_5b/text_encoder
     tokenizer_path: ./models/video/wan_2_2_5b/tokenizer
     image_encoder_path: ./models/video/wan_2_2_5b/clip_image_encoder
+    transformer_config_path: ./models/video/wan_2_2_5b/transformer_config
     status: installed
     vram_required_gb: 12
 voice:
