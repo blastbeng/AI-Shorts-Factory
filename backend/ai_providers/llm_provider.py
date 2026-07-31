@@ -128,7 +128,7 @@ class LLMProvider(BaseAIProvider):
                 if is_interrupted and is_interrupted():
                     return ""
                 
-                system_prompt = f"You are a professional scriptwriter. Follow the user's instructions exactly. Do not output any thinking process, reasoning, meta-text, prompt analysis, or step-by-step breakdowns. Output ONLY a valid JSON object with a single key 'content' containing the final text. The output MUST be in the language requested by the user. Do not include any introductory or concluding remarks. Do not output the prompt or any part of it. Never output your internal thoughts or translate the prompt. Example: {{\"content\": \"The generated text here.\"}}"
+                system_prompt = f"You are a professional scriptwriter. Follow the user's instructions exactly. Do not output any thinking process, reasoning, meta-text, prompt analysis, or step-by-step breakdowns. Output ONLY a valid JSON object with a single key 'content' containing the final text. The output MUST be in the language requested by the user. Do not include any introductory or concluding remarks. Do not output the prompt or any part of it. Never output your internal thoughts or translate the prompt. Do not include prefixes like 'CONTENT:', 'TEXT:', 'NARRATION:' in the final text. Example: {{\"content\": \"The generated text here.\"}}"
                 import threading
                 import random as random_module
                 dynamic_temp = random_module.uniform(0.7, 0.85)
@@ -167,7 +167,7 @@ class LLMProvider(BaseAIProvider):
                         generated_text = re.sub(r'^.*?(Here\'s a thinking process:|Thinking Process:).*?\n', '', generated_text, flags=re.IGNORECASE).strip()
                         generated_text = re.sub(r'^(Sure, here is|Here is|Here\'s|This is|Il seguente è|Ecco).*?:\s*', '', generated_text, flags=re.IGNORECASE).strip()
                         # Remove common meta-text prefixes like CONTENT:, TEXT:, NARRATION:, etc.
-                        generated_text = re.sub(r'^\s*(CONTENT|TEXT|NARRATION|OUTPUT|RESPONSE|RESULT|SCRIPT)\s*:\s*', '', generated_text, flags=re.IGNORECASE).strip()
+                        generated_text = re.sub(r'(?i)\b(CONTENT|TEXT|NARRATION|OUTPUT|RESPONSE|RESULT|SCRIPT)\s*:\s*', '', generated_text).strip()
                         generated_text = re.sub(r'\*+', '', generated_text).strip()
                         generated_text = re.sub(r'#+', '', generated_text).strip()
                 
