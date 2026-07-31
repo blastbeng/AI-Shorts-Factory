@@ -183,7 +183,8 @@ class WanProvider(BaseAIProvider):
             logger.info("Caricamento VAE e Text Encoder locali...")
             vae = AutoencoderKLWan.from_single_file(
                 vae_path,
-                torch_dtype=torch.float16
+                torch_dtype=torch.float16,
+                low_cpu_mem_usage=True
             )
             self.ram()
             text_encoder = T5EncoderModel.from_pretrained(
@@ -224,6 +225,8 @@ class WanProvider(BaseAIProvider):
             
             # Materialize the model on CPU with empty tensors
             transformer = transformer.to_empty(device="cpu")
+            # Force float8 dtype to prevent float32 fallback which uses 4x RAM
+            transformer = transformer.to(torch.float8_e4m3fn)
             
             state_dict = transformer.state_dict()
             model_keys = set(state_dict.keys())
