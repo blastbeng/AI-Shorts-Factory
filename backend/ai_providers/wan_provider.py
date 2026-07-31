@@ -66,7 +66,7 @@ class WanProvider(BaseAIProvider):
             logger.info("Caricamento VAE e Text Encoder locali...")
             vae = AutoencoderKLWan.from_single_file(
                 vae_path,
-                torch_dtype=torch.float16
+                torch_dtype=torch.float32
             )
             text_encoder = UMT5EncoderModel.from_pretrained(
                 text_encoder_path,
