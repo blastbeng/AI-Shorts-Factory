@@ -15,7 +15,9 @@ torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = True
 import numpy as np
 import cv2
 from PIL import Image
-from diffusers import DiffusionPipeline
+import gguf
+from diffusers import WanImg2VideoPipeline
+from diffusers.utils import load_image
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger
@@ -65,23 +67,62 @@ class WanProvider(BaseAIProvider):
             torch.cuda.set_per_process_memory_fraction(0.95, gpu_id)
 
         if self.pipeline is None:
-            logger.info("Caricamento pipeline Wan 2.2 5B (Img2Video)...")
+            logger.info("Caricamento pipeline Wan 2.2 5B (Img2Video) da GGUF...")
             model_path = os.path.abspath(self.model_info.get("path"))
             
-            self.pipeline = DiffusionPipeline.from_single_file(
-                model_path,
-                torch_dtype=torch.float16
-            )
+            # 1. Parse the GGUF file
+            gguf_reader = gguf.GGUFReader(model_path)
             
-            # VAE memory optimizations for RDNA3
+            # 2. Extract metadata (e.g., architecture, config)
+            arch = None
+            for field in gguf_reader.fields:
+                if field.name == "general.architecture":
+                    arch = field.parts[field.data[0]].decode("utf-8")
+                    break
+            if arch is None:
+                raise ValueError("GGUF file missing 'general.architecture' key")
+            
+            # 3. Build a config dict from GGUF metadata (simplified – adapt to actual keys)
+            config = {}
+            for field in gguf_reader.fields:
+                if field.name.startswith("diffusion."):
+                    key = field.name[len("diffusion."):]
+                    # Convert GGUF types to Python primitives
+                    if len(field.parts) == 1:
+                        config[key] = field.parts[field.data[0]]
+                    else:
+                        config[key] = [field.parts[idx] for idx in field.data]
+            
+            # 4. Instantiate the pipeline from the config (no weights yet)
+            self.pipeline = WanImg2VideoPipeline.from_config(config, torch_dtype=torch.float16)
+            
+            # 5. Load the GGUF tensors into the pipeline components
+            #    The GGUF file stores tensors with names like "transformer.xxx", "vae.xxx", etc.
+            #    We need to map them to the correct submodule.
+            state_dict = {}
+            for tensor_info in gguf_reader.tensors:
+                name = tensor_info.name
+                tensor_data = tensor_info.data  # numpy array
+                state_dict[name] = torch.from_numpy(tensor_data)
+            
+            # 6. Assign tensors to the appropriate sub‑models
+            #    This mapping depends on the GGUF naming convention.
+            #    A typical split:
+            transformer_dict = {k.replace("transformer.", ""): v for k, v in state_dict.items() if k.startswith("transformer.")}
+            vae_dict = {k.replace("vae.", ""): v for k, v in state_dict.items() if k.startswith("vae.")}
+            # ... other components (text_encoder, etc.) if present
+            
+            self.pipeline.transformer.load_state_dict(transformer_dict, strict=False)
+            self.pipeline.vae.load_state_dict(vae_dict, strict=False)
+            # If there is a text encoder, load it similarly.
+            
+            # 7. Move to device and apply memory optimizations
             self.pipeline.vae.enable_tiling(
                 tile_sample_min_height=256,
                 tile_sample_min_width=256,
                 tile_sample_min_num_frames=32
             )
             self.pipeline.vae.enable_slicing()
-
-            # Use pipeline-level CPU offload to manage VRAM and RAM efficiently
             self.pipeline.enable_model_cpu_offload()
 
             logger.info(f"Transformer dtype {self.pipeline.transformer.dtype}")
