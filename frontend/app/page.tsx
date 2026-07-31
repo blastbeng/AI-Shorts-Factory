@@ -273,11 +273,11 @@ export default function Home() {
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
               <span className="w-2 h-2 bg-blue-500 rounded-full"></span> Genera Video
             </h2>
-            <form onSubmit={handleGenerate} className="flex-1 flex flex-col">
+            <form onSubmit={handleGenerate} className="flex-1 flex flex-col min-h-0">
               <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 p-3 rounded-lg font-bold transition-all shadow-md mb-4">
                 Avvia Generazione
               </button>
-              <div className="space-y-4 flex-1 overflow-y-scroll pr-2">
+              <div className="space-y-4 flex-1 overflow-y-scroll pr-2 min-h-0 custom-scrollbar">
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Genere</label>
                   <select
