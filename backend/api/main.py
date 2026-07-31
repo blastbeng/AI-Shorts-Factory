@@ -86,7 +86,7 @@ def migrate_database():
             "gen_wan_steps": "INTEGER DEFAULT 30",
             "gen_ltx_steps": "INTEGER DEFAULT 50",
             "video_provider": "VARCHAR DEFAULT 'wan'",
-            "width": "INTEGER DEFAULT 353",
+            "width": "INTEGER DEFAULT 352",
             "height": "INTEGER DEFAULT 640",
         }
 
@@ -155,7 +155,7 @@ class JobCreate(BaseModel):
     duration_seconds: int = 16
     gen_width: int = int(os.getenv("GEN_WIDTH", 256))
     gen_height: int = int(os.getenv("GEN_HEIGHT", 448))
-    width: int = 353
+    width: int = 352
     height: int = 640
     gen_frames: int = int(os.getenv("GEN_FRAMES", 49))
     gen_flux_steps: int = int(os.getenv("GEN_FLUX_STEPS", 4))
@@ -168,7 +168,7 @@ class JobCreate(BaseModel):
 @app.get("/settings")
 def get_settings():
     # Read from env with fallback
-    width_str = os.getenv("GEN_WIDTH", "353")
+    width_str = os.getenv("GEN_WIDTH", "352")
     height_str = os.getenv("GEN_HEIGHT", "640")
     
     # Validate width
@@ -176,8 +176,8 @@ def get_settings():
         width = int(width_str)
         if width <= 0: raise ValueError
     except ValueError:
-        width = 353
-        logger.warning("Invalid GEN_WIDTH in .env, falling back to 353")
+        width = 352
+        logger.warning("Invalid GEN_WIDTH in .env, falling back to 352")
         
     # Validate height
     try:

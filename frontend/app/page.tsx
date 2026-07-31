@@ -48,7 +48,7 @@ export default function Home() {
   const [videoProvider, setVideoProvider] = useState('wan');
   const [generateSubtitles, setGenerateSubtitles] = useState(false);
   const [inputImage, setInputImage] = useState<string | null>(null);
-  const [width, setWidth] = useState(353);
+  const [width, setWidth] = useState(352);
   const [height, setHeight] = useState(640);
   const [resolutionIndex, setResolutionIndex] = useState(0);
   const resolutions = [
@@ -394,7 +394,7 @@ export default function Home() {
                   <input
                     type="number"
                     value={width}
-                    onChange={(e) => setWidth(parseInt(e.target.value) || 353)}
+                    onChange={(e) => setWidth(parseInt(e.target.value) || 352)}
                     className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                   />
                 </div>
