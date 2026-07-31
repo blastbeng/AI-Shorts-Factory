@@ -15,7 +15,8 @@ torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = True
 import numpy as np
 import cv2
 from PIL import Image
-from diffusers import DiffusionPipeline
+from diffusers import DiffusionPipeline, GGUFQuantizationConfig
+from diffusers import WanTransformer3DModel
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger
@@ -67,9 +68,18 @@ class WanProvider(BaseAIProvider):
         if self.pipeline is None:
             logger.info("Caricamento pipeline Wan 2.2 5B (Img2Video) da GGUF...")
             model_path = os.path.abspath(self.model_info.get("path"))
+            base_model_path = self.model_info.get("base_model_path", "Wan-AI/Wan2.1-I2V-5B-480P-Diffusers")
             
-            self.pipeline = DiffusionPipeline.from_single_file(
+            logger.info(f"Caricamento transformer GGUF da {model_path}...")
+            transformer = WanTransformer3DModel.from_single_file(
                 model_path,
+                quantization_config=GGUFQuantizationConfig(compute_dtype=torch.float16)
+            )
+            
+            logger.info(f"Caricamento pipeline da {base_model_path}...")
+            self.pipeline = DiffusionPipeline.from_pretrained(
+                base_model_path,
+                transformer=transformer,
                 torch_dtype=torch.float16,
             )
             
