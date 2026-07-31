@@ -45,7 +45,7 @@ class WanProvider(BaseAIProvider):
 
     def generate(self, prompts: list, output_path: str, *args, frames_per_clip=int(os.getenv("GEN_FRAMES", 49)), width=int(os.getenv("GEN_WIDTH", 256)), height=int(os.getenv("GEN_HEIGHT", 448)), steps=int(os.getenv("GEN_WAN_STEPS", 30)), **kwargs):
         if not self.health_check():
-            raise RuntimeError("Modello Wan 2.2 5B non installato.")
+            raise RuntimeError("Modello Wan 2.2 14B non installato.")
             
         job_id = kwargs.get("job_id")
         image_path = kwargs.get("image_path")
