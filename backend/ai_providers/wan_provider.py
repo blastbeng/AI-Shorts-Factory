@@ -16,7 +16,7 @@ import cv2
 from PIL import Image
 from safetensors.torch import load_file
 from diffusers import WanImageToVideoPipeline, AutoencoderKLWan, WanTransformer3DModel, FlowMatchEulerDiscreteScheduler
-from transformers import UMT5EncoderModel, AutoTokenizer, CLIPVisionModel, CLIPImageProcessor
+from transformers import T5EncoderModel, AutoTokenizer, CLIPVisionModel, CLIPImageProcessor
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger
