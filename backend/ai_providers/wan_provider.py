@@ -70,8 +70,7 @@ class WanProvider(BaseAIProvider):
             
             self.pipeline = WanImageToVideoPipeline.from_single_file(
                 model_path,
-                torch_dtype=torch.float16,
-                gguf_file=model_path
+                torch_dtype=torch.float16
             )
             
             # VAE memory optimizations for RDNA3
