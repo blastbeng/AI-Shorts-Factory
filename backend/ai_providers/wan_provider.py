@@ -59,18 +59,20 @@ class WanProvider(BaseAIProvider):
         if self.pipeline is None:
             logger.info("Caricamento pipeline Wan 2.2 5B (Img2Video)...")
             model_path = os.path.abspath(self.model_info.get("path"))
-            model_dir = os.path.dirname(model_path)
+            vae_path = os.path.abspath(self.model_info.get("vae_path"))
+            text_encoder_path = os.path.abspath(self.model_info.get("text_encoder_path"))
+            tokenizer_path = os.path.abspath(self.model_info.get("tokenizer_path"))
             
             logger.info("Caricamento VAE e Text Encoder locali...")
             vae = AutoencoderKLWan.from_single_file(
-                os.path.join(model_dir, "Wan2.1_VAE.pth"),
+                vae_path,
                 torch_dtype=torch.float16
             )
             text_encoder = UMT5EncoderModel.from_pretrained(
-                os.path.join(model_dir, "text_encoder"),
+                text_encoder_path,
                 torch_dtype=torch.float16
             )
-            tokenizer = T5TokenizerFast.from_pretrained(os.path.join(model_dir, "tokenizer"))
+            tokenizer = T5TokenizerFast.from_pretrained(tokenizer_path)
             
             self.pipeline = WanImageToVideoPipeline.from_single_file(
                 model_path,
