@@ -15,9 +15,7 @@ torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = True
 import numpy as np
 import cv2
 from PIL import Image
-import gguf
-from diffusers import WanImg2VideoPipeline
-from diffusers.utils import load_image
+from diffusers import WanPipeline
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger
@@ -70,62 +68,17 @@ class WanProvider(BaseAIProvider):
             logger.info("Caricamento pipeline Wan 2.2 5B (Img2Video) da GGUF...")
             model_path = os.path.abspath(self.model_info.get("path"))
             
-            # 1. Parse the GGUF file
-            gguf_reader = gguf.GGUFReader(model_path)
-            
-            # 2. Extract metadata (e.g., architecture, config)
-            arch = None
-            for field in gguf_reader.fields:
-                if field.name == "general.architecture":
-                    arch = field.parts[field.data[0]].decode("utf-8")
-                    break
-            if arch is None:
-                raise ValueError("GGUF file missing 'general.architecture' key")
-            
-            # 3. Build a config dict from GGUF metadata (simplified – adapt to actual keys)
-            config = {}
-            for field in gguf_reader.fields:
-                if field.name.startswith("diffusion."):
-                    key = field.name[len("diffusion."):]
-                    # Convert GGUF types to Python primitives
-                    if len(field.parts) == 1:
-                        config[key] = field.parts[field.data[0]]
-                    else:
-                        config[key] = [field.parts[idx] for idx in field.data]
-            
-            # 4. Instantiate the pipeline from the config (no weights yet)
-            self.pipeline = WanImg2VideoPipeline.from_config(config, torch_dtype=torch.float16)
-            
-            # 5. Load the GGUF tensors into the pipeline components
-            #    The GGUF file stores tensors with names like "transformer.xxx", "vae.xxx", etc.
-            #    We need to map them to the correct submodule.
-            state_dict = {}
-            for tensor_info in gguf_reader.tensors:
-                name = tensor_info.name
-                tensor_data = tensor_info.data  # numpy array
-                state_dict[name] = torch.from_numpy(tensor_data)
-            
-            # 6. Assign tensors to the appropriate sub‑models
-            #    This mapping depends on the GGUF naming convention.
-            #    A typical split:
-            transformer_dict = {k.replace("transformer.", ""): v for k, v in state_dict.items() if k.startswith("transformer.")}
-            vae_dict = {k.replace("vae.", ""): v for k, v in state_dict.items() if k.startswith("vae.")}
-            # ... other components (text_encoder, etc.) if present
-            
-            self.pipeline.transformer.load_state_dict(transformer_dict, strict=False)
-            self.pipeline.vae.load_state_dict(vae_dict, strict=False)
-            # If there is a text encoder, load it similarly.
-            
-            # 7. Move to device and apply memory optimizations
-            self.pipeline.vae.enable_tiling(
-                tile_sample_min_height=256,
-                tile_sample_min_width=256,
-                tile_sample_min_num_frames=32
+            self.pipeline = WanPipeline.from_single_file(
+                model_path,
+                torch_dtype=torch.float16,
             )
-            self.pipeline.vae.enable_slicing()
+            
+            # Memory optimisations (as recommended by the model card)
             self.pipeline.enable_model_cpu_offload()
-
-            logger.info(f"Transformer dtype {self.pipeline.transformer.dtype}")
+            self.pipeline.enable_vae_slicing()
+            self.pipeline.enable_vae_tiling()
+            
+            logger.info(f"Pipeline caricata. Transformer dtype: {self.pipeline.transformer.dtype}")
 
         import random
         
@@ -205,7 +158,7 @@ class WanProvider(BaseAIProvider):
             torch.cuda.empty_cache()
 
             with torch.inference_mode():
-                video = self.pipeline(
+                output = self.pipeline(
                     image=current_image,
                     prompt=prompt,
                     num_inference_steps=steps,
@@ -216,20 +169,10 @@ class WanProvider(BaseAIProvider):
                     generator=generator,
                     callback_on_step_end=progress_callback,
                     callback_on_step_end_tensor_inputs=[]
-                ).frames[0]
+                ).frames[0]   # list of PIL Images
 
-            if isinstance(video, torch.Tensor):
-                video = video.cpu().numpy()
-                if video.ndim == 4 and video.shape[1] == 3:
-                    video = np.transpose(video, (0, 2, 3, 1))
-            elif isinstance(video, list):
-                video = np.stack([np.array(frame) for frame in video])
-
-            if video.dtype != np.uint8:
-                if video.max() <= 1.0 and video.min() >= -1.0:
-                    video = np.clip(video, 0, 1)
-                    video = (video * 255).round()
-                video = video.astype("uint8")
+            # Convert PIL Images to numpy arrays (uint8)
+            video = np.stack([np.array(frame) for frame in output])
 
             last_frame = video[-1].copy()
 
@@ -238,7 +181,6 @@ class WanProvider(BaseAIProvider):
                 temp_clip_path,
                 fps=24.0,
                 codec="libx264",
-                macro_block_size=1,
                 ffmpeg_params=[
                     "-crf", "16",
                     "-preset", "slow",
@@ -261,7 +203,7 @@ class WanProvider(BaseAIProvider):
 
         logger.info(f"Concatenazione di {len(temp_clips)} clip in {output_path}...")
         
-        final_writer = imageio.get_writer(output_path, fps=fps, codec='libx264', quality=8, macro_block_size=1)
+        final_writer = imageio.get_writer(output_path, fps=fps, codec='libx264', quality=8)
         for temp_clip_path in temp_clips:
             reader = imageio.get_reader(temp_clip_path)
             for frame in reader:
