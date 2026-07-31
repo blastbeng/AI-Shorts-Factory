@@ -74,25 +74,39 @@ class WanProvider(BaseAIProvider):
             transformer = WanTransformer3DModel.from_single_file(
                 model_path,
                 quantization_config=GGUFQuantizationConfig(compute_dtype=torch.float16),
-                low_cpu_mem_usage=False
+                low_cpu_mem_usage=True
             )
-            
-            logger.info(f"Caricamento VAE da {base_model_path} in float32...")
-            vae = AutoencoderKLWan.from_pretrained(base_model_path, subfolder="vae", torch_dtype=torch.float16)
-            
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+            logger.info(f"Caricamento VAE da {base_model_path} in float16...")
+            vae = AutoencoderKLWan.from_pretrained(
+                base_model_path,
+                subfolder="vae",
+                torch_dtype=torch.float16,
+                low_cpu_mem_usage=True,
+                use_safetensors=True
+            )
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
             logger.info(f"Caricamento pipeline da {base_model_path}...")
             self.pipeline = DiffusionPipeline.from_pretrained(
                 base_model_path,
                 transformer=transformer,
                 vae=vae,
                 torch_dtype=torch.float16,
+                low_cpu_mem_usage=True,
+                use_safetensors=True
             )
-            
+
             # Memory optimisations (as recommended by the model card)
             self.pipeline.enable_model_cpu_offload()
             self.pipeline.enable_vae_slicing()
             self.pipeline.enable_vae_tiling()
-            
+
             logger.info(f"Pipeline caricata. Transformer dtype: {self.pipeline.transformer.dtype}")
 
         temp_clips = []
