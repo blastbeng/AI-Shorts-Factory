@@ -189,9 +189,7 @@ class WanProvider(BaseAIProvider):
             text_encoder = T5EncoderModel.from_pretrained(
                 text_encoder_path,
                 torch_dtype=torch.float16,
-                device_map="auto",
                 low_cpu_mem_usage=True,
-                offload_folder="./offload",
                 local_files_only=True
             )
             self.ram()
@@ -206,8 +204,7 @@ class WanProvider(BaseAIProvider):
             image_encoder = CLIPVisionModel.from_pretrained(
                 image_encoder_path,
                 torch_dtype=torch.float16,
-                low_cpu_mem_usage=True,
-                device_map="cpu"
+                low_cpu_mem_usage=True
             )
             self.ram()
             feature_extractor = CLIPImageProcessor.from_pretrained(image_encoder_path)
@@ -237,13 +234,11 @@ class WanProvider(BaseAIProvider):
             logger.info(f"WAN CREATED CONFIG: {transformer.config}")
             logger.info(f"WAN CREATED PATCH: {transformer.patch_embedding.weight.shape}")
             
-            state_dict = load_file(model_path)
-            mapped_state_dict = {}
+            mapped_state_dict = load_file(model_path)
 
             with safe_open(model_path, framework="pt", device="cpu") as f:
                 for key in f.keys():
                     mapped_key = self.convert_key(key)
-
                     mapped_state_dict[mapped_key] = f.get_tensor(key)
 
             for k in list(mapped_state_dict.keys())[:50]:
@@ -257,7 +252,6 @@ class WanProvider(BaseAIProvider):
             logger.info(f"MISSING: {len(missing)}")
             logger.info(f"UNEXPECTED: {len(unexpected)}")
             
-            del state_dict
             del mapped_state_dict
             gc.collect()
             if torch.cuda.is_available():
@@ -296,13 +290,8 @@ class WanProvider(BaseAIProvider):
             # Attention memory optimization
             self.pipeline.enable_attention_slicing("max")
 
-            # Use CPU offload for better performance on 16GB VRAM
-            transformer.enable_group_offload(
-                onload_device="cuda",
-                offload_device="cpu",
-                offload_type="block_level",
-                num_blocks_per_group=1,
-            )
+            # Use pipeline-level CPU offload to manage VRAM and RAM efficiently
+            self.pipeline.enable_model_cpu_offload()
 
             logger.info(f"Transformer dtype {self.pipeline.transformer.dtype}")
 
