@@ -234,7 +234,7 @@ class WanProvider(BaseAIProvider):
             logger.info(f"WAN CREATED CONFIG: {transformer.config}")
             logger.info(f"WAN CREATED PATCH: {transformer.patch_embedding.weight.shape}")
             
-            mapped_state_dict = load_file(model_path)
+            mapped_state_dict = {}
 
             with safe_open(model_path, framework="pt", device="cpu") as f:
                 for key in f.keys():
