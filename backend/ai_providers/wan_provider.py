@@ -70,7 +70,8 @@ class WanProvider(BaseAIProvider):
             
             self.pipeline = WanImageToVideoPipeline.from_single_file(
                 model_path,
-                torch_dtype=torch.float16
+                torch_dtype=torch.float16,
+                gguf_file=model_path
             )
             
             # VAE memory optimizations for RDNA3
@@ -80,9 +81,6 @@ class WanProvider(BaseAIProvider):
                 tile_sample_min_num_frames=32
             )
             self.pipeline.vae.enable_slicing()
-
-            # Attention memory optimization
-            self.pipeline.enable_attention_slicing("max")
 
             # Use pipeline-level CPU offload to manage VRAM and RAM efficiently
             self.pipeline.enable_model_cpu_offload()
@@ -131,7 +129,7 @@ class WanProvider(BaseAIProvider):
             logger.info(f"Generazione clip {i+1}/{len(prompts)} per prompt: {prompt}")
             
             seed = self.base_seed + i
-            generator = torch.Generator(device=device).manual_seed(seed)
+            generator = torch.Generator(device="cpu").manual_seed(seed)
             
             # Determine the conditioning image for this clip
             target_width = width
