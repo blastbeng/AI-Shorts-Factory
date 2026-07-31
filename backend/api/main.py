@@ -87,8 +87,8 @@ def migrate_database():
             "gen_wan_steps": "INTEGER DEFAULT 30",
             "gen_ltx_steps": "INTEGER DEFAULT 50",
             "video_provider": "VARCHAR DEFAULT 'wan'",
-            "width": "INTEGER DEFAULT 352",
-            "height": "INTEGER DEFAULT 640",
+            "width": "INTEGER DEFAULT 256",
+            "height": "INTEGER DEFAULT 448",
         }
 
         for col_name, col_def in new_columns.items():
@@ -156,8 +156,8 @@ class JobCreate(BaseModel):
     duration_seconds: int = 16
     gen_width: int = int(os.getenv("GEN_WIDTH", 256))
     gen_height: int = int(os.getenv("GEN_HEIGHT", 448))
-    width: int = 256
-    height: int = 448
+    width: int = int(os.getenv("GEN_WIDTH", 256))
+    height: int = int(os.getenv("GEN_HEIGHT", 448))
     gen_frames: int = int(os.getenv("GEN_FRAMES", 49))
     gen_flux_steps: int = int(os.getenv("GEN_FLUX_STEPS", 4))
     gen_wan_steps: int = int(os.getenv("GEN_WAN_STEPS", 30))
