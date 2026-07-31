@@ -13,7 +13,7 @@ import numpy as np
 import cv2
 from PIL import Image
 from diffusers import WanImageToVideoPipeline, AutoencoderKLWan, WanTransformer3DModel, FlowMatchEulerDiscreteScheduler
-from optimum.quanto import quantize, freeze, qfloat8
+from transformers import UMT5EncoderModel, AutoTokenizer, CLIPVisionModel, CLIPImageProcessor
 from transformers import UMT5EncoderModel, AutoTokenizer, CLIPVisionModel, CLIPImageProcessor
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
@@ -83,37 +83,14 @@ class WanProvider(BaseAIProvider):
             )
             feature_extractor = CLIPImageProcessor.from_pretrained(image_encoder_path)
             
-            wan_ti2v_5b_config = {
-                "class_name": "WanTransformer3DModel",
-                "dim": 3072,
-                "num_heads": 40,
-                "num_layers": 30,
-                "patch_size": [1, 2, 2],
-                "text_dim": 4096,
-                "in_channels": 16,
-                "out_channels": 16,
-                "freq_dim": 256,
-                "text_len": 512,
-                "cross_attn_dim": 4096,
-                "guidance_embed": False
-            }
-
+            transformer_config_path = os.path.join(os.path.dirname(model_path), "transformer_config")
             logger.info("Caricamento Transformer Wan 2.2 5B con config locale...")
-            try:
-                transformer = WanTransformer3DModel.from_single_file(
-                    model_path,
-                    config=wan_ti2v_5b_config,
-                    torch_dtype=torch.float8_e4m3fn
-                )
-            except Exception as e:
-                logger.warning(f"FP8 dtype non supportato o errore: {e}. Fallback a FP16 con quantizzazione optimum.quanto...")
-                transformer = WanTransformer3DModel.from_single_file(
-                    model_path,
-                    config=wan_ti2v_5b_config,
-                    torch_dtype=torch.float16
-                )
-                quantize(transformer, weights=qfloat8)
-                freeze(transformer)
+            transformer = WanTransformer3DModel.from_single_file(
+                model_path,
+                config=transformer_config_path,
+                torch_dtype=torch.float16,
+                low_cpu_mem_usage=True
+            )
 
             logger.info("Costruzione pipeline Wan 2.2 5B (Img2Video)...")
             scheduler = FlowMatchEulerDiscreteScheduler(

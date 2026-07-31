@@ -25,6 +25,25 @@ WAN_2_2_5B_MODEL="$WAN_2_2_5B_DIR/Wan2_2-TI2V-5B_fp8_e4m3fn_scaled_KJ.safetensor
 
 if [ ! -f "$WAN_2_2_5B_DIR/.download_complete" ]; then
     mkdir -p "$WAN_2_2_5B_DIR/tokenizer"
+    mkdir -p "$WAN_2_2_5B_DIR/transformer_config"
+    cat << 'EOF' > "$WAN_2_2_5B_DIR/transformer_config/config.json"
+{
+  "_class_name": "WanTransformer3DModel",
+  "dim": 3072,
+  "num_heads": 40,
+  "num_layers": 30,
+  "patch_size": [1, 2, 2],
+  "text_dim": 4096,
+  "in_channels": 16,
+  "out_channels": 16,
+  "freq_dim": 256,
+  "text_len": 512,
+  "cross_attn_dim": 4096,
+  "rope_theta": [1.0, 1.0, 1.0],
+  "time_bias": 0,
+  "guidance_embed": false
+}
+EOF
     echo "Downloading Wan2_2-TI2V-5B_fp8_e4m3fn_scaled_KJ.safetensors..."
     wget -q --show-progress -O "$WAN_2_2_5B_MODEL" "https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/TI2V/Wan2_2-TI2V-5B_fp8_e4m3fn_scaled_KJ.safetensors"
     
