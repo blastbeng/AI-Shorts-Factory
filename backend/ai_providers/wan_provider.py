@@ -252,11 +252,11 @@ class WanProvider(BaseAIProvider):
         return output_path
 
     def get_capabilities(self):
-        return {"type": "video", "model": "wan_2_2_14b"}
+        return {"type": "video", "model": "wan_2_2_5b"}
 
     def get_gpu_requirements(self):
         return {
-            "vram_required_gb": self.model_info.get("vram_required_gb", 12),
+            "vram_required_gb": self.model_info.get("vram_required_gb", 8),
             "backend": self.model_info.get("backend")
         }
 
