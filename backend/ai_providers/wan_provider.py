@@ -70,7 +70,7 @@ class WanProvider(BaseAIProvider):
             )
             text_encoder = UMT5EncoderModel.from_pretrained(
                 text_encoder_path,
-                torch_dtype=torch.bfloat16
+                torch_dtype=torch.float16
             )
             tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
             
@@ -90,7 +90,6 @@ class WanProvider(BaseAIProvider):
                 tile_sample_min_num_frames=32
             )
             self.pipeline.vae.enable_slicing()
-            self.pipeline.vae.to(dtype=torch.float16)
 
             # Attention memory optimization
             self.pipeline.enable_attention_slicing("max")
