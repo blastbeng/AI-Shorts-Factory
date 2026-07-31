@@ -86,7 +86,7 @@ class FluxProvider(BaseAIProvider):
                     "black-forest-labs/FLUX.1-schnell",
                     **pipeline_kwargs
                 )
-                self.pipeline.enable_vae_tiling()
+                self.pipeline.vae.enable_tiling()
                 self.pipeline.vae.enable_slicing()
                 self.pipeline.vae.to(torch.bfloat16)
 
