@@ -36,7 +36,7 @@ WAN_BASE_DIR="./models/video/wan_2_2_5b/base_model"
 if [ ! -f "$WAN_BASE_DIR/model_index.json" ]; then
     mkdir -p "$WAN_BASE_DIR"
     echo "Downloading Wan2.2-TI2V-5B-Diffusers base model..."
-    hf download Wan-AI/Wan2.2-TI2V-5B-Diffusers --local-dir "$WAN_BASE_DIR" --exclude "transformer/*"
+    $PYTHON_BIN -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='Wan-AI/Wan2.2-TI2V-5B-Diffusers', local_dir='$WAN_BASE_DIR', exclude=['transformer/*'])"
 else
     echo "[OK] Modello base wan_2_2_5b già installato."
 fi
