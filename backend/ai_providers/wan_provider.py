@@ -9,6 +9,7 @@ import gc
 import json
 import yaml
 import torch
+import psutil
 torch.backends.cuda.matmul.allow_tf32 = False
 torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = True
 import numpy as np
@@ -137,6 +138,12 @@ class WanProvider(BaseAIProvider):
 
         return nk
 
+    def ram():
+        p = psutil.Process(os.getpid())
+        logger.info(
+            f"RAM usage: {p.memory_info().rss / 1024**3:.2f} GB"
+        )
+
     def install_status(self):
         return self.model_info.get("status", "not_installed")
 
@@ -175,26 +182,33 @@ class WanProvider(BaseAIProvider):
             logger.info("Caricamento VAE e Text Encoder locali...")
             vae = AutoencoderKLWan.from_single_file(
                 vae_path,
-                torch_dtype=torch.float32
+                torch_dtype=torch.float16
             )
+            ram()
             text_encoder = T5EncoderModel.from_pretrained(
                 text_encoder_path,
                 torch_dtype=torch.float16,
                 low_cpu_mem_usage=True,
                 local_files_only=True
             )
+            ram()
             tokenizer = AutoTokenizer.from_pretrained(
                 tokenizer_path,
                 local_files_only=True
             )
+            ram()
             
             image_encoder_path = os.path.abspath(self.model_info.get("image_encoder_path", os.path.join(os.path.dirname(model_path), "clip_image_encoder")))
             logger.info("Caricamento Image Encoder (CLIP) locale...")
             image_encoder = CLIPVisionModel.from_pretrained(
                 image_encoder_path,
-                torch_dtype=torch.float16
+                torch_dtype=torch.float16,
+                low_cpu_mem_usage=True,
+                device_map="cpu"
             )
+            ram()
             feature_extractor = CLIPImageProcessor.from_pretrained(image_encoder_path)
+            ram()
             
             transformer_config_path = os.path.abspath(self.model_info.get("transformer_config_path"))
             with open(os.path.join(transformer_config_path, "config.json"), "r") as f:
