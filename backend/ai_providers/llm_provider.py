@@ -128,7 +128,7 @@ class LLMProvider(BaseAIProvider):
                 if is_interrupted and is_interrupted():
                     return ""
                 
-                system_prompt = f"You are a professional scriptwriter. Follow the user's instructions exactly. Do not output any thinking process, reasoning, meta-text, prompt analysis, or step-by-step breakdowns. Output ONLY a valid JSON object with a single key 'content' containing the final text. The output MUST be in the language requested by the user. Do not include any introductory or concluding remarks. Do not output the prompt or any part of it. Never output your internal thoughts or translate the prompt. Do not include prefixes like 'CONTENT:', 'TEXT:', 'NARRATION:' in the final text. Example: {{\"content\": \"The generated text here.\"}}"
+                system_prompt = f"You are a professional scriptwriter. Follow the user's instructions exactly. Do not output any thinking process, reasoning, meta-text, prompt analysis, or step-by-step breakdowns. Output ONLY a valid JSON object with a single key 'content' containing the final text. The output MUST be in the language requested by the user. Do not include any introductory or concluding remarks. Do not output the prompt or any part of it. Never output your internal thoughts or translate the prompt. CRITICAL: Do not include prefixes like 'CONTENT:', 'TEXT:', 'NARRATION:', 'OUTPUT:', 'RESPONSE:' in the final text. The 'content' value must contain ONLY the raw text. Example: {{\"content\": \"The generated text here.\"}}"
                 import threading
                 import random as random_module
                 dynamic_temp = random_module.uniform(0.7, 0.85)
