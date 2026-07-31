@@ -37,7 +37,7 @@ WAN_BASE_DIR="./models/video/wan_2_2_5b/base_model"
 if [ ! -d "$WAN_BASE_DIR" ]; then
     mkdir -p "$WAN_BASE_DIR"
     echo "Downloading Wan2.1-I2V-5B-480P-Diffusers base model..."
-    huggingface-cli download Wan-AI/Wan2.1-I2V-5B-480P-Diffusers --local-dir "$WAN_BASE_DIR"
+    hf download Wan-AI/Wan2.1-I2V-5B-480P-Diffusers --local-dir "$WAN_BASE_DIR"
 else
     echo "[OK] Modello base wan_2_2_5b già installato."
 fi
