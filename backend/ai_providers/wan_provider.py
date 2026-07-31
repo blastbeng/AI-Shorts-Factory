@@ -184,19 +184,19 @@ class WanProvider(BaseAIProvider):
                 vae_path,
                 torch_dtype=torch.float16
             )
-            ram()
+            self.ram()
             text_encoder = T5EncoderModel.from_pretrained(
                 text_encoder_path,
                 torch_dtype=torch.float16,
                 low_cpu_mem_usage=True,
                 local_files_only=True
             )
-            ram()
+            self.ram()
             tokenizer = AutoTokenizer.from_pretrained(
                 tokenizer_path,
                 local_files_only=True
             )
-            ram()
+            self.ram()
             
             image_encoder_path = os.path.abspath(self.model_info.get("image_encoder_path", os.path.join(os.path.dirname(model_path), "clip_image_encoder")))
             logger.info("Caricamento Image Encoder (CLIP) locale...")
@@ -206,9 +206,9 @@ class WanProvider(BaseAIProvider):
                 low_cpu_mem_usage=True,
                 device_map="cpu"
             )
-            ram()
+            self.ram()
             feature_extractor = CLIPImageProcessor.from_pretrained(image_encoder_path)
-            ram()
+            self.ram()
             
             transformer_config_path = os.path.abspath(self.model_info.get("transformer_config_path"))
             with open(os.path.join(transformer_config_path, "config.json"), "r") as f:
