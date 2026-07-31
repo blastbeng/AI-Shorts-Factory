@@ -114,6 +114,12 @@ class WanProvider(BaseAIProvider):
             logger.info("Caricamento Transformer Wan 2.2 5B con config locale e pesi KJ...")
             
             transformer = WanTransformer3DModel.from_config(transformer_config, torch_dtype=torch.float8_e4m3fn)
+
+            logger.info(
+                f"WAN CREATED dim={transformer.config.dim} "
+                f"in_channels={transformer.config.in_channels} "
+                f"text_dim={transformer.config.text_dim}"
+            )
             
             state_dict = load_file(model_path)
             mapped_state_dict = self.convert_kj_to_diffusers(state_dict)
