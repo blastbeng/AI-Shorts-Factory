@@ -70,7 +70,7 @@ class WanProvider(BaseAIProvider):
             )
             text_encoder = UMT5EncoderModel.from_pretrained(
                 text_encoder_path,
-                torch_dtype=torch.float16
+                torch_dtype=torch.bfloat16
             )
             tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
             
