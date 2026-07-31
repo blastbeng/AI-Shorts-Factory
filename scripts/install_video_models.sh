@@ -51,6 +51,9 @@ snapshot_download(repo_id='Wan-AI/Wan2.1-T2V-14B-Diffusers', allow_patterns='tex
 # Tokenizer
 for f in ['tokenizer.json', 'spiece.model', 'tokenizer_config.json', 'special_tokens_map.json']:
     hf_hub_download(repo_id='Wan-AI/Wan2.1-T2V-14B-Diffusers', filename=f'tokenizer/{f}', local_dir='$WAN_2_2_5B_DIR', token=token)
+
+# Image Encoder (CLIP) and Feature Extractor
+snapshot_download(repo_id='openai/clip-vit-large-patch14', local_dir='$WAN_2_2_5B_DIR/clip_image_encoder', token=token)
 "
     
     touch "$WAN_2_2_5B_DIR/.download_complete"

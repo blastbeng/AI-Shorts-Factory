@@ -13,7 +13,7 @@ import numpy as np
 import cv2
 from PIL import Image
 from diffusers import WanImageToVideoPipeline, AutoencoderKLWan, WanTransformer3DModel, FlowMatchEulerDiscreteScheduler
-from transformers import UMT5EncoderModel, AutoTokenizer
+from transformers import UMT5EncoderModel, AutoTokenizer, CLIPVisionModel, CLIPImageProcessor
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger
@@ -74,6 +74,14 @@ class WanProvider(BaseAIProvider):
             )
             tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
             
+            image_encoder_path = os.path.abspath(self.model_info.get("image_encoder_path", os.path.join(os.path.dirname(model_path), "clip_image_encoder")))
+            logger.info("Caricamento Image Encoder (CLIP) locale...")
+            image_encoder = CLIPVisionModel.from_pretrained(
+                image_encoder_path,
+                torch_dtype=torch.float16
+            )
+            feature_extractor = CLIPImageProcessor.from_pretrained(image_encoder_path)
+            
             logger.info("Caricamento Transformer locale...")
             transformer = WanTransformer3DModel.from_single_file(
                 model_path,
@@ -92,6 +100,8 @@ class WanProvider(BaseAIProvider):
                 vae=vae,
                 text_encoder=text_encoder,
                 tokenizer=tokenizer,
+                image_encoder=image_encoder,
+                feature_extractor=feature_extractor,
                 transformer=transformer,
                 scheduler=scheduler,
                 torch_dtype=torch.float16
