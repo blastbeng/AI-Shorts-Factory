@@ -22,6 +22,8 @@ class Job(Base):
     duration_seconds = Column(Integer, default=16)
     gen_width = Column(Integer, default=lambda: int(os.getenv("GEN_WIDTH", 480)))
     gen_height = Column(Integer, default=lambda: int(os.getenv("GEN_HEIGHT", 832)))
+    width = Column(Integer, default=353)
+    height = Column(Integer, default=640)
     gen_frames = Column(Integer, default=lambda: int(os.getenv("GEN_FRAMES", 49)))
     gen_flux_steps = Column(Integer, default=lambda: int(os.getenv("GEN_FLUX_STEPS", 4)))
     gen_wan_steps = Column(Integer, default=lambda: int(os.getenv("GEN_WAN_STEPS", 30)))

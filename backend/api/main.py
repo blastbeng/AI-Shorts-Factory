@@ -86,6 +86,8 @@ def migrate_database():
             "gen_wan_steps": "INTEGER DEFAULT 30",
             "gen_ltx_steps": "INTEGER DEFAULT 50",
             "video_provider": "VARCHAR DEFAULT 'wan'",
+            "width": "INTEGER DEFAULT 353",
+            "height": "INTEGER DEFAULT 640",
         }
 
         for col_name, col_def in new_columns.items():
@@ -153,6 +155,8 @@ class JobCreate(BaseModel):
     duration_seconds: int = 16
     gen_width: int = int(os.getenv("GEN_WIDTH", 256))
     gen_height: int = int(os.getenv("GEN_HEIGHT", 448))
+    width: int = 353
+    height: int = 640
     gen_frames: int = int(os.getenv("GEN_FRAMES", 49))
     gen_flux_steps: int = int(os.getenv("GEN_FLUX_STEPS", 4))
     gen_wan_steps: int = int(os.getenv("GEN_WAN_STEPS", 30))
@@ -160,6 +164,30 @@ class JobCreate(BaseModel):
     video_provider: str = os.getenv("DEFAULT_VIDEO_PROVIDER", "wan")
     generate_subtitles: bool = True
     input_image: Optional[str] = None
+
+@app.get("/settings")
+def get_settings():
+    # Read from env with fallback
+    width_str = os.getenv("GEN_WIDTH", "353")
+    height_str = os.getenv("GEN_HEIGHT", "640")
+    
+    # Validate width
+    try:
+        width = int(width_str)
+        if width <= 0: raise ValueError
+    except ValueError:
+        width = 353
+        logger.warning("Invalid GEN_WIDTH in .env, falling back to 353")
+        
+    # Validate height
+    try:
+        height = int(height_str)
+        if height <= 0: raise ValueError
+    except ValueError:
+        height = 640
+        logger.warning("Invalid GEN_HEIGHT in .env, falling back to 640")
+        
+    return {"default_width": width, "default_height": height}
 
 @app.get("/health")
 def health():
@@ -212,6 +240,8 @@ def start_job(job_params: JobCreate, db: Session = Depends(get_db)):
         duration_seconds=job_params.duration_seconds,
         gen_width=job_params.gen_width,
         gen_height=job_params.gen_height,
+        width=job_params.width,
+        height=job_params.height,
         gen_frames=job_params.gen_frames,
         gen_flux_steps=job_params.gen_flux_steps,
         gen_wan_steps=job_params.gen_wan_steps,

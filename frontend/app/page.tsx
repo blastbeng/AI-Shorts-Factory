@@ -48,6 +48,8 @@ export default function Home() {
   const [videoProvider, setVideoProvider] = useState('wan');
   const [generateSubtitles, setGenerateSubtitles] = useState(true);
   const [inputImage, setInputImage] = useState<string | null>(null);
+  const [width, setWidth] = useState(353);
+  const [height, setHeight] = useState(640);
   const [resolutionIndex, setResolutionIndex] = useState(0);
   const resolutions = [
     { w: 256, h: 448 },
@@ -124,6 +126,16 @@ export default function Home() {
   };
 
   useEffect(() => {
+    fetch(`${apiUrl}/settings`)
+      .then(res => res.json())
+      .then(data => {
+        setWidth(data.default_width);
+        setHeight(data.default_height);
+      })
+      .catch(err => console.error("Failed to fetch settings", err));
+  }, []);
+
+  useEffect(() => {
     fetchData();
     fetchSchedulerStatus();
     const interval = setInterval(() => {
@@ -149,6 +161,8 @@ export default function Home() {
           ...genParams,
           gen_width: genWidth,
           gen_height: genHeight,
+          width: width,
+          height: height,
           gen_frames: genFrames,
           gen_flux_steps: genFluxSteps,
           gen_wan_steps: genWanSteps,
@@ -341,6 +355,26 @@ export default function Home() {
                 />
                 <span className="text-sm text-gray-300">Generate & Embed Subtitles</span>
               </label>
+              <div className="flex space-x-2">
+                <div className="flex flex-col">
+                  <label className="text-sm text-gray-300 mb-1">Width</label>
+                  <input
+                    type="number"
+                    value={width}
+                    onChange={(e) => setWidth(parseInt(e.target.value) || 353)}
+                    className="bg-gray-700 text-white p-2 rounded border border-gray-600 w-24"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-sm text-gray-300 mb-1">Height</label>
+                  <input
+                    type="number"
+                    value={height}
+                    onChange={(e) => setHeight(parseInt(e.target.value) || 640)}
+                    className="bg-gray-700 text-white p-2 rounded border border-gray-600 w-24"
+                  />
+                </div>
+              </div>
               <div className="flex flex-col">
                 <label className="text-sm text-gray-300 mb-1">Input Image (Optional)</label>
                 <input
