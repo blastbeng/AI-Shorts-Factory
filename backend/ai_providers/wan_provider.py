@@ -5,6 +5,7 @@ os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True,garbage_collec
 os.environ["PYTORCH_HIP_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8,max_split_size_mb:512,roundup_power2_divisions:16"
 os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8,max_split_size_mb:512,roundup_power2_divisions:16"
 
+import json
 import yaml
 import torch
 torch.backends.cuda.matmul.allow_tf32 = False
@@ -12,6 +13,7 @@ torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = True
 import numpy as np
 import cv2
 from PIL import Image
+from safetensors.torch import load_file
 from diffusers import WanImageToVideoPipeline, AutoencoderKLWan, WanTransformer3DModel, FlowMatchEulerDiscreteScheduler
 from transformers import UMT5EncoderModel, AutoTokenizer, CLIPVisionModel, CLIPImageProcessor
 from transformers import UMT5EncoderModel, AutoTokenizer, CLIPVisionModel, CLIPImageProcessor
@@ -28,6 +30,28 @@ class WanProvider(BaseAIProvider):
         self.gm = GPUManager()
         self.pipeline = None
         self.base_seed = 42
+
+    @staticmethod
+    def convert_kj_to_diffusers(state_dict):
+        new_state_dict = {}
+        for k, v in state_dict.items():
+            nk = k
+            if "self_attn." in k:
+                nk = nk.replace("self_attn.norm.q_norm", "attn1.q_norm")
+                nk = nk.replace("self_attn.norm.k_norm", "attn1.k_norm")
+                nk = nk.replace("self_attn.q", "attn1.to_q")
+                nk = nk.replace("self_attn.k", "attn1.to_k")
+                nk = nk.replace("self_attn.v", "attn1.to_v")
+                nk = nk.replace("self_attn.o", "attn1.to_out.0")
+            elif "cross_attn." in k:
+                nk = nk.replace("cross_attn.norm.q_norm", "attn2.q_norm")
+                nk = nk.replace("cross_attn.norm.k_norm", "attn2.k_norm")
+                nk = nk.replace("cross_attn.q", "attn2.to_q")
+                nk = nk.replace("cross_attn.k", "attn2.to_k")
+                nk = nk.replace("cross_attn.v", "attn2.to_v")
+                nk = nk.replace("cross_attn.o", "attn2.to_out.0")
+            new_state_dict[nk] = v
+        return new_state_dict
 
     def install_status(self):
         return self.model_info.get("status", "not_installed")
@@ -83,16 +107,22 @@ class WanProvider(BaseAIProvider):
             )
             feature_extractor = CLIPImageProcessor.from_pretrained(image_encoder_path)
             
-            with open(os.path.join(os.path.dirname(model_path), "transformer_config")) as f:
-                transformer_config_path = json.load(f)
+            transformer_config_path = os.path.abspath(self.model_info.get("transformer_config_path"))
+            with open(os.path.join(transformer_config_path, "config.json"), "r") as f:
+                transformer_config = json.load(f)
             logger.info(f"WAN CONFIG PATH: {transformer_config_path}")
-            logger.info("Caricamento Transformer Wan 2.2 5B con config locale...")
-            transformer = WanTransformer3DModel.from_single_file(
-                model_path,
-                config=transformer_config_path,
-                torch_dtype=torch.float16,
-                low_cpu_mem_usage=True
-            )
+            logger.info("Caricamento Transformer Wan 2.2 5B con config locale e pesi KJ...")
+            
+            transformer = WanTransformer3DModel.from_config(transformer_config, torch_dtype=torch.float16)
+            
+            state_dict = load_file(model_path)
+            mapped_state_dict = self.convert_kj_to_diffusers(state_dict)
+            
+            missing, unexpected = transformer.load_state_dict(mapped_state_dict, strict=False)
+            if missing:
+                logger.warning(f"Missing keys in transformer: {missing}")
+            if unexpected:
+                logger.warning(f"Unexpected keys in transformer: {unexpected}")
 
             logger.info("Costruzione pipeline Wan 2.2 5B (Img2Video)...")
             scheduler = FlowMatchEulerDiscreteScheduler(
