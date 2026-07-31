@@ -45,6 +45,7 @@ export default function Home() {
   const [genFluxSteps, setGenFluxSteps] = useState(4);
   const [genWanSteps, setGenWanSteps] = useState(30);
   const [genLtxSteps, setGenLtxSteps] = useState(50);
+  const [videoProvider, setVideoProvider] = useState('wan');
   const [generateSubtitles, setGenerateSubtitles] = useState(true);
   const [resolutionIndex, setResolutionIndex] = useState(0);
   const resolutions = [
@@ -151,6 +152,7 @@ export default function Home() {
           gen_flux_steps: genFluxSteps,
           gen_wan_steps: genWanSteps,
           gen_ltx_steps: genLtxSteps,
+          video_provider: videoProvider,
           generate_subtitles: generateSubtitles
         })
       });
@@ -316,6 +318,17 @@ export default function Home() {
                     onChange={(e) => setGenParams({ ...genParams, duration_seconds: parseInt(e.target.value) || 16 })}
                   />
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Video Provider</label>
+                <select
+                  className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={videoProvider}
+                  onChange={(e) => setVideoProvider(e.target.value)}
+                >
+                  <option value="wan">Wan</option>
+                  <option value="ltx">LTX</option>
+                </select>
               </div>
               <label className="flex items-center space-x-2">
                 <input

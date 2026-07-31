@@ -307,8 +307,14 @@ class PipelineOrchestrator:
                     self._update_stage(stage, "completed", image_path)
 
                 elif stage == "video_generation":
-                    from backend.ai_providers.wan_provider import WanProvider
-                    wan = WanProvider()
+                    if self.job.video_provider == "ltx":
+                        from backend.ai_providers.ltx_provider import LtxProvider
+                        video_provider_instance = LtxProvider()
+                        gen_steps = self.job.gen_ltx_steps
+                    else:
+                        from backend.ai_providers.wan_provider import WanProvider
+                        video_provider_instance = WanProvider()
+                        gen_steps = self.job.gen_wan_steps
                     try:
                         video_path = f"output/video_{self.job_id}.mp4"
                         
@@ -352,13 +358,13 @@ class PipelineOrchestrator:
                                 
                         video_prompts = scenes
                         
-                        if not wan.health_check():
-                            logger.warning("Wan Video non installato. Uso video dummy.")
+                        if not video_provider_instance.health_check():
+                            logger.warning("Video provider non installato. Uso video dummy.")
                             self._generate_dummy_media("video", video_path)
                         else:
-                            wan.generate(video_prompts, video_path, job_id=self.job_id, image_path=image_path, target_duration=voice_duration, frames_per_clip=self.job.gen_frames, width=self.job.gen_width, height=self.job.gen_height, steps=self.job.gen_wan_steps)
+                            video_provider_instance.generate(video_prompts, video_path, job_id=self.job_id, image_path=image_path, target_duration=voice_duration, frames_per_clip=self.job.gen_frames, width=self.job.gen_width, height=self.job.gen_height, steps=gen_steps)
                     finally:
-                        wan.cleanup()
+                        video_provider_instance.cleanup()
                     self._update_stage(stage, "completed", video_path)
 
                 elif stage == "video_upscaling":
