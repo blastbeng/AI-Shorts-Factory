@@ -222,6 +222,11 @@ class WanProvider(BaseAIProvider):
                     logger.info(f"Fixing num_attention_heads from {transformer_config.get('num_attention_heads')} to {expected_heads}")
                     transformer_config["num_attention_heads"] = expected_heads
 
+            # Fix mismatched ffn_dim for Wan 2.2 5B model
+            if transformer_config.get("ffn_dim") == 13824:
+                logger.info("Fixing ffn_dim from 13824 to 14336 for Wan 2.2 5B")
+                transformer_config["ffn_dim"] = 14336
+
             logger.info(f"WAN CONFIG PATH: {transformer_config_path}")
             logger.info("Caricamento Transformer Wan 2.2 5B con config locale e pesi KJ...")
 
