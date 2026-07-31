@@ -62,9 +62,6 @@ class WanProvider(BaseAIProvider):
         device = self.gm.get_device_string(gpu['id'], preferred_backend=preferred_backend)
         gpu_id = int(device.split(":")[-1]) if ":" in device else 0
         
-        if torch.cuda.is_available():
-            torch.cuda.set_per_process_memory_fraction(0.95, gpu_id)
-
         if self.pipeline is None:
             logger.info("Caricamento pipeline Wan 2.2 5B (Img2Video) da FP8...")
             model_path = os.path.abspath(self.model_info.get("path"))
@@ -105,6 +102,9 @@ class WanProvider(BaseAIProvider):
             self.pipeline.enable_vae_slicing()
             self.pipeline.enable_vae_tiling()
             self.pipeline.enable_attention_slicing()
+            
+            # Crucial for 16GB VRAM cards like the RX 7800 XT
+            self.pipeline.enable_model_cpu_offload()
 
             logger.info(f"Pipeline caricata. Transformer dtype: {self.pipeline.transformer.dtype}")
 
