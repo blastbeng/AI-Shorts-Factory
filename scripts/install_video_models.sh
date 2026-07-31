@@ -35,7 +35,7 @@ if [ ! -f "$WAN_2_2_5B_DIR/.download_complete" ]; then
   "patch_size": [1, 2, 2],
   "text_dim": 3072,
   "cross_attn_dim": 3072,
-  "in_channels": 16,
+  "in_channels": 48,
   "out_channels": 16,
   "freq_dim": 256,
   "text_len": 512,

@@ -112,16 +112,19 @@ class WanProvider(BaseAIProvider):
             logger.info(f"WAN CONFIG PATH: {transformer_config_path}")
             logger.info("Caricamento Transformer Wan 2.2 5B con config locale e pesi KJ...")
             
-            transformer = WanTransformer3DModel.from_config(transformer_config, torch_dtype=torch.float16)
+            transformer = WanTransformer3DModel.from_config(transformer_config, torch_dtype=torch.float8_e4m3fn)
             
             state_dict = load_file(model_path)
             mapped_state_dict = self.convert_kj_to_diffusers(state_dict)
             
-            missing, unexpected = transformer.load_state_dict(mapped_state_dict, strict=False)
-            if missing:
-                logger.warning(f"Missing keys in transformer: {missing}")
-            if unexpected:
-                logger.warning(f"Unexpected keys in transformer: {unexpected}")
+            transformer.load_state_dict(mapped_state_dict, strict=True)
+            
+            del state_dict
+            del mapped_state_dict
+            import gc
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
             logger.info("Costruzione pipeline Wan 2.2 5B (Img2Video)...")
             scheduler = FlowMatchEulerDiscreteScheduler(
