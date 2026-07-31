@@ -214,6 +214,14 @@ class WanProvider(BaseAIProvider):
             transformer_config_path = os.path.abspath(self.model_info.get("transformer_config_path"))
             with open(os.path.join(transformer_config_path, "config.json"), "r") as f:
                 transformer_config = json.load(f)
+            
+            # Fix mismatched num_attention_heads for 5B model
+            if "dim" in transformer_config and "attention_head_dim" in transformer_config:
+                expected_heads = transformer_config["dim"] // transformer_config["attention_head_dim"]
+                if transformer_config.get("num_attention_heads") != expected_heads:
+                    logger.info(f"Fixing num_attention_heads from {transformer_config.get('num_attention_heads')} to {expected_heads}")
+                    transformer_config["num_attention_heads"] = expected_heads
+
             logger.info(f"WAN CONFIG PATH: {transformer_config_path}")
             logger.info("Caricamento Transformer Wan 2.2 5B con config locale e pesi KJ...")
 
