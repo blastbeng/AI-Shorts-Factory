@@ -5,6 +5,7 @@ os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True,garbage_collec
 os.environ["PYTORCH_HIP_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8,max_split_size_mb:512,roundup_power2_divisions:16"
 os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8,max_split_size_mb:512,roundup_power2_divisions:16"
 
+import gc
 import json
 import yaml
 import torch
@@ -121,7 +122,6 @@ class WanProvider(BaseAIProvider):
             
             del state_dict
             del mapped_state_dict
-            import gc
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
@@ -158,7 +158,6 @@ class WanProvider(BaseAIProvider):
 
             logger.info(f"Transformer dtype {self.pipeline.transformer.dtype}")
 
-        import gc
         import random
         
         temp_clips = []
@@ -321,8 +320,6 @@ class WanProvider(BaseAIProvider):
         if self.pipeline is not None:
             del self.pipeline
             self.pipeline = None
-        import gc
-        import torch
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
