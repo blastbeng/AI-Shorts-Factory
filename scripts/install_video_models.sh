@@ -20,26 +20,26 @@ else
     echo "[OK] Modello ltx_video già installato."
 fi
 
-WAN_2_2_5B_DIR="./models/video/wan_2_2_5b"
-WAN_2_2_5B_MODEL="$WAN_2_2_5B_DIR/wan22-i2v-a14b-high-q4-k-s.gguf"
+WAN_2_2_14B_DIR="./models/video/wan_2_2_14b"
+WAN_2_2_14B_MODEL="$WAN_2_2_14B_DIR/wan22-i2v-a14b-high-q4-k-s.gguf"
 
-if [ ! -f "$WAN_2_2_5B_DIR/.download_complete" ]; then
-    mkdir -p "$WAN_2_2_5B_DIR"
+if [ ! -f "$WAN_2_2_14B_DIR/.download_complete" ]; then
+    mkdir -p "$WAN_2_2_14B_DIR"
     echo "Downloading wan22-i2v-a14b-high-q4-k-s.gguf..."
-    wget -q --show-progress -O "$WAN_2_2_5B_MODEL" "https://huggingface.co/wangkanai/wan22-fp8-i2v-gguf/resolve/main/diffusion_models/wan/wan22-i2v-a14b-high-q4-k-s.gguf"
+    wget -q --show-progress -O "$WAN_2_2_14B_MODEL" "https://huggingface.co/wangkanai/wan22-fp8-i2v-gguf/resolve/main/diffusion_models/wan/wan22-i2v-a14b-high-q4-k-s.gguf"
     
-    touch "$WAN_2_2_5B_DIR/.download_complete"
+    touch "$WAN_2_2_14B_DIR/.download_complete"
 else
-    echo "[OK] Modello wan_2_2_5b già installato."
+    echo "[OK] Modello wan_2_2_14b già installato."
 fi
 
-WAN_BASE_DIR="./models/video/wan_2_2_5b/base_model"
+WAN_BASE_DIR="./models/video/wan_2_2_14b/base_model"
 if [ ! -f "$WAN_BASE_DIR/model_index.json" ]; then
     mkdir -p "$WAN_BASE_DIR"
     echo "Downloading Wan2.2-I2V-A14B-Diffusers base model..."
     hf download Wan-AI/Wan2.2-I2V-A14B-Diffusers --local-dir "$WAN_BASE_DIR"
 else
-    echo "[OK] Modello base wan_2_2_5b già installato."
+    echo "[OK] Modello base wan_2_2_14b già installato."
 fi
 
 echo "Installazione dei modelli video completata."

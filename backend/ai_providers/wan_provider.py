@@ -15,7 +15,7 @@ torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = True
 import numpy as np
 import cv2
 from PIL import Image
-from diffusers import DiffusionPipeline, GGUFQuantizationConfig
+from diffusers import DiffusionPipeline, GGUFQuantizationConfig, AutoencoderKLWan
 from diffusers import WanTransformer3DModel
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
@@ -26,7 +26,7 @@ class WanProvider(BaseAIProvider):
     def __init__(self):
         with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
             self.models_config = yaml.safe_load(f)
-        self.model_info = self.models_config.get("video", {}).get("wan_2_2_5b", {})
+        self.model_info = self.models_config.get("video", {}).get("wan_2_2_14b", {})
         self.gm = GPUManager()
         self.pipeline = None
         self.base_seed = 42
@@ -66,7 +66,7 @@ class WanProvider(BaseAIProvider):
             torch.cuda.set_per_process_memory_fraction(0.95, gpu_id)
 
         if self.pipeline is None:
-            logger.info("Caricamento pipeline Wan 2.2 5B (Img2Video) da GGUF...")
+            logger.info("Caricamento pipeline Wan 2.2 14B (Img2Video) da GGUF...")
             model_path = os.path.abspath(self.model_info.get("path"))
             base_model_path = self.model_info.get("base_model_path", "Wan-AI/Wan2.2-I2V-A14B-Diffusers")
             
@@ -76,10 +76,14 @@ class WanProvider(BaseAIProvider):
                 quantization_config=GGUFQuantizationConfig(compute_dtype=torch.float16)
             )
             
+            logger.info(f"Caricamento VAE da {base_model_path} in float32...")
+            vae = AutoencoderKLWan.from_pretrained(base_model_path, subfolder="vae", torch_dtype=torch.float32)
+            
             logger.info(f"Caricamento pipeline da {base_model_path}...")
             self.pipeline = DiffusionPipeline.from_pretrained(
                 base_model_path,
                 transformer=transformer,
+                vae=vae,
                 torch_dtype=torch.float16,
             )
             
