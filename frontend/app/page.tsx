@@ -46,7 +46,7 @@ export default function Home() {
   const [genWanSteps, setGenWanSteps] = useState(30);
   const [genLtxSteps, setGenLtxSteps] = useState(50);
   const [videoProvider, setVideoProvider] = useState('wan');
-  const [generateSubtitles, setGenerateSubtitles] = useState(true);
+  const [generateSubtitles, setGenerateSubtitles] = useState(false);
   const [inputImage, setInputImage] = useState<string | null>(null);
   const [width, setWidth] = useState(353);
   const [height, setHeight] = useState(640);
@@ -131,6 +131,7 @@ export default function Home() {
       .then(data => {
         setWidth(data.default_width);
         setHeight(data.default_height);
+        setGenerateSubtitles(data.default_generate_subtitles);
       })
       .catch(err => console.error("Failed to fetch settings", err));
   }, []);
@@ -274,7 +275,7 @@ export default function Home() {
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
               <span className="w-2 h-2 bg-blue-500 rounded-full"></span> Genera Video
             </h2>
-            <form onSubmit={handleGenerate} className="space-y-4">
+            <form onSubmit={handleGenerate} className="space-y-4 flex-1 overflow-y-auto pr-2">
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Genere</label>
                 <select
@@ -355,26 +356,6 @@ export default function Home() {
                 />
                 <span className="text-sm text-gray-300">Generate & Embed Subtitles</span>
               </label>
-              <div className="flex space-x-2">
-                <div className="flex flex-col">
-                  <label className="text-sm text-gray-300 mb-1">Width</label>
-                  <input
-                    type="number"
-                    value={width}
-                    onChange={(e) => setWidth(parseInt(e.target.value) || 353)}
-                    className="bg-gray-700 text-white p-2 rounded border border-gray-600 w-24"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label className="text-sm text-gray-300 mb-1">Height</label>
-                  <input
-                    type="number"
-                    value={height}
-                    onChange={(e) => setHeight(parseInt(e.target.value) || 640)}
-                    className="bg-gray-700 text-white p-2 rounded border border-gray-600 w-24"
-                  />
-                </div>
-              </div>
               <div className="flex flex-col">
                 <label className="text-sm text-gray-300 mb-1">Input Image (Optional)</label>
                 <input
@@ -407,6 +388,26 @@ export default function Home() {
               <span className="w-2 h-2 bg-orange-500 rounded-full"></span> Parametri di Generazione
             </h2>
             <div className="space-y-6 flex-1 overflow-y-auto pr-2">
+              <div className="flex space-x-2">
+                <div className="flex flex-col w-1/2">
+                  <label className="text-sm text-gray-400 mb-2">Width</label>
+                  <input
+                    type="number"
+                    value={width}
+                    onChange={(e) => setWidth(parseInt(e.target.value) || 353)}
+                    className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+                <div className="flex flex-col w-1/2">
+                  <label className="text-sm text-gray-400 mb-2">Height</label>
+                  <input
+                    type="number"
+                    value={height}
+                    onChange={(e) => setHeight(parseInt(e.target.value) || 640)}
+                    className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+              </div>
               {/* Risoluzione */}
               <div>
                 <label className="block text-sm text-gray-400 mb-2">Risoluzione ({genWidth}x{genHeight})</label>

@@ -162,7 +162,7 @@ class JobCreate(BaseModel):
     gen_wan_steps: int = int(os.getenv("GEN_WAN_STEPS", 30))
     gen_ltx_steps: int = int(os.getenv("GEN_LTX_STEPS", 50))
     video_provider: str = os.getenv("DEFAULT_VIDEO_PROVIDER", "wan")
-    generate_subtitles: bool = True
+    generate_subtitles: bool = os.getenv("GENERATE_SUBTITLES", "false").lower() == "true"
     input_image: Optional[str] = None
 
 @app.get("/settings")
@@ -186,8 +186,10 @@ def get_settings():
     except ValueError:
         height = 640
         logger.warning("Invalid GEN_HEIGHT in .env, falling back to 640")
-        
-    return {"default_width": width, "default_height": height}
+
+    generate_subtitles = os.getenv("GENERATE_SUBTITLES", "false").lower() == "true"
+
+    return {"default_width": width, "default_height": height, "default_generate_subtitles": generate_subtitles}
 
 @app.get("/health")
 def health():
