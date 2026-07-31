@@ -12,7 +12,7 @@ torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = True
 import numpy as np
 import cv2
 from PIL import Image
-from diffusers import WanImageToVideoPipeline, AutoencoderKLWan, WanTransformer3DModel, FlowMatchEulerDiscreteScheduler
+from diffusers import WanImageToVideoPipeline, AutoencoderKLWan, WanTransformer3DModel
 from transformers import UMT5EncoderModel, AutoTokenizer, CLIPVisionModel, CLIPImageProcessor
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
