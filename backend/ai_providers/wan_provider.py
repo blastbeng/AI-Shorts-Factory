@@ -13,7 +13,7 @@ import numpy as np
 import cv2
 from PIL import Image
 from diffusers import WanImageToVideoPipeline, AutoencoderKLWan
-from transformers import UMT5EncoderModel, T5TokenizerFast
+from transformers import UMT5EncoderModel, AutoTokenizer
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger
@@ -72,7 +72,7 @@ class WanProvider(BaseAIProvider):
                 text_encoder_path,
                 torch_dtype=torch.float16
             )
-            tokenizer = T5TokenizerFast.from_pretrained(tokenizer_path)
+            tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
             
             self.pipeline = WanImageToVideoPipeline.from_single_file(
                 model_path,
