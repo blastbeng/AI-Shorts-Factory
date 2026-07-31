@@ -37,7 +37,7 @@ WAN_BASE_DIR="./models/video/wan_2_2_14b/base_model"
 if [ ! -f "$WAN_BASE_DIR/model_index.json" ]; then
     mkdir -p "$WAN_BASE_DIR"
     echo "Downloading Wan2.2-I2V-A14B-Diffusers base model..."
-    hf download Wan-AI/Wan2.2-I2V-A14B-Diffusers --local-dir "$WAN_BASE_DIR"
+    hf download Wan-AI/Wan2.2-I2V-A14B-Diffusers --local-dir "$WAN_BASE_DIR" --exclude "transformer/*"
 else
     echo "[OK] Modello base wan_2_2_14b già installato."
 fi
