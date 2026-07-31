@@ -68,7 +68,7 @@ class WanProvider(BaseAIProvider):
         if self.pipeline is None:
             logger.info("Caricamento pipeline Wan 2.2 5B (Img2Video) da GGUF...")
             model_path = os.path.abspath(self.model_info.get("path"))
-            base_model_path = self.model_info.get("base_model_path", "Wan-AI/Wan2.1-I2V-5B-480P-Diffusers")
+            base_model_path = self.model_info.get("base_model_path", "Wan-AI/Wan2.2-I2V-A14B-Diffusers")
             
             logger.info(f"Caricamento transformer GGUF da {model_path}...")
             transformer = WanTransformer3DModel.from_single_file(
