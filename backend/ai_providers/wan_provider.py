@@ -82,21 +82,15 @@ class WanProvider(BaseAIProvider):
             )
             feature_extractor = CLIPImageProcessor.from_pretrained(image_encoder_path)
             
-            logger.info("Caricamento Transformer locale...")
-            transformer = WanTransformer3DModel.from_single_file(
+            logger.info("Caricamento pipeline Wan 2.2 5B (Img2Video) da single file...")
+            self.pipeline = WanImageToVideoPipeline.from_single_file(
                 model_path,
-                torch_dtype=torch.float16
-            )
-            
-            self.pipeline = WanImageToVideoPipeline.from_pretrained(
-                "Wan-AI/Wan2.2-TI2V-5B-Diffusers",
-                transformer=transformer,
                 vae=vae,
                 text_encoder=text_encoder,
                 tokenizer=tokenizer,
                 image_encoder=image_encoder,
                 feature_extractor=feature_extractor,
-                torch_dtype=torch.float16
+                low_cpu_mem_usage=True
             )
             
             # VAE memory optimizations for RDNA3
