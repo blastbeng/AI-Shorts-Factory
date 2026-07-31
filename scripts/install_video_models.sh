@@ -31,6 +31,7 @@ if [ ! -f "$WAN_2_2_5B_DIR/.download_complete" ]; then
   "_class_name": "WanTransformer3DModel",
   "dim": 3072,
   "num_heads": 24,
+  "num_attention_heads": 24,
   "num_layers": 30,
   "patch_size": [1, 2, 2],
   "text_dim": 3072,
