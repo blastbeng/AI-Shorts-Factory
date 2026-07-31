@@ -31,14 +31,14 @@ if [ ! -f "$WAN_2_2_5B_DIR/.download_complete" ]; then
     echo "Downloading VAE, Text Encoder, and Tokenizer using huggingface_hub..."
     "$PYTHON_BIN" -c "
 import os
-from huggingface_hub import hf_hub_download
+from huggingface_hub import hf_hub_download, snapshot_download
 token = os.getenv('HF_TOKEN')
 
 # VAE
 hf_hub_download(repo_id='Wan-AI/Wan2.1-T2V-14B', filename='Wan2.1_VAE.pth', local_dir='$WAN_2_2_5B_DIR', token=token)
 
 # Text Encoder
-hf_hub_download(repo_id='Wan-AI/Wan2.1-T2V-14B', filename='models_t5_umt5-xxl-enc-bf16.pth', local_dir='$WAN_2_2_5B_DIR', token=token)
+snapshot_download(repo_id='Wan-AI/Wan2.1-T2V-14B-Diffusers', allow_patterns='text_encoder/*', local_dir='$WAN_2_2_5B_DIR', token=token)
 
 # Tokenizer
 for f in ['tokenizer.json', 'spiece.model', 'tokenizer_config.json', 'special_tokens_map.json']:
