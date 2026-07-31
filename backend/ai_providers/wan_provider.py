@@ -74,9 +74,7 @@ class WanProvider(BaseAIProvider):
             transformer = WanTransformer3DModel.from_single_file(
                 model_path,
                 quantization_config=GGUFQuantizationConfig(compute_dtype=torch.float16),
-                torch_dtype=torch.float16,
-                low_cpu_mem_usage=True,
-                device_map={"": device}
+                torch_dtype=torch.float16
             )
             gc.collect()
             if torch.cuda.is_available():
@@ -105,7 +103,6 @@ class WanProvider(BaseAIProvider):
             )
 
             # Memory optimisations (as recommended by the model card)
-            self.pipeline.enable_model_cpu_offload()
             self.pipeline.enable_vae_slicing()
             self.pipeline.enable_vae_tiling()
             self.pipeline.enable_attention_slicing()
