@@ -54,6 +54,9 @@ for f in ['tokenizer.json', 'spiece.model', 'tokenizer_config.json', 'special_to
 
 # Image Encoder (CLIP) and Feature Extractor
 snapshot_download(repo_id='openai/clip-vit-large-patch14', local_dir='$WAN_2_2_5B_DIR/clip_image_encoder', token=token)
+
+# Transformer Config
+hf_hub_download(repo_id='Wan-AI/Wan2.2-TI2V-5B-Diffusers', filename='transformer/config.json', local_dir='$WAN_2_2_5B_DIR', token=token)
 "
     
     touch "$WAN_2_2_5B_DIR/.download_complete"

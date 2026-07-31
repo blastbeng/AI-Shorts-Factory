@@ -83,8 +83,10 @@ class WanProvider(BaseAIProvider):
             feature_extractor = CLIPImageProcessor.from_pretrained(image_encoder_path)
             
             logger.info("Caricamento Transformer locale...")
+            transformer_config_path = os.path.join(os.path.dirname(model_path), "transformer")
             transformer = WanTransformer3DModel.from_single_file(
                 model_path,
+                config=transformer_config_path,
                 torch_dtype=torch.float16
             )
             
