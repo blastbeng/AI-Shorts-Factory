@@ -14,7 +14,7 @@ torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = True
 import numpy as np
 import cv2
 from PIL import Image
-from safetensors.torch import load_file
+from safetensors.torch import load_file, safe_open
 from diffusers import WanImageToVideoPipeline, AutoencoderKLWan, WanTransformer3DModel, FlowMatchEulerDiscreteScheduler
 from transformers import T5EncoderModel, AutoTokenizer, CLIPVisionModel, CLIPImageProcessor
 from backend.ai_providers.base_provider import BaseAIProvider
@@ -32,115 +32,110 @@ class WanProvider(BaseAIProvider):
         self.base_seed = 42
 
     @staticmethod
-    def convert_kj_to_diffusers(state_dict):
-        new_state_dict = {}
+    def convert_key(k):
 
-        for k, v in state_dict.items():
-            nk = k
+        nk = k
 
-            # Head
-            nk = nk.replace(
-                "head.head.",
-                "proj_out."
-            )
+        # head
+        nk = nk.replace(
+            "head.head.",
+            "proj_out."
+        )
 
-            # Text embedding
-            nk = nk.replace(
-                "text_embedding.0.",
-                "condition_embedder.text_embedder.linear_1."
-            )
-            nk = nk.replace(
-                "text_embedding.2.",
-                "condition_embedder.text_embedder.linear_2."
-            )
+        # text embedding
+        nk = nk.replace(
+            "text_embedding.0.",
+            "condition_embedder.text_embedder.linear_1."
+        )
+        nk = nk.replace(
+            "text_embedding.2.",
+            "condition_embedder.text_embedder.linear_2."
+        )
 
-            # Time embedding
-            nk = nk.replace(
-                "time_embedding.0.",
-                "condition_embedder.time_embedder.linear_1."
-            )
-            nk = nk.replace(
-                "time_embedding.2.",
-                "condition_embedder.time_embedder.linear_2."
-            )
+        # time embedding
+        nk = nk.replace(
+            "time_embedding.0.",
+            "condition_embedder.time_embedder.linear_1."
+        )
+        nk = nk.replace(
+            "time_embedding.2.",
+            "condition_embedder.time_embedder.linear_2."
+        )
 
-            nk = nk.replace(
-                "time_projection.1.",
-                "condition_embedder.time_proj."
-            )
+        nk = nk.replace(
+            "time_projection.",
+            "condition_embedder.time_proj."
+        )
 
-            # Blocks attention
-            nk = nk.replace(
-                ".self_attn.",
-                ".attn1."
-            )
+        # blocks
+        nk = nk.replace(
+            ".modulation",
+            ".scale_shift_table"
+        )
 
-            nk = nk.replace(
-                ".cross_attn.",
-                ".attn2."
-            )
+        # self attention
+        nk = nk.replace(
+            "self_attn.norm.q_norm",
+            "attn1.norm_q"
+        )
+        nk = nk.replace(
+            "self_attn.norm.k_norm",
+            "attn1.norm_k"
+        )
+        nk = nk.replace(
+            "self_attn.q",
+            "attn1.to_q"
+        )
+        nk = nk.replace(
+            "self_attn.k",
+            "attn1.to_k"
+        )
+        nk = nk.replace(
+            "self_attn.v",
+            "attn1.to_v"
+        )
+        nk = nk.replace(
+            "self_attn.o",
+            "attn1.to_out.0"
+        )
 
-            # Attention projections
-            nk = nk.replace(
-                ".attn1.q.",
-                ".attn1.to_q."
-            )
-            nk = nk.replace(
-                ".attn1.k.",
-                ".attn1.to_k."
-            )
-            nk = nk.replace(
-                ".attn1.v.",
-                ".attn1.to_v."
-            )
-            nk = nk.replace(
-                ".attn1.o.",
-                ".attn1.to_out.0."
-            )
+        # cross attention
+        nk = nk.replace(
+            "cross_attn.norm.q_norm",
+            "attn2.norm_q"
+        )
+        nk = nk.replace(
+            "cross_attn.norm.k_norm",
+            "attn2.norm_k"
+        )
+        nk = nk.replace(
+            "cross_attn.q",
+            "attn2.to_q"
+        )
+        nk = nk.replace(
+            "cross_attn.k",
+            "attn2.to_k"
+        )
+        nk = nk.replace(
+            "cross_attn.v",
+            "attn2.to_v"
+        )
+        nk = nk.replace(
+            "cross_attn.o",
+            "attn2.to_out.0"
+        )
 
-            nk = nk.replace(
-                ".attn2.q.",
-                ".attn2.to_q."
-            )
-            nk = nk.replace(
-                ".attn2.k.",
-                ".attn2.to_k."
-            )
-            nk = nk.replace(
-                ".attn2.v.",
-                ".attn2.to_v."
-            )
-            nk = nk.replace(
-                ".attn2.o.",
-                ".attn2.to_out.0."
-            )
+        # FFN
+        nk = nk.replace(
+            ".ffn.0.",
+            ".ffn.net.0.proj."
+        )
+        nk = nk.replace(
+            ".ffn.2.",
+            ".ffn.net.2."
+        )
 
-            # FFN
-            nk = nk.replace(
-                ".ffn.0.",
-                ".ffn.net.0.proj."
-            )
-
-            nk = nk.replace(
-                ".ffn.2.",
-                ".ffn.net.2."
-            )
-
-            # Modulation
-            nk = nk.replace(
-                ".modulation",
-                ".scale_shift_table"
-            )
-
-            # Norm
-            nk = nk.replace(
-                ".norm3.",
-                ".norm2."
-            )
-
-            new_state_dict[nk] = v
-
-        return new_state_dict
+        return nk
 
     def install_status(self):
         return self.model_info.get("status", "not_installed")
@@ -185,6 +180,7 @@ class WanProvider(BaseAIProvider):
             text_encoder = T5EncoderModel.from_pretrained(
                 text_encoder_path,
                 torch_dtype=torch.float16,
+                low_cpu_mem_usage=True,
                 local_files_only=True
             )
             tokenizer = AutoTokenizer.from_pretrained(
@@ -225,9 +221,15 @@ class WanProvider(BaseAIProvider):
             logger.info(f"WAN CREATED PATCH: {transformer.patch_embedding.weight.shape}")
             
             state_dict = load_file(model_path)
-            mapped_state_dict = self.convert_kj_to_diffusers(state_dict)
+            mapped_state_dict = {}
 
-            for k in list(mapped.keys())[:50]:
+            with safe_open(model_path, framework="pt", device="cpu") as f:
+                for key in f.keys():
+                    mapped_key = self.convert_key(key)
+
+                    mapped_state_dict[mapped_key] = f.get_tensor(key)
+
+            for k in list(mapped_state_dict.keys())[:50]:
                 logger.info(k)
             
             missing, unexpected = transformer.load_state_dict(
