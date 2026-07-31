@@ -313,8 +313,17 @@ class PipelineOrchestrator:
                     try:
                         # Extract first scene for a more dynamic initial image
                         import re
+                        import json
+                        # Handle potential JSON-wrapped output from LLM
+                        storyboard_text = storyboard
+                        try:
+                            data = json.loads(storyboard)
+                            if isinstance(data, dict) and "content" in data:
+                                storyboard_text = data["content"]
+                        except (json.JSONDecodeError, TypeError):
+                            pass
                         # Robustly split by numbered list items
-                        raw_scenes = re.split(r'(?m)^\s*\d+[\.\)]\s*', storyboard)
+                        raw_scenes = re.split(r'(?m)^\s*\d+[\.\)]\s*', storyboard_text)
                         first_scene = ""
                         if raw_scenes:
                             cleaned = raw_scenes[1].strip() if len(raw_scenes) > 1 else raw_scenes[0].strip()
@@ -351,8 +360,17 @@ class PipelineOrchestrator:
                             
                         # Parse storyboard into individual scenes and strip numbering
                         import re
+                        import json
+                        # Handle potential JSON-wrapped output from LLM
+                        storyboard_text = storyboard
+                        try:
+                            data = json.loads(storyboard)
+                            if isinstance(data, dict) and "content" in data:
+                                storyboard_text = data["content"]
+                        except (json.JSONDecodeError, TypeError):
+                            pass
                         # Robustly split by numbered list items (e.g., "1. ", "2) ")
-                        raw_scenes = re.split(r'(?m)^\s*\d+[\.\)]\s*', storyboard)
+                        raw_scenes = re.split(r'(?m)^\s*\d+[\.\)]\s*', storyboard_text)
                         scenes = []
                         for s in raw_scenes:
                             cleaned = s.strip()
@@ -436,7 +454,16 @@ class PipelineOrchestrator:
                         
                         # Pulisci lo storyboard dai numeri di scena e dai prefissi per evitare che vengano letti
                         import re
-                        clean_storyboard = re.sub(r'(?i)\bSCENA\s*\d+[\:\.\-]?\s*', '', storyboard)
+                        import json
+                        # Handle potential JSON-wrapped output from LLM
+                        storyboard_text = storyboard
+                        try:
+                            data = json.loads(storyboard)
+                            if isinstance(data, dict) and "content" in data:
+                                storyboard_text = data["content"]
+                        except (json.JSONDecodeError, TypeError):
+                            pass
+                        clean_storyboard = re.sub(r'(?i)\bSCENA\s*\d+[\:\.\-]?\s*', '', storyboard_text)
                         clean_storyboard = re.sub(r'^\d+[\.\)]\s*', '', clean_storyboard, flags=re.MULTILINE)
                         clean_storyboard = re.sub(r'\s+', ' ', clean_storyboard).strip()
                         
