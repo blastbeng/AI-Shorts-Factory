@@ -229,35 +229,31 @@ class WanProvider(BaseAIProvider):
             ]:
                 transformer_config.pop(k, None)
             
-            transformer = WanTransformer3DModel.from_config(transformer_config, torch_dtype=torch.float8_e4m3fn)
+            with torch.device("meta"):
+                transformer = WanTransformer3DModel.from_config(transformer_config, torch_dtype=torch.float8_e4m3fn)
 
             logger.info(f"WAN CREATED CONFIG: {transformer.config}")
             logger.info(f"WAN CREATED PATCH: {transformer.patch_embedding.weight.shape}")
             
-            state_dict = transformer.state_dict()
-            model_keys = set(state_dict.keys())
-            loaded_keys = set()
-            unexpected_keys = set()
-
+            mapped_state_dict = {}
             with safe_open(model_path, framework="pt", device="cpu") as f:
                 for key in f.keys():
                     mapped_key = self.convert_key(key)
-                    if mapped_key in state_dict:
-                        state_dict[mapped_key].copy_(f.get_tensor(key))
-                        loaded_keys.add(mapped_key)
-                    else:
-                        unexpected_keys.add(mapped_key)
+                    mapped_state_dict[mapped_key] = f.get_tensor(key)
 
-            for k in list(loaded_keys)[:50]:
+            missing, unexpected = transformer.load_state_dict(
+                mapped_state_dict,
+                strict=False,
+                assign=True
+            )
+
+            for k in list(mapped_state_dict.keys())[:50]:
                 logger.info(k)
-
-            missing = list(model_keys - loaded_keys)
-            unexpected = list(unexpected_keys)
 
             logger.info(f"MISSING: {len(missing)}")
             logger.info(f"UNEXPECTED: {len(unexpected)}")
             
-            del state_dict
+            del mapped_state_dict
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
