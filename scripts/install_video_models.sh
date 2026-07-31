@@ -33,15 +33,18 @@ if [ ! -f "$WAN_2_2_5B_DIR/.download_complete" ]; then
   "num_heads": 40,
   "num_layers": 30,
   "patch_size": [1, 2, 2],
-  "text_dim": 4096,
+  "text_dim": 3072,
+  "cross_attn_dim": 3072,
   "in_channels": 16,
   "out_channels": 16,
   "freq_dim": 256,
   "text_len": 512,
-  "cross_attn_dim": 4096,
+  "num_freqs": 1,
   "rope_theta": [1.0, 1.0, 1.0],
-  "time_bias": 0,
-  "guidance_embed": false
+  "guidance_embed": false,
+  "attention_head_dim": 128,
+  "mlp_ratio": 4.0,
+  "norm_eps": 1e-6
 }
 EOF
     echo "Downloading Wan2_2-TI2V-5B_fp8_e4m3fn_scaled_KJ.safetensors..."
