@@ -74,11 +74,11 @@ class WanProvider(BaseAIProvider):
             transformer = WanTransformer3DModel.from_single_file(
                 model_path,
                 quantization_config=GGUFQuantizationConfig(compute_dtype=torch.float16),
-                low_cpu_mem_usage=False
+                low_cpu_mem_usage=True
             )
             
             logger.info(f"Caricamento VAE da {base_model_path} in float32...")
-            vae = AutoencoderKLWan.from_pretrained(base_model_path, subfolder="vae", torch_dtype=torch.float32)
+            vae = AutoencoderKLWan.from_pretrained(base_model_path, subfolder="vae", torch_dtype=torch.float16)
             
             logger.info(f"Caricamento pipeline da {base_model_path}...")
             self.pipeline = DiffusionPipeline.from_pretrained(
@@ -186,10 +186,8 @@ class WanProvider(BaseAIProvider):
                     callback_on_step_end_tensor_inputs=[]
                 ).frames[0]   # list of PIL Images
 
-            # Convert PIL Images to numpy arrays (uint8)
-            video = np.stack([np.array(frame) for frame in output])
-
-            last_frame = video[-1].copy()
+            # Extract last frame for next clip conditioning
+            last_frame = np.array(output[-1]).copy()
 
             temp_clip_path = output_path.replace(".mp4", f"_clip_{i}.mp4")
             writer = imageio.get_writer(
@@ -202,13 +200,13 @@ class WanProvider(BaseAIProvider):
                     "-pix_fmt", "yuv420p"
                 ]
             )
-            for frame in video:
-                writer.append_data(frame)
+            for frame in output:
+                writer.append_data(np.array(frame))
             writer.close()
             temp_clips.append(temp_clip_path)
             logger.info(f"Clip {i+1} salvata in {temp_clip_path}")
             
-            del video
+            del output
             del current_image
             if 'init_image' in locals():
                 del init_image
