@@ -179,8 +179,13 @@ class WanProvider(BaseAIProvider):
             # Attention memory optimization
             self.pipeline.enable_attention_slicing("max")
 
-            # Use model CPU offload for better performance on 16GB VRAM
-            self.pipeline.enable_model_cpu_offload(device=device)
+            # Use CPU offload for better performance on 16GB VRAM
+            transformer.enable_group_offload(
+                onload_device="cuda",
+                offload_device="cpu",
+                offload_type="block_level",
+                num_blocks_per_group=1,
+            )
 
             logger.info(f"Transformer dtype {self.pipeline.transformer.dtype}")
 
