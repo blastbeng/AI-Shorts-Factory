@@ -39,6 +39,7 @@ if [ ! -f "$WAN_2_2_5B_DIR/.download_complete" ]; then
   "in_channels": 48,
   "out_channels": 16,
   "freq_dim": 256,
+  "ffn_dim": 14336,
   "text_len": 512,
   "num_freqs": 1,
   "rope_theta": [1.0, 1.0, 1.0],
