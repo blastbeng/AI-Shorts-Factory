@@ -70,6 +70,7 @@ class WanProvider(BaseAIProvider):
             logger.info(f"Caricamento transformer FP8 da {model_path}...")
             transformer = WanTransformer3DModel.from_single_file(
                 model_path,
+                config=os.path.join(base_model_path, "transformer"),
                 torch_dtype=torch.float8_e4m3fn
             )
             gc.collect()
