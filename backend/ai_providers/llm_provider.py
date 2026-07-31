@@ -154,6 +154,8 @@ class LLMProvider(BaseAIProvider):
                 try:
                     parsed_json = json.loads(generated_text)
                     generated_text = parsed_json.get("content", "").strip()
+                    # Remove meta-text prefixes from the extracted content
+                    generated_text = re.sub(r'(?i)\b(CONTENT|TEXT|NARRATION|OUTPUT|RESPONSE|RESULT|SCRIPT)\s*[:：]\s*', '', generated_text).strip()
                 except json.JSONDecodeError:
                     # Fallback: estrazione del campo content tramite regex
                     match = re.search(r'"content"\s*:\s*"(.*?)"', generated_text, flags=re.DOTALL)
@@ -167,7 +169,7 @@ class LLMProvider(BaseAIProvider):
                         generated_text = re.sub(r'^.*?(Here\'s a thinking process:|Thinking Process:).*?\n', '', generated_text, flags=re.IGNORECASE).strip()
                         generated_text = re.sub(r'^(Sure, here is|Here is|Here\'s|This is|Il seguente è|Ecco).*?:\s*', '', generated_text, flags=re.IGNORECASE).strip()
                         # Remove common meta-text prefixes like CONTENT:, TEXT:, NARRATION:, etc.
-                        generated_text = re.sub(r'(?i)\b(CONTENT|TEXT|NARRATION|OUTPUT|RESPONSE|RESULT|SCRIPT)\s*:\s*', '', generated_text).strip()
+                        generated_text = re.sub(r'(?i)\b(CONTENT|TEXT|NARRATION|OUTPUT|RESPONSE|RESULT|SCRIPT)\s*[:：]\s*', '', generated_text).strip()
                         generated_text = re.sub(r'\*+', '', generated_text).strip()
                         generated_text = re.sub(r'#+', '', generated_text).strip()
                 
