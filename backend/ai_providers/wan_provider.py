@@ -38,6 +38,9 @@ class WanProvider(BaseAIProvider):
 
         nk = k
 
+        # Strip ComfyUI model prefix
+        nk = nk.replace("model.diffusion_model.", "")
+
         # head
         nk = nk.replace(
             "head.head.",
@@ -274,6 +277,13 @@ class WanProvider(BaseAIProvider):
                 ctypes.CDLL("libc.so.6").malloc_trim(0)
             except Exception:
                 pass
+
+            # Cast fp8 parameters to fp16 for ROCm compatibility,
+            # preserving fp32 modules (time_embedder, norms, etc.)
+            for name, param in transformer.named_parameters():
+                if param.dtype == torch.float8_e4m3fn:
+                    param.data = param.data.to(torch.float16)
+            logger.info(f"Transformer cast to fp16 for ROCm inference")
 
             logger.info("Costruzione pipeline Wan 2.2 5B (Img2Video)...")
             scheduler = FlowMatchEulerDiscreteScheduler(
