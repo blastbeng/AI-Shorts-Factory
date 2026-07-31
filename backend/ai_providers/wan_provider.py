@@ -94,11 +94,14 @@ class WanProvider(BaseAIProvider):
                 torch_dtype=torch.float32
             )
             text_encoder = T5EncoderModel.from_pretrained(
-                text_encoder,
+                text_encoder_path,
                 torch_dtype=torch.float16,
                 local_files_only=True
             )
-            tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+            tokenizer = AutoTokenizer.from_pretrained(
+                tokenizer_path,
+                local_files_only=True
+            )
             
             image_encoder_path = os.path.abspath(self.model_info.get("image_encoder_path", os.path.join(os.path.dirname(model_path), "clip_image_encoder")))
             logger.info("Caricamento Image Encoder (CLIP) locale...")
