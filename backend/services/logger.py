@@ -15,6 +15,29 @@ class FlushStreamHandler(logging.StreamHandler):
         super().emit(record)
         self.flush()
 
+class TqdmToLogger:
+    def __init__(self, logger, level=logging.INFO):
+        self.logger = logger
+        self.level = level
+        self.buffer = ""
+
+    def write(self, buf):
+        self.buffer += buf
+        while '\n' in self.buffer:
+            line, self.buffer = self.buffer.split('\n', 1)
+            # Handle carriage returns from tqdm by keeping only the last update
+            if '\r' in line:
+                line = line.split('\r')[-1]
+            if line.strip():
+                self.logger.log(self.level, line.strip())
+
+    def flush(self):
+        if self.buffer.strip():
+            line = self.buffer.split('\r')[-1]
+            if line.strip():
+                self.logger.log(self.level, line.strip())
+        self.buffer = ""
+
 def load_existing_logs():
     if os.path.exists(LOG_FILE_PATH):
         with open(LOG_FILE_PATH, "r") as f:
@@ -52,6 +75,9 @@ def setup_logger():
         file_handler.setLevel(logging.INFO)
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
+    
+    # Redirect stderr to logger to capture tqdm progress bars
+    sys.stderr = TqdmToLogger(logger)
     
     return logger
 
