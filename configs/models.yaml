@@ -38,6 +38,7 @@ video:
   wan_2_2_5b:
     backend: rocm
     path: ./models/video/wan_2_2_5b/wan22-i2v-a14b-high-q4-k-s.gguf
+    base_model_path: Wan-AI/Wan2.1-I2V-5B-480P-Diffusers
     status: installed
     vram_required_gb: 12
 voice:
