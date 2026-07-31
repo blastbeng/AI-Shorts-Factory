@@ -12,7 +12,7 @@ torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = True
 import numpy as np
 import cv2
 from PIL import Image
-from diffusers import WanImageToVideoPipeline, AutoencoderKLWan
+from diffusers import WanImageToVideoPipeline, AutoencoderKLWan, WanTransformer3DModel, FlowMatchEulerDiscreteScheduler
 from transformers import UMT5EncoderModel, AutoTokenizer
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
@@ -74,13 +74,27 @@ class WanProvider(BaseAIProvider):
             )
             tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
             
-            self.pipeline = WanImageToVideoPipeline.from_single_file(
+            logger.info("Caricamento Transformer locale...")
+            transformer = WanTransformer3DModel.from_single_file(
                 model_path,
+                torch_dtype=torch.float16
+            )
+            
+            scheduler = FlowMatchEulerDiscreteScheduler(
+                shift=3.0,
+                sigma_max=1.0,
+                sigma_min=0.0,
+                use_dynamic_shifting=False,
+                timestep_spacing="linspace",
+            )
+            
+            self.pipeline = WanImageToVideoPipeline(
                 vae=vae,
                 text_encoder=text_encoder,
                 tokenizer=tokenizer,
-                torch_dtype=torch.float16,
-                low_cpu_mem_usage=True
+                transformer=transformer,
+                scheduler=scheduler,
+                torch_dtype=torch.float16
             )
             
             # VAE memory optimizations for RDNA3
