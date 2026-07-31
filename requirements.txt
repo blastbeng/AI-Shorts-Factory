@@ -29,4 +29,5 @@ opencv-python
 gguf
 imageio[ffmpeg]
 imageio-ffmpeg
+optimum-quanto
 pillow<12.0
