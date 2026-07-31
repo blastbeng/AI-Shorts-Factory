@@ -216,19 +216,6 @@ class WanProvider(BaseAIProvider):
             logger.info(f"WAN CONFIG PATH: {transformer_config_path}")
             logger.info("Caricamento Transformer Wan 2.2 5B con config locale e pesi KJ...")
 
-            for k in [
-                "dim",
-                "num_heads",
-                "cross_attn_dim",
-                "text_len",
-                "num_freqs",
-                "rope_theta",
-                "guidance_embed",
-                "mlp_ratio",
-                "norm_eps"
-            ]:
-                transformer_config.pop(k, None)
-            
             with torch.device("meta"):
                 transformer = WanTransformer3DModel.from_config(transformer_config, torch_dtype=torch.float8_e4m3fn)
 
