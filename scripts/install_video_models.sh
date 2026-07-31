@@ -46,7 +46,8 @@ if [ ! -f "$WAN_2_2_5B_DIR/.download_complete" ]; then
   "guidance_embed": false,
   "attention_head_dim": 128,
   "mlp_ratio": 4.0,
-  "norm_eps": 1e-6
+  "norm_eps": 1e-6,
+  "image_dim": 768
 }
 EOF
     echo "Downloading Wan2_2-TI2V-5B_fp8_e4m3fn_scaled_KJ.safetensors..."

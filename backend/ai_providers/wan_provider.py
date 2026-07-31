@@ -137,6 +137,12 @@ class WanProvider(BaseAIProvider):
             ".ffn.net.2."
         )
 
+        # image embedding (CLIP projection)
+        nk = nk.replace(
+            "img_emb.",
+            "image_emb."
+        )
+
         return nk
 
     def ram(self):
