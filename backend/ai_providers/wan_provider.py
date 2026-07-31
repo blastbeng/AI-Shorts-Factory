@@ -85,26 +85,17 @@ class WanProvider(BaseAIProvider):
             logger.info("Caricamento Transformer locale...")
             transformer = WanTransformer3DModel.from_single_file(
                 model_path,
-                config="Wan-AI/Wan2.2-TI2V-5B-Diffusers",
                 torch_dtype=torch.float16
             )
             
-            scheduler = FlowMatchEulerDiscreteScheduler(
-                shift=3.0,
-                sigma_max=1.0,
-                sigma_min=0.0,
-                use_dynamic_shifting=False,
-                timestep_spacing="linspace",
-            )
-            
-            self.pipeline = WanImageToVideoPipeline(
+            self.pipeline = WanImageToVideoPipeline.from_pretrained(
+                "Wan-AI/Wan2.2-TI2V-5B-Diffusers",
+                transformer=transformer,
                 vae=vae,
                 text_encoder=text_encoder,
                 tokenizer=tokenizer,
                 image_encoder=image_encoder,
                 feature_extractor=feature_extractor,
-                transformer=transformer,
-                scheduler=scheduler,
                 torch_dtype=torch.float16
             )
             
