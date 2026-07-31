@@ -26,6 +26,7 @@ class Job(Base):
     gen_flux_steps = Column(Integer, default=lambda: int(os.getenv("GEN_FLUX_STEPS", 4)))
     gen_wan_steps = Column(Integer, default=lambda: int(os.getenv("GEN_WAN_STEPS", 30)))
     gen_ltx_steps = Column(Integer, default=lambda: int(os.getenv("GEN_LTX_STEPS", 50)))
+    generate_subtitles = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     videos = relationship("Video", backref="job")

@@ -262,7 +262,10 @@ class PipelineOrchestrator:
                     self._update_stage(stage, "completed", voice_path)
 
                 elif stage == "subtitle_generation":
-                    if os.getenv("ENABLE_SRT_GENERATION", "true").lower() != "true":
+                    if not self.job.generate_subtitles:
+                        logger.info("Generazione sottotitoli disabilitata dall'utente. Salto lo stage.")
+                        self._update_stage(stage, "completed", "")
+                    elif os.getenv("ENABLE_SRT_GENERATION", "true").lower() != "true":
                         logger.info("Generazione sottotitoli disabilitata da configurazione. Salto lo stage.")
                         self._update_stage(stage, "completed", "")
                     else:

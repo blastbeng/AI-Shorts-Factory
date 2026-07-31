@@ -155,6 +155,7 @@ class JobCreate(BaseModel):
     gen_flux_steps: int = int(os.getenv("GEN_FLUX_STEPS", 4))
     gen_wan_steps: int = int(os.getenv("GEN_WAN_STEPS", 30))
     gen_ltx_steps: int = int(os.getenv("GEN_LTX_STEPS", 50))
+    generate_subtitles: bool = True
 
 @app.get("/health")
 def health():
@@ -210,7 +211,8 @@ def start_job(job_params: JobCreate, db: Session = Depends(get_db)):
         gen_frames=job_params.gen_frames,
         gen_flux_steps=job_params.gen_flux_steps,
         gen_wan_steps=job_params.gen_wan_steps,
-        gen_ltx_steps=job_params.gen_ltx_steps
+        gen_ltx_steps=job_params.gen_ltx_steps,
+        generate_subtitles=job_params.generate_subtitles
     )
     db.add(job)
     db.commit()

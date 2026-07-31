@@ -45,6 +45,7 @@ export default function Home() {
   const [genFluxSteps, setGenFluxSteps] = useState(4);
   const [genWanSteps, setGenWanSteps] = useState(30);
   const [genLtxSteps, setGenLtxSteps] = useState(50);
+  const [generateSubtitles, setGenerateSubtitles] = useState(true);
   const [resolutionIndex, setResolutionIndex] = useState(0);
   const resolutions = [
     { w: 256, h: 448 },
@@ -149,7 +150,8 @@ export default function Home() {
           gen_frames: genFrames,
           gen_flux_steps: genFluxSteps,
           gen_wan_steps: genWanSteps,
-          gen_ltx_steps: genLtxSteps
+          gen_ltx_steps: genLtxSteps,
+          generate_subtitles: generateSubtitles
         })
       });
       setGenParams({ genre: "random", custom_prompt: "", language: "italian", duration_seconds: 16 });
@@ -315,6 +317,15 @@ export default function Home() {
                   />
                 </div>
               </div>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={generateSubtitles}
+                  onChange={(e) => setGenerateSubtitles(e.target.checked)}
+                  className="form-checkbox h-4 w-4 text-blue-600"
+                />
+                <span className="text-sm text-gray-300">Generate & Embed Subtitles</span>
+              </label>
               <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 p-3 rounded-lg font-bold transition-all shadow-md">
                 Avvia Generazione
               </button>
