@@ -93,9 +93,10 @@ class WanProvider(BaseAIProvider):
                 vae_path,
                 torch_dtype=torch.float32
             )
-            text_encoder = UMT5EncoderModel.from_pretrained(
-                text_encoder_path,
-                torch_dtype=torch.float16
+            text_encoder = T5EncoderModel.from_pretrained(
+                text_encoder,
+                torch_dtype=torch.float16,
+                local_files_only=True
             )
             tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
             
