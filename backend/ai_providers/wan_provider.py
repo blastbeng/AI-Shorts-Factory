@@ -68,7 +68,7 @@ class WanProvider(BaseAIProvider):
         )
 
         nk = nk.replace(
-            "time_projection.",
+            "time_projection.1.",
             "condition_embedder.time_proj."
         )
 
