@@ -140,7 +140,7 @@ class WanProvider(BaseAIProvider):
 
             new_state_dict[nk] = v
 
-    return new_state_dict
+        return new_state_dict
 
     def install_status(self):
         return self.model_info.get("status", "not_installed")
