@@ -109,14 +109,36 @@ class WanProvider(BaseAIProvider):
                 image_encoder_path,
                 torch_dtype=torch.float16
             )
+            feature_extractor = CLIPImageProcessor.from_pretrained(image_encoder_path)
             
-            transformer = WanTransformer3DModel.from_single_file(
-                './models/video/wan_2_2_5b/Wan2_2-TI2V-5B_fp8_e4m3fn_scaled_KJ.safetensors',
-                torch_dtype=torch.bfloat16
-            )
+            transformer_config_path = os.path.abspath(self.model_info.get("transformer_config_path"))
+            with open(os.path.join(transformer_config_path, "config.json"), "r") as f:
+                transformer_config = json.load(f)
+            logger.info(f"WAN CONFIG PATH: {transformer_config_path}")
+            logger.info("Caricamento Transformer Wan 2.2 5B con config locale e pesi KJ...")
+
+            for k in [
+                "dim",
+                "num_heads",
+                "cross_attn_dim",
+                "text_len",
+                "num_freqs",
+                "rope_theta",
+                "guidance_embed",
+                "mlp_ratio",
+                "norm_eps"
+            ]:
+                transformer_config.pop(k, None)
+            
+            transformer = WanTransformer3DModel.from_config(transformer_config, torch_dtype=torch.float8_e4m3fn)
 
             logger.info(f"WAN CREATED CONFIG: {transformer.config}")
             logger.info(f"WAN CREATED PATCH: {transformer.patch_embedding.weight.shape}")
+            
+            state_dict = load_file(model_path)
+            mapped_state_dict = self.convert_kj_to_diffusers(state_dict)
+            
+            transformer.load_state_dict(mapped_state_dict, strict=True)
             
             del state_dict
             del mapped_state_dict
@@ -158,12 +180,7 @@ class WanProvider(BaseAIProvider):
             self.pipeline.enable_attention_slicing("max")
 
             # Use model CPU offload for better performance on 16GB VRAM
-            transformer.enable_group_offload(
-                onload_device="cuda",
-                offload_device="cpu",
-                offload_type="block_level",
-                num_blocks_per_group=1,
-            )
+            self.pipeline.enable_model_cpu_offload(device=device)
 
             logger.info(f"Transformer dtype {self.pipeline.transformer.dtype}")
 
