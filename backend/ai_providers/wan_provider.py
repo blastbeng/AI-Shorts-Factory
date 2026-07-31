@@ -230,16 +230,10 @@ class WanProvider(BaseAIProvider):
             logger.info(f"WAN CONFIG PATH: {transformer_config_path}")
             logger.info("Caricamento Transformer Wan 2.2 5B con config locale e pesi KJ...")
 
-            with torch.device("meta"):
-                transformer = WanTransformer3DModel.from_config(transformer_config, torch_dtype=torch.float8_e4m3fn)
+            transformer = WanTransformer3DModel.from_config(transformer_config, torch_dtype=torch.float8_e4m3fn)
 
             logger.info(f"WAN CREATED CONFIG: {transformer.config}")
             logger.info(f"WAN CREATED PATCH: {transformer.patch_embedding.weight.shape}")
-            
-            # Materialize the model on CPU with empty tensors
-            transformer = transformer.to_empty(device="cpu")
-            # Force float8 dtype to prevent float32 fallback which uses 4x RAM
-            transformer = transformer.to(torch.float8_e4m3fn)
             
             state_dict = transformer.state_dict()
             model_keys = set(state_dict.keys())
