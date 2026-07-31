@@ -95,8 +95,6 @@ class WanProvider(BaseAIProvider):
             
             logger.info(f"Pipeline caricata. Transformer dtype: {self.pipeline.transformer.dtype}")
 
-        import random
-        
         temp_clips = []
         last_frame = None
         for i, prompt_data in enumerate(prompts):
@@ -216,14 +214,23 @@ class WanProvider(BaseAIProvider):
 
         logger.info(f"Concatenazione di {len(temp_clips)} clip in {output_path}...")
         
-        final_writer = imageio.get_writer(output_path, fps=fps, codec='libx264', quality=8)
-        for temp_clip_path in temp_clips:
-            reader = imageio.get_reader(temp_clip_path)
-            for frame in reader:
-                final_writer.append_data(frame)
-            reader.close()
-        final_writer.close()
+        list_file_path = output_path.replace(".mp4", "_list.txt")
+        with open(list_file_path, "w") as f:
+            for temp_clip_path in temp_clips:
+                f.write(f"file '{os.path.abspath(temp_clip_path)}'\n")
         
+        import subprocess
+        cmd = [
+            "ffmpeg", "-y",
+            "-f", "concat",
+            "-safe", "0",
+            "-i", list_file_path,
+            "-c", "copy",
+            output_path
+        ]
+        subprocess.run(cmd, check=True)
+        
+        os.remove(list_file_path)
         for temp_clip_path in temp_clips:
             if os.path.exists(temp_clip_path):
                 os.remove(temp_clip_path)
