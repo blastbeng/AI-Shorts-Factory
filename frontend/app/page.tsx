@@ -273,110 +273,112 @@ export default function Home() {
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
               <span className="w-2 h-2 bg-blue-500 rounded-full"></span> Genera Video
             </h2>
-            <form onSubmit={handleGenerate} className="space-y-4 flex-1 overflow-y-auto pr-2">
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Genere</label>
-                <select
-                  className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  value={genParams.genre}
-                  onChange={(e) => setGenParams({ ...genParams, genre: e.target.value })}
-                >
-                  <option value="random">Genere Casuale</option>
-                  <option value="Horror">Horror</option>
-                  <option value="Sci-Fi">Sci-Fi</option>
-                  <option value="Fantasy">Fantasy</option>
-                  <option value="True Crime">True Crime</option>
-                  <option value="Commedia">Commedia</option>
-                  <option value="Dramma">Dramma</option>
-                  <option value="Thriller">Thriller</option>
-                  <option value="Documentario">Documentario</option>
-                  <option value="Mistero">Mistero</option>
-                  <option value="Azione">Azione</option>
-                  <option value="Romantico">Romantico</option>
-                  <option value="Storico">Storico</option>
-                  <option value="Post-Apocalittico">Post-Apocalittico</option>
-                  <option value="Cyberpunk">Cyberpunk</option>
-                  <option value="Surrealista">Surrealista</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Prompt (Opzionale)</label>
-                <textarea
-                  placeholder="Es. Gatti spaziali che esplorano Marte..."
-                  className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
-                  rows={3}
-                  value={genParams.custom_prompt}
-                  onChange={(e) => setGenParams({ ...genParams, custom_prompt: e.target.value })}
-                ></textarea>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleGenerate} className="flex-1 flex flex-col">
+              <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 p-3 rounded-lg font-bold transition-all shadow-md mb-4">
+                Avvia Generazione
+              </button>
+              <div className="space-y-4 flex-1 overflow-y-scroll pr-2">
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Lingua</label>
+                  <label className="block text-sm text-gray-400 mb-1">Genere</label>
                   <select
                     className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                    value={genParams.language}
-                    onChange={(e) => setGenParams({ ...genParams, language: e.target.value })}
+                    value={genParams.genre}
+                    onChange={(e) => setGenParams({ ...genParams, genre: e.target.value })}
                   >
-                    <option value="italian">Italiano</option>
-                    <option value="english">Inglese</option>
-                    <option value="spanish">Spagnolo</option>
-                    <option value="french">Francese</option>
-                    <option value="german">Tedesco</option>
+                    <option value="random">Genere Casuale</option>
+                    <option value="Horror">Horror</option>
+                    <option value="Sci-Fi">Sci-Fi</option>
+                    <option value="Fantasy">Fantasy</option>
+                    <option value="True Crime">True Crime</option>
+                    <option value="Commedia">Commedia</option>
+                    <option value="Dramma">Dramma</option>
+                    <option value="Thriller">Thriller</option>
+                    <option value="Documentario">Documentario</option>
+                    <option value="Mistero">Mistero</option>
+                    <option value="Azione">Azione</option>
+                    <option value="Romantico">Romantico</option>
+                    <option value="Storico">Storico</option>
+                    <option value="Post-Apocalittico">Post-Apocalittico</option>
+                    <option value="Cyberpunk">Cyberpunk</option>
+                    <option value="Surrealista">Surrealista</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Durata (s)</label>
-                  <input
-                    type="number"
+                  <label className="block text-sm text-gray-400 mb-1">Prompt (Opzionale)</label>
+                  <textarea
+                    placeholder="Es. Gatti spaziali che esplorano Marte..."
+                    className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                    rows={3}
+                    value={genParams.custom_prompt}
+                    onChange={(e) => setGenParams({ ...genParams, custom_prompt: e.target.value })}
+                  ></textarea>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Lingua</label>
+                    <select
+                      className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      value={genParams.language}
+                      onChange={(e) => setGenParams({ ...genParams, language: e.target.value })}
+                    >
+                      <option value="italian">Italiano</option>
+                      <option value="english">Inglese</option>
+                      <option value="spanish">Spagnolo</option>
+                      <option value="french">Francese</option>
+                      <option value="german">Tedesco</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Durata (s)</label>
+                    <input
+                      type="number"
+                      className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      value={genParams.duration_seconds}
+                      onChange={(e) => setGenParams({ ...genParams, duration_seconds: parseInt(e.target.value) || 16 })}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Video Provider</label>
+                  <select
                     className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                    value={genParams.duration_seconds}
-                    onChange={(e) => setGenParams({ ...genParams, duration_seconds: parseInt(e.target.value) || 16 })}
+                    value={videoProvider}
+                    onChange={(e) => setVideoProvider(e.target.value)}
+                  >
+                    <option value="wan">Wan</option>
+                    <option value="ltx">LTX</option>
+                  </select>
+                </div>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={generateSubtitles}
+                    onChange={(e) => setGenerateSubtitles(e.target.checked)}
+                    className="form-checkbox h-4 w-4 text-blue-600"
+                  />
+                  <span className="text-sm text-gray-300">Generate & Embed Subtitles</span>
+                </label>
+                <div className="flex flex-col">
+                  <label className="text-sm text-gray-300 mb-1">Input Image (Optional)</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setInputImage(reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      } else {
+                        setInputImage(null);
+                      }
+                    }}
+                    className="text-sm text-gray-300"
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Video Provider</label>
-                <select
-                  className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  value={videoProvider}
-                  onChange={(e) => setVideoProvider(e.target.value)}
-                >
-                  <option value="wan">Wan</option>
-                  <option value="ltx">LTX</option>
-                </select>
-              </div>
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={generateSubtitles}
-                  onChange={(e) => setGenerateSubtitles(e.target.checked)}
-                  className="form-checkbox h-4 w-4 text-blue-600"
-                />
-                <span className="text-sm text-gray-300">Generate & Embed Subtitles</span>
-              </label>
-              <div className="flex flex-col">
-                <label className="text-sm text-gray-300 mb-1">Input Image (Optional)</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        setInputImage(reader.result as string);
-                      };
-                      reader.readAsDataURL(file);
-                    } else {
-                      setInputImage(null);
-                    }
-                  }}
-                  className="text-sm text-gray-300"
-                />
-              </div>
-              <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 p-3 rounded-lg font-bold transition-all shadow-md">
-                Avvia Generazione
-              </button>
             </form>
           </div>
 
