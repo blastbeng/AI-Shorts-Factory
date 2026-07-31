@@ -7,7 +7,6 @@ os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_
 os.environ["SAFETENSORS_FAST_GPU"] = "1"
 
 import gc
-import json
 import yaml
 import torch
 import psutil
@@ -16,9 +15,7 @@ torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = True
 import numpy as np
 import cv2
 from PIL import Image
-from safetensors.torch import load_file, safe_open
-from diffusers import WanImageToVideoPipeline, AutoencoderKLWan, WanTransformer3DModel, FlowMatchEulerDiscreteScheduler
-from transformers import T5EncoderModel, AutoTokenizer, CLIPVisionModel, CLIPImageProcessor
+from diffusers import WanImageToVideoPipeline
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger
@@ -32,121 +29,6 @@ class WanProvider(BaseAIProvider):
         self.gm = GPUManager()
         self.pipeline = None
         self.base_seed = 42
-
-    @staticmethod
-    def convert_key(k):
-
-        nk = k
-
-        # Strip ComfyUI model prefix
-        nk = nk.replace("model.diffusion_model.", "")
-
-        # head
-        nk = nk.replace(
-            "head.head.",
-            "proj_out."
-        )
-
-        # text embedding
-        nk = nk.replace(
-            "text_embedding.0.",
-            "condition_embedder.text_embedder.linear_1."
-        )
-        nk = nk.replace(
-            "text_embedding.2.",
-            "condition_embedder.text_embedder.linear_2."
-        )
-
-        # time embedding
-        nk = nk.replace(
-            "time_embedding.0.",
-            "condition_embedder.time_embedder.linear_1."
-        )
-        nk = nk.replace(
-            "time_embedding.2.",
-            "condition_embedder.time_embedder.linear_2."
-        )
-
-        nk = nk.replace(
-            "time_projection.1.",
-            "condition_embedder.time_proj."
-        )
-
-        # blocks
-        nk = nk.replace(
-            ".modulation",
-            ".scale_shift_table"
-        )
-
-        # self attention
-        nk = nk.replace(
-            "self_attn.norm.q_norm",
-            "attn1.norm_q"
-        )
-        nk = nk.replace(
-            "self_attn.norm.k_norm",
-            "attn1.norm_k"
-        )
-        nk = nk.replace(
-            "self_attn.q",
-            "attn1.to_q"
-        )
-        nk = nk.replace(
-            "self_attn.k",
-            "attn1.to_k"
-        )
-        nk = nk.replace(
-            "self_attn.v",
-            "attn1.to_v"
-        )
-        nk = nk.replace(
-            "self_attn.o",
-            "attn1.to_out.0"
-        )
-
-        # cross attention
-        nk = nk.replace(
-            "cross_attn.norm.q_norm",
-            "attn2.norm_q"
-        )
-        nk = nk.replace(
-            "cross_attn.norm.k_norm",
-            "attn2.norm_k"
-        )
-        nk = nk.replace(
-            "cross_attn.q",
-            "attn2.to_q"
-        )
-        nk = nk.replace(
-            "cross_attn.k",
-            "attn2.to_k"
-        )
-        nk = nk.replace(
-            "cross_attn.v",
-            "attn2.to_v"
-        )
-        nk = nk.replace(
-            "cross_attn.o",
-            "attn2.to_out.0"
-        )
-
-        # FFN
-        nk = nk.replace(
-            ".ffn.0.",
-            ".ffn.net.0.proj."
-        )
-        nk = nk.replace(
-            ".ffn.2.",
-            ".ffn.net.2."
-        )
-
-        # image embedding (CLIP projection)
-        nk = nk.replace(
-            "img_emb.",
-            "image_emb."
-        )
-
-        return nk
 
     def ram(self):
         p = psutil.Process(os.getpid())
@@ -185,120 +67,10 @@ class WanProvider(BaseAIProvider):
         if self.pipeline is None:
             logger.info("Caricamento pipeline Wan 2.2 5B (Img2Video)...")
             model_path = os.path.abspath(self.model_info.get("path"))
-            vae_path = os.path.abspath(self.model_info.get("vae_path"))
-            text_encoder_path = os.path.abspath(self.model_info.get("text_encoder_path"))
-            tokenizer_path = os.path.abspath(self.model_info.get("tokenizer_path"))
             
-            logger.info("Caricamento VAE e Text Encoder locali...")
-            vae = AutoencoderKLWan.from_single_file(
-                vae_path,
-                torch_dtype=torch.float16,
-                low_cpu_mem_usage=True
-            )
-            self.ram()
-            text_encoder = T5EncoderModel.from_pretrained(
-                text_encoder_path,
-                torch_dtype=torch.float16,
-                low_cpu_mem_usage=True,
-                local_files_only=True
-            )
-            self.ram()
-            tokenizer = AutoTokenizer.from_pretrained(
-                tokenizer_path,
-                local_files_only=True
-            )
-            self.ram()
-            
-            image_encoder_path = os.path.abspath(self.model_info.get("image_encoder_path", os.path.join(os.path.dirname(model_path), "clip_image_encoder")))
-            logger.info("Caricamento Image Encoder (CLIP) locale...")
-            image_encoder = CLIPVisionModel.from_pretrained(
-                image_encoder_path,
-                torch_dtype=torch.float16,
-                low_cpu_mem_usage=True
-            )
-            self.ram()
-            feature_extractor = CLIPImageProcessor.from_pretrained(image_encoder_path)
-            self.ram()
-            
-            transformer_config_path = os.path.abspath(self.model_info.get("transformer_config_path"))
-            with open(os.path.join(transformer_config_path, "config.json"), "r") as f:
-                transformer_config = json.load(f)
-            
-            # Fix mismatched num_attention_heads for 5B model
-            if "dim" in transformer_config and "attention_head_dim" in transformer_config:
-                expected_heads = transformer_config["dim"] // transformer_config["attention_head_dim"]
-                if transformer_config.get("num_attention_heads") != expected_heads:
-                    logger.info(f"Fixing num_attention_heads from {transformer_config.get('num_attention_heads')} to {expected_heads}")
-                    transformer_config["num_attention_heads"] = expected_heads
-
-            # Fix mismatched ffn_dim for Wan 2.2 5B model
-            if transformer_config.get("ffn_dim") == 13824:
-                logger.info("Fixing ffn_dim from 13824 to 14336 for Wan 2.2 5B")
-                transformer_config["ffn_dim"] = 14336
-
-            logger.info(f"WAN CONFIG PATH: {transformer_config_path}")
-            logger.info("Caricamento Transformer Wan 2.2 5B con config locale e pesi KJ...")
-
-            transformer = WanTransformer3DModel.from_config(transformer_config, torch_dtype=torch.float8_e4m3fn)
-
-            logger.info(f"WAN CREATED CONFIG: {transformer.config}")
-            logger.info(f"WAN CREATED PATCH: {transformer.patch_embedding.weight.shape}")
-            
-            state_dict = transformer.state_dict()
-            model_keys = set(state_dict.keys())
-            loaded_keys = set()
-            unexpected_keys = set()
-
-            with safe_open(model_path, framework="pt", device="cpu") as f:
-                for key in f.keys():
-                    mapped_key = self.convert_key(key)
-                    if mapped_key in state_dict:
-                        state_dict[mapped_key].copy_(f.get_tensor(key))
-                        loaded_keys.add(mapped_key)
-                    else:
-                        unexpected_keys.add(mapped_key)
-
-            for k in list(loaded_keys)[:50]:
-                logger.info(k)
-
-            missing = list(model_keys - loaded_keys)
-            unexpected = list(unexpected_keys)
-
-            logger.info(f"MISSING: {len(missing)}")
-            logger.info(f"UNEXPECTED: {len(unexpected)}")
-            
-            del state_dict
-            gc.collect()
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-
-            try:
-                import ctypes
-                ctypes.CDLL("libc.so.6").malloc_trim(0)
-            except Exception:
-                pass
-
-            # Cast fp8 parameters to fp16 for ROCm compatibility,
-            # preserving fp32 modules (time_embedder, norms, etc.)
-            for name, param in transformer.named_parameters():
-                if param.dtype == torch.float8_e4m3fn:
-                    param.data = param.data.to(torch.float16)
-            logger.info(f"Transformer cast to fp16 for ROCm inference")
-
-            logger.info("Costruzione pipeline Wan 2.2 5B (Img2Video)...")
-            scheduler = FlowMatchEulerDiscreteScheduler(
-                shift=5.0,
-                use_dynamic_shifting=False,
-                timestep_spacing="linspace",
-            )
-            self.pipeline = WanImageToVideoPipeline(
-                transformer=transformer,
-                vae=vae,
-                text_encoder=text_encoder,
-                tokenizer=tokenizer,
-                image_encoder=image_encoder,
-                feature_extractor=feature_extractor,
-                scheduler=scheduler
+            self.pipeline = WanImageToVideoPipeline.from_single_file(
+                model_path,
+                torch_dtype=torch.float16
             )
             
             # VAE memory optimizations for RDNA3

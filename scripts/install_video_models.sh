@@ -21,65 +21,12 @@ else
 fi
 
 WAN_2_2_5B_DIR="./models/video/wan_2_2_5b"
-WAN_2_2_5B_MODEL="$WAN_2_2_5B_DIR/Wan2_2-TI2V-5B_fp8_e4m3fn_scaled_KJ.safetensors"
+WAN_2_2_5B_MODEL="$WAN_2_2_5B_DIR/wan22-i2v-a14b-high-q4-k-s.gguf"
 
 if [ ! -f "$WAN_2_2_5B_DIR/.download_complete" ]; then
-    mkdir -p "$WAN_2_2_5B_DIR/tokenizer"
-    mkdir -p "$WAN_2_2_5B_DIR/transformer_config"
-    cat << 'EOF' > "$WAN_2_2_5B_DIR/transformer_config/config.json"
-{
-  "_class_name": "WanTransformer3DModel",
-  "dim": 3072,
-  "num_heads": 24,
-  "num_attention_heads": 24,
-  "num_layers": 30,
-  "patch_size": [1, 2, 2],
-  "text_dim": 3072,
-  "cross_attn_dim": 3072,
-  "in_channels": 48,
-  "out_channels": 48,
-  "freq_dim": 256,
-  "ffn_dim": 14336,
-  "text_len": 512,
-  "num_freqs": 1,
-  "rope_theta": [1.0, 1.0, 1.0],
-  "guidance_embed": false,
-  "attention_head_dim": 128,
-  "mlp_ratio": 4.0,
-  "norm_eps": 1e-6,
-  "image_dim": 768
-}
-EOF
-    echo "Downloading Wan2_2-TI2V-5B_fp8_e4m3fn_scaled_KJ.safetensors..."
-    wget -q --show-progress -O "$WAN_2_2_5B_MODEL" "https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/TI2V/Wan2_2-TI2V-5B_fp8_e4m3fn_scaled_KJ.safetensors"
-    
-    if [ -z "$HF_TOKEN" ]; then
-        echo "Warning: HF_TOKEN environment variable is not set. Downloads will be unauthenticated and may be rate-limited."
-    else
-        echo "HF_TOKEN found. Using authenticated requests for Hugging Face Hub."
-    fi
-
-    echo "Downloading VAE, Text Encoder, and Tokenizer using huggingface_hub..."
-    "$PYTHON_BIN" -c "
-import os
-from huggingface_hub import hf_hub_download, snapshot_download
-token = os.getenv('HF_TOKEN')
-if not token:
-    print('Proceeding without HF_TOKEN. Unauthenticated requests may be rate-limited.')
-
-# VAE
-hf_hub_download(repo_id='Wan-AI/Wan2.1-T2V-14B', filename='Wan2.1_VAE.pth', local_dir='$WAN_2_2_5B_DIR', token=token)
-
-# Text Encoder
-snapshot_download(repo_id='Wan-AI/Wan2.1-T2V-14B-Diffusers', allow_patterns='text_encoder/*', local_dir='$WAN_2_2_5B_DIR', token=token)
-
-# Tokenizer
-for f in ['tokenizer.json', 'spiece.model', 'tokenizer_config.json', 'special_tokens_map.json']:
-    hf_hub_download(repo_id='Wan-AI/Wan2.1-T2V-14B-Diffusers', filename=f'tokenizer/{f}', local_dir='$WAN_2_2_5B_DIR', token=token)
-
-# Image Encoder (CLIP) and Feature Extractor
-snapshot_download(repo_id='openai/clip-vit-large-patch14', local_dir='$WAN_2_2_5B_DIR/clip_image_encoder', token=token)
-"
+    mkdir -p "$WAN_2_2_5B_DIR"
+    echo "Downloading wan22-i2v-a14b-high-q4-k-s.gguf..."
+    wget -q --show-progress -O "$WAN_2_2_5B_MODEL" "https://huggingface.co/wangkanai/wan22-fp8-i2v-gguf/resolve/main/diffusion_models/wan/wan22-i2v-a14b-high-q4-k-s.gguf"
     
     touch "$WAN_2_2_5B_DIR/.download_complete"
 else
