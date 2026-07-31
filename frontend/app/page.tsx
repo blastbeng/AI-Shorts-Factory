@@ -46,8 +46,8 @@ export default function Home() {
   const [videoProvider, setVideoProvider] = useState('wan');
   const [generateSubtitles, setGenerateSubtitles] = useState(false);
   const [inputImage, setInputImage] = useState<string | null>(null);
-  const [width, setWidth] = useState(352);
-  const [height, setHeight] = useState(640);
+  const [width, setWidth] = useState(256);
+  const [height, setHeight] = useState(448);
   const [resolutionIndex, setResolutionIndex] = useState(0);
   const resolutions = [
     { w: 256, h: 448 },

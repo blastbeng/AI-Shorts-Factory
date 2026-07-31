@@ -154,10 +154,10 @@ class JobCreate(BaseModel):
     language: str = "italian"
     style: str = "default"
     duration_seconds: int = 16
-    gen_width: int = int(os.getenv("GEN_WIDTH", 352))
-    gen_height: int = int(os.getenv("GEN_HEIGHT", 640))
-    width: int = 352
-    height: int = 640
+    gen_width: int = int(os.getenv("GEN_WIDTH", 256))
+    gen_height: int = int(os.getenv("GEN_HEIGHT", 448))
+    width: int = 256
+    height: int = 448
     gen_frames: int = int(os.getenv("GEN_FRAMES", 49))
     gen_flux_steps: int = int(os.getenv("GEN_FLUX_STEPS", 4))
     gen_wan_steps: int = int(os.getenv("GEN_WAN_STEPS", 30))
@@ -169,24 +169,24 @@ class JobCreate(BaseModel):
 @app.get("/settings")
 def get_settings():
     # Read from env with fallback
-    width_str = os.getenv("GEN_WIDTH", "352")
-    height_str = os.getenv("GEN_HEIGHT", "640")
+    width_str = os.getenv("GEN_WIDTH", "256")
+    height_str = os.getenv("GEN_HEIGHT", "448")
     
     # Validate width
     try:
         width = int(width_str)
         if width <= 0: raise ValueError
     except ValueError:
-        width = 352
-        logger.warning("Invalid GEN_WIDTH in .env, falling back to 352")
+        width = 256
+        logger.warning("Invalid GEN_WIDTH in .env, falling back to 256")
         
     # Validate height
     try:
         height = int(height_str)
         if height <= 0: raise ValueError
     except ValueError:
-        height = 640
-        logger.warning("Invalid GEN_HEIGHT in .env, falling back to 640")
+        height = 448
+        logger.warning("Invalid GEN_HEIGHT in .env, falling back to 448")
 
     generate_subtitles = os.getenv("GENERATE_SUBTITLES", "false").lower() == "true"
 
