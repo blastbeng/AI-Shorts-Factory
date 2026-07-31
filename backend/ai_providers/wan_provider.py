@@ -83,7 +83,9 @@ class WanProvider(BaseAIProvider):
             )
             feature_extractor = CLIPImageProcessor.from_pretrained(image_encoder_path)
             
-            transformer_config_path = os.path.join(os.path.dirname(model_path), "transformer_config")
+            with open(os.path.join(os.path.dirname(model_path), "transformer_config")) as f:
+                transformer_config_path = json.load(f)
+            logger.info(f"WAN CONFIG PATH: {transformer_config_path}")
             logger.info("Caricamento Transformer Wan 2.2 5B con config locale...")
             transformer = WanTransformer3DModel.from_single_file(
                 model_path,
