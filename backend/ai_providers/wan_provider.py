@@ -128,11 +128,8 @@ class WanProvider(BaseAIProvider):
             
             transformer = WanTransformer3DModel.from_config(transformer_config, torch_dtype=torch.float8_e4m3fn)
 
-            logger.info(
-                f"WAN CREATED dim={transformer.config.dim} "
-                f"in_channels={transformer.config.in_channels} "
-                f"text_dim={transformer.config.text_dim}"
-            )
+            logger.info(f"WAN CREATED CONFIG: {transformer.config}")
+            logger.info(f"WAN CREATED PATCH: {transformer.patch_embedding.weight.shape}")
             
             state_dict = load_file(model_path)
             mapped_state_dict = self.convert_kj_to_diffusers(state_dict)
