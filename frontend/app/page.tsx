@@ -39,8 +39,6 @@ export default function Home() {
   const [logs, setLogs] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [genParams, setGenParams] = useState({ genre: "random", custom_prompt: "", language: "italian", duration_seconds: 16 });
-  const [genWidth, setGenWidth] = useState(256);
-  const [genHeight, setGenHeight] = useState(448);
   const [genFrames, setGenFrames] = useState(49);
   const [genFluxSteps, setGenFluxSteps] = useState(4);
   const [genWanSteps, setGenWanSteps] = useState(30);
@@ -61,8 +59,8 @@ export default function Home() {
 
   const handleResolutionChange = (index: number) => {
     setResolutionIndex(index);
-    setGenWidth(resolutions[index].w);
-    setGenHeight(resolutions[index].h);
+    setWidth(resolutions[index].w);
+    setHeight(resolutions[index].h);
   };
 
   const [schedulerRunning, setSchedulerRunning] = useState(false);
@@ -160,8 +158,8 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...genParams,
-          gen_width: genWidth,
-          gen_height: genHeight,
+          gen_width: width,
+          gen_height: height,
           width: width,
           height: height,
           gen_frames: genFrames,
@@ -388,29 +386,9 @@ export default function Home() {
               <span className="w-2 h-2 bg-orange-500 rounded-full"></span> Parametri di Generazione
             </h2>
             <div className="space-y-6 flex-1 overflow-y-auto pr-2">
-              <div className="flex space-x-2">
-                <div className="flex flex-col w-1/2">
-                  <label className="text-sm text-gray-400 mb-2">Width</label>
-                  <input
-                    type="number"
-                    value={width}
-                    onChange={(e) => setWidth(parseInt(e.target.value) || 352)}
-                    className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  />
-                </div>
-                <div className="flex flex-col w-1/2">
-                  <label className="text-sm text-gray-400 mb-2">Height</label>
-                  <input
-                    type="number"
-                    value={height}
-                    onChange={(e) => setHeight(parseInt(e.target.value) || 640)}
-                    className="w-full p-2.5 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  />
-                </div>
-              </div>
               {/* Risoluzione */}
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Risoluzione ({genWidth}x{genHeight})</label>
+                <label className="block text-sm text-gray-400 mb-2">Risoluzione ({width}x{height})</label>
                 <div className="flex items-center gap-4">
                   <span className="text-xs text-gray-500">480p</span>
                   <input

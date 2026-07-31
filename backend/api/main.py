@@ -153,8 +153,8 @@ class JobCreate(BaseModel):
     language: str = "italian"
     style: str = "default"
     duration_seconds: int = 16
-    gen_width: int = int(os.getenv("GEN_WIDTH", 256))
-    gen_height: int = int(os.getenv("GEN_HEIGHT", 448))
+    gen_width: int = int(os.getenv("GEN_WIDTH", 352))
+    gen_height: int = int(os.getenv("GEN_HEIGHT", 640))
     width: int = 352
     height: int = 640
     gen_frames: int = int(os.getenv("GEN_FRAMES", 49))
