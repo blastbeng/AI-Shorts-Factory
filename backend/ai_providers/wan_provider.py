@@ -4,6 +4,7 @@ os.environ["TORCH_BLAS_PREFER_HIPBLAS"] = "1"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8,max_split_size_mb:256,roundup_power2_divisions:16"
 os.environ["PYTORCH_HIP_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8,max_split_size_mb:256,roundup_power2_divisions:16"
 os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8,max_split_size_mb:256,roundup_power2_divisions:16"
+os.environ["SAFETENSORS_FAST_GPU"] = "1"
 
 import gc
 import json
@@ -188,7 +189,9 @@ class WanProvider(BaseAIProvider):
             text_encoder = T5EncoderModel.from_pretrained(
                 text_encoder_path,
                 torch_dtype=torch.float16,
+                device_map="auto",
                 low_cpu_mem_usage=True,
+                offload_folder="./offload",
                 local_files_only=True
             )
             self.ram()
