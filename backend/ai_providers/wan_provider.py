@@ -234,25 +234,30 @@ class WanProvider(BaseAIProvider):
             logger.info(f"WAN CREATED CONFIG: {transformer.config}")
             logger.info(f"WAN CREATED PATCH: {transformer.patch_embedding.weight.shape}")
             
-            mapped_state_dict = {}
+            state_dict = transformer.state_dict()
+            model_keys = set(state_dict.keys())
+            loaded_keys = set()
+            unexpected_keys = set()
 
             with safe_open(model_path, framework="pt", device="cpu") as f:
                 for key in f.keys():
                     mapped_key = self.convert_key(key)
-                    mapped_state_dict[mapped_key] = f.get_tensor(key)
+                    if mapped_key in state_dict:
+                        state_dict[mapped_key].copy_(f.get_tensor(key))
+                        loaded_keys.add(mapped_key)
+                    else:
+                        unexpected_keys.add(mapped_key)
 
-            for k in list(mapped_state_dict.keys())[:50]:
+            for k in list(loaded_keys)[:50]:
                 logger.info(k)
-            
-            missing, unexpected = transformer.load_state_dict(
-                mapped_state_dict,
-                strict=False
-            )
+
+            missing = list(model_keys - loaded_keys)
+            unexpected = list(unexpected_keys)
 
             logger.info(f"MISSING: {len(missing)}")
             logger.info(f"UNEXPECTED: {len(unexpected)}")
             
-            del mapped_state_dict
+            del state_dict
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
