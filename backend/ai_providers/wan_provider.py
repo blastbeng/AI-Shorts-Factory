@@ -73,7 +73,7 @@ class WanProvider(BaseAIProvider):
             logger.info(f"Caricamento transformer FP8 da {model_path}...")
             transformer = WanTransformer3DModel.from_single_file(
                 model_path,
-                torch_dtype=torch.float16
+                torch_dtype=torch.float8_e4m3fn
             )
             gc.collect()
             if torch.cuda.is_available():
