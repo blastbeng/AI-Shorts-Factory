@@ -138,7 +138,7 @@ class WanProvider(BaseAIProvider):
 
         return nk
 
-    def ram():
+    def ram(self):
         p = psutil.Process(os.getpid())
         logger.info(
             f"RAM usage: {p.memory_info().rss / 1024**3:.2f} GB"
