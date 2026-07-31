@@ -106,6 +106,32 @@ class PipelineOrchestrator:
         narration = ""
         final_video_path = f"output/final_video_{self.job_id}.mp4"
         quality_score = 0.0
+        input_image_path = None
+
+        if self.job.input_image and not self.job.custom_prompt:
+            import base64
+            from PIL import Image
+            import io
+            
+            # Decode base64 image
+            image_data = self.job.input_image.split(",")[1]
+            image_bytes = base64.b64decode(image_data)
+            image = Image.open(io.BytesIO(image_bytes))
+            
+            input_image_path = f"/tmp/input_image_{self.job_id}.png"
+            image.save(input_image_path)
+            
+            # Analyze image to generate a prompt
+            from backend.ai_providers.video_analysis_provider import VideoAnalysisProvider
+            analyzer = VideoAnalysisProvider()
+            try:
+                generated_prompt = analyzer.generate(input_image_path)
+                
+                # Update job with generated prompt
+                self.job.custom_prompt = generated_prompt
+                self.db.commit()
+            finally:
+                analyzer.cleanup()
 
         # Recupera gli stage già completati per supportare il resume
         completed_stages = self.db.query(PipelineStage).filter(
@@ -362,7 +388,9 @@ class PipelineOrchestrator:
                             logger.warning("Video provider non installato. Uso video dummy.")
                             self._generate_dummy_media("video", video_path)
                         else:
-                            video_provider_instance.generate(video_prompts, video_path, job_id=self.job_id, image_path=image_path, target_duration=voice_duration, frames_per_clip=self.job.gen_frames, width=self.job.gen_width, height=self.job.gen_height, steps=gen_steps)
+                            # Use input image if provided, otherwise use generated image
+                            gen_image_path = input_image_path if input_image_path else image_path
+                            video_provider_instance.generate(video_prompts, video_path, job_id=self.job_id, image_path=gen_image_path, target_duration=voice_duration, frames_per_clip=self.job.gen_frames, width=self.job.gen_width, height=self.job.gen_height, steps=gen_steps)
                     finally:
                         video_provider_instance.cleanup()
                     self._update_stage(stage, "completed", video_path)

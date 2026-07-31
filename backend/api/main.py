@@ -18,6 +18,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
+from typing import Optional
 from pydantic import BaseModel
 from backend.database.session import Base, engine, get_db, SessionLocal
 from backend.database.models import Job, Video, PipelineStage
@@ -158,6 +159,7 @@ class JobCreate(BaseModel):
     gen_ltx_steps: int = int(os.getenv("GEN_LTX_STEPS", 50))
     video_provider: str = os.getenv("DEFAULT_VIDEO_PROVIDER", "wan")
     generate_subtitles: bool = True
+    input_image: Optional[str] = None
 
 @app.get("/health")
 def health():
@@ -215,7 +217,8 @@ def start_job(job_params: JobCreate, db: Session = Depends(get_db)):
         gen_wan_steps=job_params.gen_wan_steps,
         gen_ltx_steps=job_params.gen_ltx_steps,
         video_provider=job_params.video_provider,
-        generate_subtitles=job_params.generate_subtitles
+        generate_subtitles=job_params.generate_subtitles,
+        input_image=job_params.input_image
     )
     db.add(job)
     db.commit()

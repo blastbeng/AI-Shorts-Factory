@@ -47,6 +47,7 @@ export default function Home() {
   const [genLtxSteps, setGenLtxSteps] = useState(50);
   const [videoProvider, setVideoProvider] = useState('wan');
   const [generateSubtitles, setGenerateSubtitles] = useState(true);
+  const [inputImage, setInputImage] = useState<string | null>(null);
   const [resolutionIndex, setResolutionIndex] = useState(0);
   const resolutions = [
     { w: 256, h: 448 },
@@ -153,7 +154,8 @@ export default function Home() {
           gen_wan_steps: genWanSteps,
           gen_ltx_steps: genLtxSteps,
           video_provider: videoProvider,
-          generate_subtitles: generateSubtitles
+          generate_subtitles: generateSubtitles,
+          input_image: inputImage
         })
       });
       setGenParams({ genre: "random", custom_prompt: "", language: "italian", duration_seconds: 16 });
@@ -339,6 +341,26 @@ export default function Home() {
                 />
                 <span className="text-sm text-gray-300">Generate & Embed Subtitles</span>
               </label>
+              <div className="flex flex-col">
+                <label className="text-sm text-gray-300 mb-1">Input Image (Optional)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setInputImage(reader.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                    } else {
+                      setInputImage(null);
+                    }
+                  }}
+                  className="text-sm text-gray-300"
+                />
+              </div>
               <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 p-3 rounded-lg font-bold transition-all shadow-md">
                 Avvia Generazione
               </button>

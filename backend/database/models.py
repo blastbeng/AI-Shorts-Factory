@@ -1,6 +1,6 @@
 import os
 import uuid
-from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from backend.database.session import Base
@@ -28,6 +28,7 @@ class Job(Base):
     gen_ltx_steps = Column(Integer, default=lambda: int(os.getenv("GEN_LTX_STEPS", 50)))
     video_provider = Column(String, default="wan")
     generate_subtitles = Column(Boolean, default=True)
+    input_image = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     videos = relationship("Video", backref="job")
