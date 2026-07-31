@@ -70,12 +70,15 @@ export default function Home() {
   const [progress, setProgress] = useState<{ [key: string]: any }>({});
 
   const getApiUrl = () => {
-    const envUrl = process.env.NEXT_PUBLIC_API_URL;
     const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-    // If accessing via IP and the env URL is localhost, use the current host dynamically
-    if (currentHost !== 'localhost' && envUrl && envUrl.includes('localhost')) {
+    const envUrl = process.env.NEXT_PUBLIC_API_URL;
+    
+    // If accessing via an IP/hostname that is not localhost, and the env URL is missing or points to localhost/127.0.0.1,
+    // dynamically construct the API URL using the current host to avoid NetworkErrors.
+    if (currentHost !== 'localhost' && (!envUrl || envUrl.includes('localhost') || envUrl.includes('127.0.0.1'))) {
       return `http://${currentHost}:8000`;
     }
+    
     return envUrl || `http://${currentHost}:8000`;
   };
   const apiUrl = getApiUrl();
