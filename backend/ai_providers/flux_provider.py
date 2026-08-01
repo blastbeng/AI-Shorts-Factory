@@ -50,6 +50,9 @@ class FluxProvider(BaseAIProvider):
             preferred_backend=preferred_backend
         )
 
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
         if self.pipeline is None:
             logger.info("Caricamento pipeline Flux GGUF...")
             try:
@@ -80,7 +83,6 @@ class FluxProvider(BaseAIProvider):
                             torch_dtype=torch.float16,
                             local_files_only=True
                         )
-                    text_encoder_2.to("cpu")
                     pipeline_kwargs["text_encoder_2"] = text_encoder_2
                 
                 self.pipeline = FluxPipeline.from_pretrained(
@@ -89,8 +91,6 @@ class FluxProvider(BaseAIProvider):
                 )
                 self.pipeline.vae.enable_tiling()
                 self.pipeline.vae.enable_slicing()
-                self.pipeline.vae.to(torch.float16)
-                self.pipeline.enable_attention_slicing()
 
                 # Flash Attention and xFormers can conflict with sequential CPU offload.
                 # We rely on VAE tiling/slicing and sequential offload for memory management.
@@ -98,11 +98,14 @@ class FluxProvider(BaseAIProvider):
 
                 # Determine if we need CPU offload based on VRAM
                 use_offload = gpu['vram_gb'] < 20
-                self.pipeline.vae.enable_tiling()
-                self.pipeline.vae.enable_slicing()
                 if use_offload:
-                    logger.info(f"VRAM {gpu['vram_gb']}GB < 20GB, uso model CPU offload.")
-                    self.pipeline.enable_sequential_cpu_offload()
+                    logger.info(
+                        f"VRAM {gpu['vram_gb']}GB < 20GB, uso model CPU offload."
+                    )
+
+                    self.pipeline.enable_model_cpu_offload(
+                        gpu_id=int(device.split(":")[-1])
+                    )
                 else:
                     self.pipeline.to(device)
             except Exception as e:
@@ -111,8 +114,6 @@ class FluxProvider(BaseAIProvider):
             
         def progress_callback(pipe, step, timestep, callback_kwargs):
             logger.info(f"Flux generation progress: step {step + 1}/{steps}")
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
             if job_id:
                 from backend.services.progress_tracker import ProgressTracker
                 ProgressTracker().update(job_id, "image_generation", step + 1, steps, f"Flux generation progress: step {step + 1}/{steps}")
