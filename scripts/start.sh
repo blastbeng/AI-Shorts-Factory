@@ -33,11 +33,18 @@ export LD_LIBRARY_PATH="$SITE_PACKAGES/torch/lib:$SITE_PACKAGES/nvidia/nccl/lib:
 
 # Force loading of the correct NCCL library (required by PyTorch 2.6+)
 NCCL_LIB=$(find "$SITE_PACKAGES/nvidia/nccl/lib" -name "libnccl.so*" 2>/dev/null | head -1)
-if [ -n "$NCCL_LIB" ]; then
+if [ -n "$NCCL_LIB" ] && nm -D "$NCCL_LIB" 2>/dev/null | grep -q ncclCommResume; then
     export LD_PRELOAD="$NCCL_LIB${LD_PRELOAD:+:$LD_PRELOAD}"
     echo "[OK] Preloading NCCL from: $NCCL_LIB"
 else
-    echo "[WARN] NCCL library not found in nvidia-nccl-cu12 package. Attempting to continue..."
+    # Fallback to system NCCL if it has the symbol
+    SYSTEM_NCCL=$(find /usr/lib /usr/local/lib -name "libnccl.so*" 2>/dev/null | head -1)
+    if [ -n "$SYSTEM_NCCL" ] && nm -D "$SYSTEM_NCCL" 2>/dev/null | grep -q ncclCommResume; then
+        export LD_PRELOAD="$SYSTEM_NCCL${LD_PRELOAD:+:$LD_PRELOAD}"
+        echo "[OK] Preloading system NCCL from: $SYSTEM_NCCL"
+    else
+        echo "[ERRORE] Nessuna libreria NCCL con ncclCommResume trovata. PyTorch potrebbe non funzionare."
+    fi
 fi
 
 # Imposta valori predefiniti se non presenti nel .env

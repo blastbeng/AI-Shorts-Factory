@@ -64,7 +64,7 @@ if [ -n "$NCCL_LIB" ]; then
     else
         echo "[WARN] NCCL library found but missing ncclCommResume symbol. Trying system NCCL..."
         # Fallback: try system NCCL if it's newer
-        SYSTEM_NCCL=$(find /usr/lib -name "libnccl.so*" 2>/dev/null | head -1)
+        SYSTEM_NCCL=$(find /usr/lib /usr/local/lib -name "libnccl.so*" 2>/dev/null | head -1)
         if [ -n "$SYSTEM_NCCL" ] && nm -D "$SYSTEM_NCCL" 2>/dev/null | grep -q ncclCommResume; then
             export LD_PRELOAD="$SYSTEM_NCCL${LD_PRELOAD:+:$LD_PRELOAD}"
             echo "[OK] Preloading system NCCL from: $SYSTEM_NCCL"
