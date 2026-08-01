@@ -42,6 +42,18 @@ class QwenImageProvider(BaseAIProvider):
             model_path = self.model_info.get("path")
             try:
                 self.pipeline = DiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.float16)
+
+                try:
+                    self.pipeline.enable_flash_attention()
+                    logger.info("Flash Attention enabled for Qwen Image.")
+                except Exception as e:
+                    logger.warning(f"Flash Attention not available ({e}), falling back to xformers/slicing.")
+                    try:
+                        self.pipeline.enable_xformers_memory_efficient_attention()
+                        logger.info("xFormers memory efficient attention enabled for Qwen Image.")
+                    except Exception:
+                        logger.warning("xFormers not available, keeping attention slicing only.")
+
                 if use_cpu_offload:
                     self.pipeline.enable_model_cpu_offload(device=device)
                 else:

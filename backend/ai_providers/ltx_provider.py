@@ -68,6 +68,18 @@ class LtxProvider(BaseAIProvider):
             self.pipeline.vae.enable_tiling()
             self.pipeline.vae.enable_slicing()
             self.pipeline.vae.to(dtype=torch.float16)
+
+            try:
+                self.pipeline.enable_flash_attention()
+                logger.info("Flash Attention enabled for LTX.")
+            except Exception as e:
+                logger.warning(f"Flash Attention not available ({e}), falling back to xformers/slicing.")
+                try:
+                    self.pipeline.enable_xformers_memory_efficient_attention()
+                    logger.info("xFormers memory efficient attention enabled for LTX.")
+                except Exception:
+                    logger.warning("xFormers not available, keeping attention slicing only.")
+
             self.pipeline.enable_attention_slicing("max")
             self.pipeline.enable_sequential_cpu_offload(device=device)
 

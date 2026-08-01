@@ -90,6 +90,17 @@ class FluxProvider(BaseAIProvider):
                 self.pipeline.vae.enable_slicing()
                 self.pipeline.vae.to(torch.bfloat16)
 
+                try:
+                    self.pipeline.enable_flash_attention()
+                    logger.info("Flash Attention enabled for Flux.")
+                except Exception as e:
+                    logger.warning(f"Flash Attention not available ({e}), falling back to xformers/slicing.")
+                    try:
+                        self.pipeline.enable_xformers_memory_efficient_attention()
+                        logger.info("xFormers memory efficient attention enabled for Flux.")
+                    except Exception:
+                        logger.warning("xFormers not available, keeping attention slicing only.")
+
                 if hasattr(self.pipeline, "text_encoder_2") and self.pipeline.text_encoder_2:
                     self.pipeline.text_encoder_2.to("cpu")
 
