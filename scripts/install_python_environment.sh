@@ -24,7 +24,7 @@ echo "Reinstallazione di PyTorch con supporto CUDA per GPU NVIDIA (dopo requirem
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124 --force-reinstall
 
 echo "Installazione di nvidia-nccl-cu12 per compatibilità NCCL..."
-pip install nvidia-nccl-cu12
+pip install nvidia-nccl-cu12==2.21.5
 
 # Ensure PyTorch's bundled libraries are found first
 SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
@@ -54,7 +54,6 @@ SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
 export LD_LIBRARY_PATH="$SITE_PACKAGES/torch/lib:$SITE_PACKAGES/nvidia/nccl/lib:$LD_LIBRARY_PATH"
 
 # Force loading of the correct NCCL library (required by PyTorch 2.6+)
-SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
 NCCL_LIB=$(find "$SITE_PACKAGES/nvidia/nccl/lib" -name "libnccl.so*" 2>/dev/null | head -1)
 if [ -n "$NCCL_LIB" ]; then
     # Verify the library contains the required symbol
