@@ -128,6 +128,14 @@ class WanProvider(BaseAIProvider):
 
         self.pipeline.to(device)
 
+        # Check available VRAM and warn if headroom is small
+        if torch.cuda.is_available():
+            free_mem = torch.cuda.get_device_properties(device).total_memory - torch.cuda.memory_allocated(device)
+            free_gb = free_mem / (1024**3)
+            logger.info(f"Free VRAM after loading Wan: {free_gb:.2f} GB")
+            if free_gb < 2.0:
+                logger.warning("VRAM headroom is low (<2 GB). Consider reducing GEN_FRAMES, GEN_WIDTH, or GEN_HEIGHT.")
+
         # Enable Flash Attention for faster inference and lower memory
         try:
             self.pipeline.enable_flash_attention()

@@ -23,6 +23,13 @@ pip install -r requirements.txt
 echo "Reinstallazione di PyTorch con supporto CUDA per GPU NVIDIA (dopo requirements.txt)..."
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124 --force-reinstall
 
+echo "Installazione di nvidia-nccl-cu12 per compatibilità NCCL..."
+pip install nvidia-nccl-cu12
+
+# Ensure PyTorch's bundled libraries are found first
+SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
+export LD_LIBRARY_PATH="$SITE_PACKAGES/torch/lib:$SITE_PACKAGES/nvidia/nccl/lib:$LD_LIBRARY_PATH"
+
 echo "Installazione di torchcodec 0.9.1 (CPU) per compatibilità CUDA..."
 pip install torchcodec==0.9.1 --index-url https://download.pytorch.org/whl/cpu --force-reinstall
 
@@ -41,6 +48,10 @@ fi
 
 echo "Installazione di xformers come fallback..."
 pip install xformers --no-build-isolation || echo "[WARN] xformers non installato."
+
+# Re-export library path before importing torch (SpaCy may trigger torch import)
+SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
+export LD_LIBRARY_PATH="$SITE_PACKAGES/torch/lib:$SITE_PACKAGES/nvidia/nccl/lib:$LD_LIBRARY_PATH"
 
 echo "Verifica dei modelli linguistici SpaCy per Kokoro TTS..."
 for model in en_core_web_sm it_core_news_sm es_core_news_sm fr_core_news_sm de_core_news_sm; do
