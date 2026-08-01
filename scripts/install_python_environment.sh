@@ -32,16 +32,6 @@ pip install -r requirements.txt
 echo "Installazione di torchcodec 0.9.1 (CPU) per compatibilità CUDA..."
 pip install torchcodec==0.9.1 --index-url https://download.pytorch.org/whl/cpu --force-reinstall
 
-echo "Rimozione di flash-attn incompatible..."
-pip uninstall -y flash-attn
-
-echo "Installazione di flash-attn 2.7.4.post1 (compatibile con PyTorch 2.6)..."
-if command -v nvcc &> /dev/null; then
-    pip install flash-attn==2.7.4.post1 --no-build-isolation || echo "[WARN] flash-attn non installato (richiede CUDA toolkit)."
-else
-    echo "[WARN] nvcc non trovato. flash-attn non può essere compilato. Verrà usato xformers come fallback."
-fi
-
 echo "Installazione di xformers compatibile con PyTorch 2.6 (dal index cu124)..."
 pip install "xformers<0.0.30" --index-url https://download.pytorch.org/whl/cu124 --no-deps || echo "[WARN] xformers non installato."
 
@@ -65,6 +55,16 @@ if [ -n "$NCCL_LIB" ]; then
     echo "[OK] Preloading NCCL from: $NCCL_LIB"
 else
     echo "[WARN] NCCL library not found in nvidia-nccl-cu12 package. Attempting to continue..."
+fi
+
+echo "Rimozione di flash-attn incompatible..."
+pip uninstall -y flash-attn
+
+echo "Installazione di flash-attn 2.7.4.post1 (compatibile con PyTorch 2.6)..."
+if command -v nvcc &> /dev/null; then
+    pip install flash-attn==2.7.4.post1 --no-build-isolation || echo "[WARN] flash-attn non installato (richiede CUDA toolkit)."
+else
+    echo "[WARN] nvcc non trovato. flash-attn non può essere compilato. Verrà usato xformers come fallback."
 fi
 
 echo "Verifica dei modelli linguistici SpaCy per Kokoro TTS..."

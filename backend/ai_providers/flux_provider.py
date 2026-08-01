@@ -97,7 +97,9 @@ class FluxProvider(BaseAIProvider):
                     **pipeline_kwargs
                 )
 
-                self.pipeline.text_encoder_2 = None
+                self.text_encoder = self.pipeline.text_encoder
+                self.tokenizer = self.pipeline.tokenizer
+                self.pipeline.text_encoder_2 = self.text_encoder_2
                 self.pipeline.vae.enable_tiling()
                 self.pipeline.vae.enable_slicing()
                 self.pipeline.vae.config.force_upcast = False
@@ -138,34 +140,24 @@ class FluxProvider(BaseAIProvider):
         logger.info(f"Generazione immagine per prompt: {prompt}")
         try:
             with torch.inference_mode():
-                self.text_encoder_2.eval()
 
-                tokens = self.pipeline.tokenizer_2(
-                    prompt,
-                    padding="max_length",
-                    max_length=self.pipeline.tokenizer_2.model_max_length,
-                    truncation=True,
-                    return_tensors="pt"
+                prompt_embeds, pooled_prompt_embeds = self.pipeline.encode_prompt(
+                    prompt=prompt,
+                    prompt_2=prompt,
+                    device="cpu",
+                    max_sequence_length=512
                 )
+            prompt_embeds = prompt_embeds.to(device)
+            pooled_prompt_embeds = pooled_prompt_embeds.to(device)
 
-                input_ids = tokens.input_ids.to("cpu")
-
-                outputs = self.text_encoder_2(
-                    input_ids=input_ids,
-                    output_hidden_states=True
-                )
-
-                prompt_embeds = outputs.hidden_states[-1]
-
-                pooled_prompt_embeds = outputs.last_hidden_state.mean(dim=1)
             image = self.pipeline(
-                    prompt_embeds=prompt_embeds,
-                    pooled_prompt_embeds=pooled_prompt_embeds,
-                    num_inference_steps=steps,
-                    guidance_scale=0.0,
-                    width=width,
-                    height=height,
-                ).images[0]
+                prompt_embeds=prompt_embeds,
+                pooled_prompt_embeds=pooled_prompt_embeds,
+                num_inference_steps=steps,
+                guidance_scale=0.0,
+                width=width,
+                height=height,
+            ).images[0]
         except Exception as e:
             logger.error(f"Errore durante la generazione dell'immagine: {e}")
             if torch.cuda.is_available():
