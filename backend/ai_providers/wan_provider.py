@@ -67,11 +67,11 @@ class WanProvider(BaseAIProvider):
             model_path = os.path.abspath(self.model_info.get("path"))
             base_model_path = self.model_info.get("base_model_path", "Wan-AI/Wan2.2-TI2V-5B-Diffusers")
             
-            logger.info(f"Caricamento transformer FP8 da {model_path}...")
+            logger.info(f"Caricamento transformer FP8 (cast a FP16) da {model_path}...")
             transformer = WanTransformer3DModel.from_single_file(
                 model_path,
                 config=os.path.join(base_model_path, "transformer"),
-                torch_dtype=torch.float8_e4m3fn
+                torch_dtype=torch.float16
             )
             gc.collect()
             if torch.cuda.is_available():
