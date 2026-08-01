@@ -25,6 +25,8 @@ from backend.services.logger import logger
 from safetensors.torch import load_file as safetensors_load
 import imageio
 
+torch.set_num_threads(1)  # reduce CPU memory overhead from parallel operations
+
 class WanProvider(BaseAIProvider):
     def __init__(self):
         with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
@@ -106,15 +108,51 @@ class WanProvider(BaseAIProvider):
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
+            # Load text encoder and image encoder explicitly in float16 to save RAM
+            from transformers import T5EncoderModel, T5Tokenizer
+            from transformers import CLIPVisionModelWithProjection, CLIPImageProcessor
+
+            logger.info("Caricamento text encoder (T5) in float16...")
+            text_encoder = T5EncoderModel.from_pretrained(
+                base_model_path,
+                subfolder="text_encoder",
+                torch_dtype=torch.float16,
+                low_cpu_mem_usage=True,
+                use_safetensors=True
+            )
+            tokenizer = T5Tokenizer.from_pretrained(base_model_path, subfolder="tokenizer")
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+            logger.info("Caricamento image encoder (CLIP) in float16...")
+            image_encoder = CLIPVisionModelWithProjection.from_pretrained(
+                base_model_path,
+                subfolder="image_encoder",
+                torch_dtype=torch.float16,
+                low_cpu_mem_usage=True,
+                use_safetensors=True
+            )
+            image_processor = CLIPImageProcessor.from_pretrained(base_model_path, subfolder="image_encoder")
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
             logger.info(f"Caricamento pipeline da {base_model_path}...")
             self.pipeline = WanImageToVideoPipeline.from_pretrained(
                 base_model_path,
                 transformer=transformer,
                 vae=vae,
+                text_encoder=text_encoder,
+                tokenizer=tokenizer,
+                image_encoder=image_encoder,
+                image_processor=image_processor,
                 torch_dtype=torch.float16,
                 low_cpu_mem_usage=True,
                 use_safetensors=True
             )
+
+            self.ram()  # log current RAM usage
 
             # self.pipeline.scheduler = DPMSolverMultistepScheduler.from_config(
             #     self.pipeline.scheduler.config,

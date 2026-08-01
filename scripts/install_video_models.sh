@@ -36,7 +36,7 @@ WAN_2_2_14B_BASE_DIR="./models/video/wan_2_2_14b/base_model"
 if [ ! -f "$WAN_2_2_14B_BASE_DIR/model_index.json" ] || [ ! -f "$WAN_2_2_14B_BASE_DIR/transformer/config.json" ]; then
     mkdir -p "$WAN_2_2_14B_BASE_DIR"
     echo "Downloading Wan2.2-I2V-A14B-Diffusers base model (full)..."
-    $PYTHON_BIN -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='Wan-AI/Wan2.2-I2V-A14B-Diffusers', local_dir='$WAN_2_2_14B_BASE_DIR', allow_patterns=['*.json', '*.txt', 'vae/**', 'scheduler/**', 'tokenizer/**', 'image_encoder/**', 'transformer/config.json'])"
+    $PYTHON_BIN -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='Wan-AI/Wan2.2-I2V-A14B-Diffusers', local_dir='$WAN_2_2_14B_BASE_DIR', allow_patterns=['*.json', '*.txt', 'vae/**', 'scheduler/**', 'tokenizer/**', 'image_encoder/**', 'text_encoder/**', 'transformer/config.json'])"
 else
     echo "[OK] Modello base wan_2_2_14b già installato."
 fi
