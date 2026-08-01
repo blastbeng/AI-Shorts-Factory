@@ -1,9 +1,9 @@
 import os
 os.environ["TORCH_BLAS_PREFER_HIPBLASLT"] = "0"
 os.environ["TORCH_BLAS_PREFER_HIPBLAS"] = "1"
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8"
-os.environ["PYTORCH_HIP_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8"
-os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8"
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.9,max_split_size_mb:512"
+os.environ["PYTORCH_HIP_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.9,max_split_size_mb:512"
+os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.9,max_split_size_mb:512"
 os.environ["SAFETENSORS_FAST_GPU"] = "1"
 
 import gc
@@ -44,7 +44,7 @@ class WanProvider(BaseAIProvider):
     def health_check(self):
         return self.install_status() == "installed"
 
-    def generate(self, prompts: list, output_path: str, *args, frames_per_clip=int(os.getenv("GEN_FRAMES", 49)), width=int(os.getenv("GEN_WIDTH", 256)), height=int(os.getenv("GEN_HEIGHT", 448)), steps=int(os.getenv("GEN_WAN_STEPS", 40)), **kwargs):
+    def generate(self, prompts: list, output_path: str, *args, frames_per_clip=int(os.getenv("GEN_FRAMES", 49)), width=int(os.getenv("GEN_WIDTH", 256)), height=int(os.getenv("GEN_HEIGHT", 448)), steps=int(os.getenv("GEN_WAN_STEPS", 30)), **kwargs):
         if not self.health_check():
             raise RuntimeError("Modello Wan 2.2 5B non installato.")
             
@@ -124,6 +124,10 @@ class WanProvider(BaseAIProvider):
                 if hasattr(self.pipeline.vae, "enable_tiling"):
                     self.pipeline.vae.enable_tiling()
                     logger.info("VAE tiling enabled.")
+
+            if hasattr(self.pipeline, "enable_vae_tiling"):
+                self.pipeline.enable_vae_tiling()
+                logger.info("VAE tiling enabled via pipeline.")
 
             logger.info(f"Pipeline caricata. Transformer dtype: {self.pipeline.transformer.dtype}")
 
@@ -252,6 +256,11 @@ class WanProvider(BaseAIProvider):
                             self.pipeline.vae.enable_slicing()
                         if hasattr(self.pipeline.vae, "enable_tiling"):
                             self.pipeline.vae.enable_tiling()
+
+                    if hasattr(self.pipeline, "enable_vae_tiling"):
+                        self.pipeline.enable_vae_tiling()
+                        logger.info("VAE tiling enabled via pipeline.")
+
                     gc.collect()
                     torch.cuda.empty_cache()
                     with torch.inference_mode():
