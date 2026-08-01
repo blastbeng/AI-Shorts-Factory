@@ -12,7 +12,7 @@ FLUX_GGUF="./models/image/flux1-schnell-Q8_0.gguf"
 if [ ! -f "$FLUX_GGUF" ]; then
     echo "[INFO] Downloading Flux GGUF model..."
     mkdir -p "./models/image"
-    wget -O "$FLUX_GGUF" "https://huggingface.co/city96/FLUX.1-schnell-gguf/resolve/main/flux1-schnell-Q8_0.gguf"
+    wget -O "$FLUX_GGUF" "https://huggingface.co/city96/FLUX.1-schnell-gguf/resolve/main/flux1-schnell-Q4_K_S.gguf"
 else
     echo "[OK] Flux GGUF model already installed."
 fi
