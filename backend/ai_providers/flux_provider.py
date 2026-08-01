@@ -90,16 +90,9 @@ class FluxProvider(BaseAIProvider):
                 self.pipeline.vae.enable_slicing()
                 self.pipeline.vae.to(torch.bfloat16)
 
-                try:
-                    self.pipeline.enable_flash_attention()
-                    logger.info("Flash Attention enabled for Flux.")
-                except Exception as e:
-                    logger.warning(f"Flash Attention not available ({e}), falling back to xformers/slicing.")
-                    try:
-                        self.pipeline.enable_xformers_memory_efficient_attention()
-                        logger.info("xFormers memory efficient attention enabled for Flux.")
-                    except Exception:
-                        logger.warning("xFormers not available, keeping attention slicing only.")
+                # Flash Attention and xFormers can conflict with sequential CPU offload.
+                # We rely on VAE tiling/slicing and sequential offload for memory management.
+                logger.info("Skipping Flash Attention/xFormers for Flux to ensure compatibility with sequential CPU offload.")
 
                 if hasattr(self.pipeline, "text_encoder_2") and self.pipeline.text_encoder_2:
                     self.pipeline.text_encoder_2.to("cpu")
@@ -135,15 +128,16 @@ class FluxProvider(BaseAIProvider):
             torch.cuda.empty_cache()
 
         logger.info(f"Generazione immagine per prompt: {prompt}")
-        image = self.pipeline(
-            prompt, 
-            num_inference_steps=steps,
-            guidance_scale=0.0,
-            width=width,
-            height=height, 
-            callback_on_step_end=progress_callback,
-            callback_on_step_end_tensor_inputs=[]
-        ).images[0]
+        with torch.inference_mode():
+            image = self.pipeline(
+                prompt, 
+                num_inference_steps=steps,
+                guidance_scale=0.0,
+                width=width,
+                height=height, 
+                callback_on_step_end=progress_callback,
+                callback_on_step_end_tensor_inputs=[]
+            ).images[0]
         
         image.save(output_path)
         logger.info(f"Immagine salvata in {output_path}")
