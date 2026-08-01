@@ -123,21 +123,54 @@ class FluxProvider(BaseAIProvider):
             next(self.pipeline.text_encoder_2.parameters()).dtype
         )
 
+        import gc
+
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+            try:
+                torch.cuda.set_per_process_memory_fraction(0.95)
+            except Exception:
+                pass
+        gc.collect()
+        try:
+            import ctypes
+            ctypes.CDLL("libc.so.6").malloc_trim(0)
+        except Exception:
+            pass
 
         logger.info(f"Generazione immagine per prompt: {prompt}")
-        with torch.inference_mode():
-            image = self.pipeline(
-                prompt, 
-                num_inference_steps=steps,
-                guidance_scale=0.0,
-                width=width,
-                height=height, 
-                callback_on_step_end=progress_callback,
-                callback_on_step_end_tensor_inputs=[]
-            ).images[0]
+        try:
+            with torch.inference_mode():
+                image = self.pipeline(
+                    prompt, 
+                    num_inference_steps=steps,
+                    guidance_scale=0.0,
+                    width=width,
+                    height=height, 
+                    callback_on_step_end=progress_callback,
+                    callback_on_step_end_tensor_inputs=[]
+                ).images[0]
+        except Exception as e:
+            logger.error(f"Errore durante la generazione dell'immagine: {e}")
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            gc.collect()
+            try:
+                import ctypes
+                ctypes.CDLL("libc.so.6").malloc_trim(0)
+            except Exception:
+                pass
+            raise e
         
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        gc.collect()
+        try:
+            import ctypes
+            ctypes.CDLL("libc.so.6").malloc_trim(0)
+        except Exception:
+            pass
+
         image.save(output_path)
         logger.info(f"Immagine salvata in {output_path}")
         return output_path
