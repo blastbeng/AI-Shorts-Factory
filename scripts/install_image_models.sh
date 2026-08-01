@@ -17,7 +17,7 @@ else
     echo "[OK] Flux GGUF model already installed."
 fi
 
-T5_GGUF="./models/image/t5-v1_1-xxl-encoder-Q8_0.gguf"
+T5_GGUF="./models/image/t5-v1_1-xxl-encoder-Q4_K_M.gguf"
 if [ ! -f "$T5_GGUF" ]; then
     echo "[INFO] Downloading T5 encoder GGUF model..."
     mkdir -p "./models/image"
