@@ -8,6 +8,7 @@ os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_
 os.environ["SAFETENSORS_FAST_GPU"] = "1"
 
 import gc
+import glob
 import yaml
 import torch
 import psutil
@@ -23,9 +24,41 @@ from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger
 from safetensors.torch import load_file as safetensors_load
+from safetensors import safe_open
 import imageio
 
 torch.set_num_threads(1)  # reduce CPU memory overhead from parallel operations
+
+def _load_model_from_safetensors_streaming(model_class, subfolder, base_path, torch_dtype=torch.float16):
+    """
+    Load a model from a directory containing safetensors files.
+    Streams weights directly into a float16 model to avoid temporary float32 copies.
+    """
+    config = model_class.load_config(base_path, subfolder=subfolder)
+    model = model_class.from_config(config, torch_dtype=torch_dtype)
+    safetensors_files = sorted(glob.glob(os.path.join(base_path, subfolder, "*.safetensors")))
+    if not safetensors_files:
+        raise FileNotFoundError(f"No safetensors files found in {os.path.join(base_path, subfolder)}")
+    param_dict = dict(model.named_parameters())
+    for sf in safetensors_files:
+        with safe_open(sf, framework="pt", device="cpu") as f:
+            for key in f.keys():
+                tensor = f.get_tensor(key)
+                tensor = tensor.to(torch_dtype)
+                if key in param_dict:
+                    param_dict[key].data.copy_(tensor)
+                else:
+                    logger.warning(f"Key {key} not found in {model_class.__name__}, skipping.")
+    del param_dict
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    try:
+        import ctypes
+        ctypes.CDLL("libc.so.6").malloc_trim(0)
+    except Exception:
+        pass
+    return model
 
 class WanProvider(BaseAIProvider):
     def __init__(self):
@@ -96,47 +129,28 @@ class WanProvider(BaseAIProvider):
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-            logger.info(f"Caricamento VAE da {base_model_path} in float16...")
-            vae = AutoencoderKLWan.from_pretrained(
-                base_model_path,
-                subfolder="vae",
-                torch_dtype=torch.float16,
-                low_cpu_mem_usage=True,
-                use_safetensors=True
-            )
-            gc.collect()
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-
-            # Load text encoder and image encoder explicitly in float16 to save RAM
             from transformers import T5EncoderModel, T5Tokenizer
             from transformers import CLIPVisionModelWithProjection, CLIPImageProcessor
 
-            logger.info("Caricamento text encoder (T5) in float16...")
-            text_encoder = T5EncoderModel.from_pretrained(
-                base_model_path,
-                subfolder="text_encoder",
-                torch_dtype=torch.float16,
-                low_cpu_mem_usage=True,
-                use_safetensors=True
+            logger.info("Caricamento VAE (streaming float16)...")
+            vae = _load_model_from_safetensors_streaming(
+                AutoencoderKLWan, "vae", base_model_path, torch_dtype=torch.float16
+            )
+            self.ram()
+
+            logger.info("Caricamento text encoder T5 (streaming float16)...")
+            text_encoder = _load_model_from_safetensors_streaming(
+                T5EncoderModel, "text_encoder", base_model_path, torch_dtype=torch.float16
             )
             tokenizer = T5Tokenizer.from_pretrained(base_model_path, subfolder="tokenizer")
-            gc.collect()
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
+            self.ram()
 
-            logger.info("Caricamento image encoder (CLIP) in float16...")
-            image_encoder = CLIPVisionModelWithProjection.from_pretrained(
-                base_model_path,
-                subfolder="image_encoder",
-                torch_dtype=torch.float16,
-                low_cpu_mem_usage=True,
-                use_safetensors=True
+            logger.info("Caricamento image encoder CLIP (streaming float16)...")
+            image_encoder = _load_model_from_safetensors_streaming(
+                CLIPVisionModelWithProjection, "image_encoder", base_model_path, torch_dtype=torch.float16
             )
             image_processor = CLIPImageProcessor.from_pretrained(base_model_path, subfolder="image_encoder")
-            gc.collect()
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
+            self.ram()
 
             logger.info(f"Caricamento pipeline da {base_model_path}...")
             self.pipeline = WanImageToVideoPipeline.from_pretrained(
