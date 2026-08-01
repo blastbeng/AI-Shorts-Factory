@@ -244,7 +244,7 @@ class WanProvider(BaseAIProvider):
                             num_frames=frames_per_clip,
                             height=height,
                             width=width,
-                            guidance_scale=5.0,
+                            guidance_scale=4.0,
                             generator=generator,
                             callback_on_step_end=progress_callback,
                             callback_on_step_end_tensor_inputs=[]
