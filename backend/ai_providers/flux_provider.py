@@ -80,8 +80,8 @@ class FluxProvider(BaseAIProvider):
                             torch_dtype=torch.float16,
                             local_files_only=True
                         )
-                    pipeline_kwargs["text_encoder_2"] = text_encoder_2.eval()
-                    self.pipeline.text_encoder_2.to("cpu")
+                    text_encoder_2.to("cpu")
+                    pipeline_kwargs["text_encoder_2"] = text_encoder_2
                 
                 self.pipeline = FluxPipeline.from_pretrained(
                     "black-forest-labs/FLUX.1-schnell",
