@@ -19,6 +19,7 @@ class FluxProvider(BaseAIProvider):
             self.t5_gguf_path = os.path.abspath(self.t5_gguf_path)
         self.gm = GPUManager()
         self.pipeline = None
+        self.text_encoder_2 = None
 
     def install_status(self):
         return self.model_info.get("status", "not_installed")
@@ -42,7 +43,7 @@ class FluxProvider(BaseAIProvider):
         
         # Check system RAM before attempting CPU offload
         available_ram = self.gm.get_available_system_ram_gb()
-        if available_ram < 20.0:
+        if available_ram < 10.0:
             raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Flux richiede circa 20GB di RAM. Operazione annullata per evitare il blocco del sistema.")
         
         device = self.gm.get_device_string(
@@ -73,18 +74,19 @@ class FluxProvider(BaseAIProvider):
 
                 if self.t5_gguf_path:
                     if self.t5_gguf_path.endswith(".gguf"):
-                        text_encoder_2 = T5EncoderModel.from_pretrained(
+                        self.text_encoder_2 = T5EncoderModel.from_pretrained(
                             os.path.dirname(self.t5_gguf_path),
                             gguf_file=os.path.basename(self.t5_gguf_path),
                             torch_dtype=torch.float16
                         )
                     else:
-                        text_encoder_2 = T5EncoderModel.from_pretrained(
+                        self.text_encoder_2 = T5EncoderModel.from_pretrained(
                             self.t5_gguf_path,
                             torch_dtype=torch.float16,
                             local_files_only=True
                         )
-                    pipeline_kwargs["text_encoder_2"] = text_encoder_2
+
+                    self.text_encoder_2.to("cpu")
                 
                 self.pipeline = FluxPipeline.from_pretrained(
                     "black-forest-labs/FLUX.1-schnell",
@@ -104,10 +106,6 @@ class FluxProvider(BaseAIProvider):
                     logger.info(
                         f"VRAM {gpu['vram_gb']}GB < 20GB, uso model CPU offload."
                     )
-
-                    self.pipeline.enable_model_cpu_offload(
-                        gpu_id=int(device.split(":")[-1])
-                    )
                 else:
                     self.pipeline.to(device)
 
@@ -121,10 +119,6 @@ class FluxProvider(BaseAIProvider):
             "transformer dtype:",
             next(self.pipeline.transformer.parameters()).dtype
         )
-        print(
-            "text encoder dtype:",
-            next(self.pipeline.text_encoder_2.parameters()).dtype
-        )
 
         import gc
         gc.collect()
@@ -136,13 +130,21 @@ class FluxProvider(BaseAIProvider):
 
         logger.info(f"Generazione immagine per prompt: {prompt}")
         try:
-            with torch.inference_mode(), torch.autocast("cuda",dtype=torch.float16):
-                image = self.pipeline(
-                    prompt, 
+            with torch.inference_mode():
+                self.pipeline.text_encoder_2 = self.text_encoder_2
+                prompt_embeds, pooled_prompt_embeds, text_ids = self.pipeline.encode_prompt(
+                    prompt=prompt,
+                    prompt_2=prompt,
+                    device="cpu"
+                )
+            image = self.pipeline(
+                    prompt_embeds=prompt_embeds,
+                    pooled_prompt_embeds=pooled_prompt_embeds,
+                    text_ids=text_ids,
                     num_inference_steps=steps,
                     guidance_scale=0.0,
                     width=width,
-                    height=height, 
+                    height=height,
                 ).images[0]
         except Exception as e:
             logger.error(f"Errore durante la generazione dell'immagine: {e}")
