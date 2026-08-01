@@ -99,10 +99,6 @@ class WanProvider(BaseAIProvider):
                 use_safetensors=True
             )
 
-            # Memory optimisations (as recommended by the model card)
-            self.pipeline.enable_vae_tiling()
-            self.pipeline.enable_attention_slicing()
-            
             # Crucial for 16GB VRAM cards like the RX 7800 XT
             self.pipeline.enable_model_cpu_offload()
 
