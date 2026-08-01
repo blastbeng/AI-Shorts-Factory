@@ -29,6 +29,12 @@ pip install torchcodec==0.9.1 --index-url https://download.pytorch.org/whl/cpu -
 echo "Installazione dipendenze (numpy<2.1 pillow<12.0)..."
 pip install "numpy<2.1,>=1.21" "pillow<12.0"
 
+echo "Installazione di flash-attn per attenzione ottimizzata CUDA..."
+pip install flash-attn --no-build-isolation || echo "[WARN] flash-attn non installato (richiede CUDA toolkit)."
+
+echo "Installazione di xformers come fallback..."
+pip install xformers --no-build-isolation || echo "[WARN] xformers non installato."
+
 echo "Verifica dei modelli linguistici SpaCy per Kokoro TTS..."
 for model in en_core_web_sm it_core_news_sm es_core_news_sm fr_core_news_sm de_core_news_sm; do
     if ! python -c "import spacy; spacy.load('$model')" 2>/dev/null; then
