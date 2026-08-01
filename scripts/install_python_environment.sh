@@ -26,12 +26,12 @@ pip install torchcodec==0.9.1 --index-url https://download.pytorch.org/whl/cpu -
 echo "Installazione dipendenze (numpy<2.1 pillow<12.0)..."
 pip install "numpy<2.1,>=1.21" "pillow<12.0"
 
-echo "Installazione di flash-attn per attenzione ottimizzata CUDA..."
+echo "Aggiornamento di flash-attn alla versione compatibile con PyTorch 2.6..."
 # Ensure CUDA toolkit is found
 export CUDA_HOME=${CUDA_HOME:-/usr/local/cuda}
 export PATH=$CUDA_HOME/bin:$PATH
 if command -v nvcc &> /dev/null; then
-    pip install flash-attn --no-build-isolation || echo "[WARN] flash-attn non installato (richiede CUDA toolkit)."
+    pip install flash-attn --no-build-isolation --upgrade || echo "[WARN] flash-attn non installato (richiede CUDA toolkit)."
 else
     echo "[WARN] nvcc non trovato. flash-attn non può essere compilato. Verrà usato xformers come fallback."
 fi
