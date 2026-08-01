@@ -43,8 +43,8 @@ class FluxProvider(BaseAIProvider):
         
         # Check system RAM before attempting CPU offload
         available_ram = self.gm.get_available_system_ram_gb()
-        if available_ram < 10.0:
-            raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Flux richiede circa 10GB di RAM. Operazione annullata per evitare il blocco del sistema.")
+        if available_ram < 20.0:
+            raise RuntimeError(f"RAM di sistema insufficiente ({available_ram:.2f}GB) per il fallback su CPU. Flux richiede circa 20GB di RAM. Operazione annullata per evitare il blocco del sistema.")
         
         device = self.gm.get_device_string(
             gpu['id'],
@@ -101,10 +101,10 @@ class FluxProvider(BaseAIProvider):
                 logger.info("Skipping Flash Attention/xFormers for Flux to ensure compatibility with sequential CPU offload.")
 
                 # Determine if we need CPU offload based on VRAM
-                use_offload = gpu['vram_gb'] < 10
+                use_offload = gpu['vram_gb'] < 20
                 if use_offload:
                     logger.info(
-                        f"VRAM {gpu['vram_gb']}GB < 10GB, uso model CPU offload."
+                        f"VRAM {gpu['vram_gb']}GB < 20GB, uso model CPU offload."
                     )
                 else:
                     self.pipeline.to(device)
