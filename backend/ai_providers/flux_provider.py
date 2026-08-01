@@ -92,6 +92,8 @@ class FluxProvider(BaseAIProvider):
                     "black-forest-labs/FLUX.1-schnell",
                     **pipeline_kwargs
                 )
+
+                self.pipeline.text_encoder_2 = None
                 self.pipeline.vae.enable_tiling()
                 self.pipeline.vae.enable_slicing()
                 self.pipeline.vae.config.force_upcast = False
@@ -107,7 +109,8 @@ class FluxProvider(BaseAIProvider):
                         f"VRAM {gpu['vram_gb']}GB < 20GB, uso model CPU offload."
                     )
                 else:
-                    self.pipeline.to(device)
+                    self.pipeline.transformer.to(device)
+                    self.pipeline.vae.to(device)
 
                 logger.info(f"Flux device: {self.pipeline.transformer.device}")
                 
@@ -137,6 +140,7 @@ class FluxProvider(BaseAIProvider):
                     prompt_2=prompt,
                     device="cpu"
                 )
+            self.pipeline.text_encoder_2 = None
             image = self.pipeline(
                     prompt_embeds=prompt_embeds,
                     pooled_prompt_embeds=pooled_prompt_embeds,
