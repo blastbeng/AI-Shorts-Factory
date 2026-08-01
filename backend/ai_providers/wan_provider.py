@@ -77,14 +77,9 @@ class WanProvider(BaseAIProvider):
             for k in state_dict:
                 state_dict[k] = state_dict[k].to(torch.float16)
             
-            # Load transformer config from base model, then inject FP8 weights
-            transformer = WanTransformer3DModel.from_pretrained(
-                base_model_path,
-                subfolder="transformer",
-                torch_dtype=torch.float16,
-                low_cpu_mem_usage=True,
-                use_safetensors=True
-            )
+            # Load transformer config only (no weights), then inject FP8 state dict
+            config = WanTransformer3DModel.load_config(base_model_path, subfolder="transformer")
+            transformer = WanTransformer3DModel.from_config(config, torch_dtype=torch.float16)
             transformer.load_state_dict(state_dict, strict=True)
             del state_dict
             gc.collect()
