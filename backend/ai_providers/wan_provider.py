@@ -100,7 +100,6 @@ class WanProvider(BaseAIProvider):
             )
 
             # Memory optimisations (as recommended by the model card)
-            self.pipeline.enable_vae_slicing()
             self.pipeline.enable_vae_tiling()
             self.pipeline.enable_attention_slicing()
             
