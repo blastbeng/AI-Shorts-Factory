@@ -3,6 +3,11 @@ os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
 os.environ["SAFETENSORS_FAST_GPU"] = "1"
 
+import torch
+torch.backends.cudnn.benchmark = True
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
+
 import multiprocessing
 try:
     multiprocessing.set_start_method("spawn", force=True)
