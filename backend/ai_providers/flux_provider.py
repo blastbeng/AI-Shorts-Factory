@@ -54,7 +54,7 @@ class FluxProvider(BaseAIProvider):
             logger.info("Caricamento pipeline Flux GGUF...")
             try:
                 quant_config = GGUFQuantizationConfig(
-                    compute_dtype=torch.bfloat16
+                    compute_dtype=torch.float16
                 )
 
                 transformer = FluxTransformer2DModel.from_single_file(
@@ -64,7 +64,7 @@ class FluxProvider(BaseAIProvider):
                 
                 pipeline_kwargs = {
                     "transformer": transformer,
-                    "torch_dtype": torch.bfloat16
+                    "torch_dtype": torch.float16
                 }
 
                 if self.t5_gguf_path:
@@ -72,15 +72,16 @@ class FluxProvider(BaseAIProvider):
                         text_encoder_2 = T5EncoderModel.from_pretrained(
                             os.path.dirname(self.t5_gguf_path),
                             gguf_file=os.path.basename(self.t5_gguf_path),
-                            torch_dtype=torch.bfloat16
+                            torch_dtype=torch.float16
                         )
                     else:
                         text_encoder_2 = T5EncoderModel.from_pretrained(
                             self.t5_gguf_path,
-                            torch_dtype=torch.bfloat16,
+                            torch_dtype=torch.float16,
                             local_files_only=True
                         )
-                    pipeline_kwargs["text_encoder_2"] = text_encoder_2
+                    pipeline_kwargs["text_encoder_2"] = text_encoder_2.eval()
+                    self.pipeline.text_encoder_2.to("cpu")
                 
                 self.pipeline = FluxPipeline.from_pretrained(
                     "black-forest-labs/FLUX.1-schnell",
@@ -88,7 +89,7 @@ class FluxProvider(BaseAIProvider):
                 )
                 self.pipeline.vae.enable_tiling()
                 self.pipeline.vae.enable_slicing()
-                self.pipeline.vae.to(torch.bfloat16)
+                self.pipeline.vae.to(torch.float16)
                 self.pipeline.enable_attention_slicing()
 
                 # Flash Attention and xFormers can conflict with sequential CPU offload.
@@ -97,11 +98,11 @@ class FluxProvider(BaseAIProvider):
 
                 # Determine if we need CPU offload based on VRAM
                 use_offload = gpu['vram_gb'] < 20
+                self.pipeline.vae.enable_tiling()
+                self.pipeline.vae.enable_slicing()
                 if use_offload:
                     logger.info(f"VRAM {gpu['vram_gb']}GB < 20GB, uso model CPU offload.")
-                    self.pipeline.enable_model_cpu_offload(
-                        gpu_id=int(device.split(":")[-1])
-                    )
+                    self.pipeline.enable_sequential_cpu_offload()
                 else:
                     self.pipeline.to(device)
             except Exception as e:
@@ -131,7 +132,7 @@ class FluxProvider(BaseAIProvider):
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
             try:
-                torch.cuda.set_per_process_memory_fraction(0.95)
+                torch.cuda.set_per_process_memory_fraction(0.85)
             except Exception:
                 pass
         gc.collect()
