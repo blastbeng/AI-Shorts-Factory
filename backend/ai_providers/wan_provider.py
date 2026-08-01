@@ -75,111 +75,53 @@ class WanProvider(BaseAIProvider):
         gpu_id = int(device.split(":")[-1]) if ":" in device else 0
         
         if self.pipeline is None:
-            logger.info("Caricamento pipeline Wan 2.2 14B (Img2Video) da FP8...")
-            model_path = os.path.abspath(self.model_info.get("path"))
-            base_model_path = self.model_info.get("base_model_path", "Wan-AI/Wan2.2-TI2V-14B-Diffusers")
-            
-            # Load transformer config only (no weights), then inject FP8 state dict
-            config = WanTransformer3DModel.load_config(base_model_path, subfolder="transformer")
-            transformer = WanTransformer3DModel.from_config(config, torch_dtype=torch.float16)
-            
-            # Stream tensors from safetensors file directly into transformer parameters
-            logger.info(f"Iniezione pesi FP8 nel transformer (streaming)...")
-            from safetensors import safe_open
-            model_file_obj = open(model_path, "rb")
-            model_fd = model_file_obj.fileno()
-            try:
-                with safe_open(model_file_obj, framework="pt", device="cpu") as f:
-                    param_dict = dict(transformer.named_parameters())
-                    for key in f.keys():
-                        if key == "scaled_fp8":
-                            continue
-                        tensor = f.get_tensor(key)
-                        tensor = tensor.to(torch.float16)
-                        if key in param_dict:
-                            param_dict[key].data.copy_(tensor)
-                        else:
-                            logger.warning(f"Key {key} not found in transformer, skipping.")
-                del param_dict
-            finally:
-                # Drop page cache for the FP8 file
-                try:
-                    os.posix_fadvise(model_fd, 0, os.fstat(model_fd).st_size, os.POSIX_FADV_DONTNEED)
-                except Exception:
-                    pass
-                model_file_obj.close()
-            gc.collect()
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
+            # ---------- memory diagnostics ----------
+            process = psutil.Process(os.getpid())
+            ram_gb = process.memory_info().rss / 1024**3
+            vram_used = torch.cuda.memory_allocated(gpu_id) / 1024**3 if torch.cuda.is_available() else 0
+            logger.info(f"[MEM] Before pipeline load: RAM {ram_gb:.2f} GB, VRAM {vram_used:.2f} GB")
 
-            from transformers import T5EncoderModel, T5Tokenizer
-            from transformers import CLIPVisionModelWithProjection, CLIPImageProcessor
-
-            logger.info("Caricamento VAE (streaming float16)...")
-            vae = _load_model_from_safetensors_streaming(
-                AutoencoderKLWan, "vae", base_model_path, torch_dtype=torch.float16
-            )
-            self.ram()
-
-            logger.info("Caricamento text encoder T5 (streaming float16)...")
-            text_encoder = _load_model_from_safetensors_streaming(
-                T5EncoderModel, "text_encoder", base_model_path, torch_dtype=torch.float16
-            )
-            tokenizer = T5Tokenizer.from_pretrained(base_model_path, subfolder="tokenizer")
-            self.ram()
-
-            logger.info("Caricamento image encoder CLIP (streaming float16)...")
-            image_encoder = _load_model_from_safetensors_streaming(
-                CLIPVisionModelWithProjection, "image_encoder", base_model_path, torch_dtype=torch.float16
-            )
-            image_processor = CLIPImageProcessor.from_pretrained(base_model_path, subfolder="image_encoder")
-            self.ram()
-
-            logger.info(f"Caricamento pipeline da {base_model_path}...")
+            logger.info("Loading base Wan pipeline (VAE, T5, CLIP, tokenizer, scheduler)...")
+            # Load the full pipeline from the local base model directory.
+            # low_cpu_mem_usage=True avoids keeping two copies of the weights.
             self.pipeline = WanImageToVideoPipeline.from_pretrained(
-                base_model_path,
-                transformer=transformer,
-                vae=vae,
-                text_encoder=text_encoder,
-                tokenizer=tokenizer,
-                image_encoder=image_encoder,
-                image_processor=image_processor,
+                self.base_model_path,
                 torch_dtype=torch.float16,
                 low_cpu_mem_usage=True,
-                use_safetensors=True
             )
+            ram_gb = process.memory_info().rss / 1024**3
+            vram_used = torch.cuda.memory_allocated(gpu_id) / 1024**3 if torch.cuda.is_available() else 0
+            logger.info(f"[MEM] After base pipeline: RAM {ram_gb:.2f} GB, VRAM {vram_used:.2f} GB")
 
-            self.ram()  # log current RAM usage
+            # Load the FP8 transformer directly, keeping weights in FP8.
+            logger.info(f"Loading FP8 transformer from {self.model_path} ...")
+            # Use from_single_file to load the single safetensors checkpoint.
+            # torch_dtype=torch.float8_e4m3fn ensures the weights stay in FP8.
+            transformer = WanTransformer3DModel.from_single_file(
+                self.model_path,
+                config=self.pipeline.transformer.config,
+                torch_dtype=torch.float8_e4m3fn,
+            )
+            # Replace the pipeline's transformer with the FP8 one.
+            self.pipeline.transformer = transformer
 
-            # self.pipeline.scheduler = DPMSolverMultistepScheduler.from_config(
-            #     self.pipeline.scheduler.config,
-            #     use_karras_sigmas=True
-            # )
-            # logger.info("Scheduler replaced with DPMSolverMultistepScheduler (Karras sigmas).")
+            ram_gb = process.memory_info().rss / 1024**3
+            vram_used = torch.cuda.memory_allocated(gpu_id) / 1024**3 if torch.cuda.is_available() else 0
+            logger.info(f"[MEM] After FP8 transformer: RAM {ram_gb:.2f} GB, VRAM {vram_used:.2f} GB")
 
-            # Try model offload first; if OOM occurs, fall back to sequential offload
-            if self.offload_strategy == "sequential":
-                self.pipeline.enable_sequential_cpu_offload()
-                logger.info("Enabled sequential CPU offload (from config).")
-            else:
-                self.pipeline.enable_model_cpu_offload()
-                logger.info("Enabled model CPU offload.")
+            # Enable sequential CPU offload – best for low VRAM.
+            self.pipeline.enable_sequential_cpu_offload()
+            logger.info("Sequential CPU offload enabled.")
 
-            # Enable additional memory-saving features
-            slicing_enabled = False
+            # Memory‑saving features
             if hasattr(self.pipeline, "enable_vae_slicing"):
                 self.pipeline.enable_vae_slicing()
-                slicing_enabled = True
-                logger.info("VAE slicing enabled via pipeline.")
+                logger.info("VAE slicing enabled.")
             if hasattr(self.pipeline, "enable_attention_slicing"):
                 self.pipeline.enable_attention_slicing()
                 logger.info("Attention slicing enabled.")
-            if hasattr(self.pipeline, "vae"):
-                if hasattr(self.pipeline.vae, "enable_slicing") and not slicing_enabled:
-                    self.pipeline.vae.enable_slicing()
-                    logger.info("VAE slicing enabled directly on VAE.")
 
-            # Enable memory-efficient attention for ROCm
+            # ROCm memory‑efficient attention (if available)
             if hasattr(torch.backends.cuda, "enable_mem_efficient_sdp"):
                 torch.backends.cuda.enable_mem_efficient_sdp(True)
                 logger.info("Memory-efficient SDP enabled.")
@@ -190,7 +132,9 @@ class WanProvider(BaseAIProvider):
                 except Exception as e:
                     logger.warning(f"Flash SDP not available: {e}")
 
-            logger.info(f"Pipeline caricata. Transformer dtype: {self.pipeline.transformer.dtype}")
+            ram_gb = process.memory_info().rss / 1024**3
+            vram_used = torch.cuda.memory_allocated(gpu_id) / 1024**3 if torch.cuda.is_available() else 0
+            logger.info(f"[MEM] Pipeline ready: RAM {ram_gb:.2f} GB, VRAM {vram_used:.2f} GB")
 
         temp_clips = []
         last_frame = None
