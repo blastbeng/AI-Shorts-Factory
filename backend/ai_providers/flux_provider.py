@@ -1,6 +1,10 @@
 import os
 import yaml
+os.environ["OMP_NUM_THREADS"]="12"
+os.environ["MKL_NUM_THREADS"]="12"
 import torch
+torch.set_num_threads(12)
+torch.set_num_interop_threads(2)
 from diffusers import FluxPipeline, FluxTransformer2DModel
 from diffusers import GGUFQuantizationConfig
 from transformers import T5EncoderModel
@@ -134,13 +138,26 @@ class FluxProvider(BaseAIProvider):
         logger.info(f"Generazione immagine per prompt: {prompt}")
         try:
             with torch.inference_mode():
-                self.pipeline.text_encoder_2 = self.text_encoder_2
-                prompt_embeds, pooled_prompt_embeds, text_ids = self.pipeline.encode_prompt(
-                    prompt=prompt,
-                    prompt_2=prompt,
-                    device="cpu"
+                self.text_encoder_2.eval()
+
+                tokens = self.pipeline.tokenizer_2(
+                    prompt,
+                    padding="max_length",
+                    max_length=self.pipeline.tokenizer_2.model_max_length,
+                    truncation=True,
+                    return_tensors="pt"
                 )
-            self.pipeline.text_encoder_2 = None
+
+                input_ids = tokens.input_ids.to("cpu")
+
+                outputs = self.text_encoder_2(
+                    input_ids=input_ids,
+                    output_hidden_states=True
+                )
+
+                prompt_embeds = outputs.hidden_states[-1]
+
+                pooled_prompt_embeds = outputs.last_hidden_state.mean(dim=1)
             image = self.pipeline(
                     prompt_embeds=prompt_embeds,
                     pooled_prompt_embeds=pooled_prompt_embeds,
