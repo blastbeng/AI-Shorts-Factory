@@ -1,4 +1,5 @@
 import os
+os.environ["HSA_OVERRIDE_GFX_VERSION"] = "11.0.0"
 os.environ["TORCH_BLAS_PREFER_HIPBLASLT"] = "0"
 os.environ["TORCH_BLAS_PREFER_HIPBLAS"] = "1"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.9,max_split_size_mb:512"
@@ -46,7 +47,7 @@ class WanProvider(BaseAIProvider):
     def health_check(self):
         return self.install_status() == "installed"
 
-    def generate(self, prompts: list, output_path: str, *args, frames_per_clip=int(os.getenv("GEN_FRAMES", 25)), width=int(os.getenv("GEN_WIDTH", 256)), height=int(os.getenv("GEN_HEIGHT", 448)), steps=int(os.getenv("GEN_WAN_STEPS", 40)), **kwargs):
+    def generate(self, prompts: list, output_path: str, *args, frames_per_clip=int(os.getenv("GEN_FRAMES", 49)), width=int(os.getenv("GEN_WIDTH", 256)), height=int(os.getenv("GEN_HEIGHT", 448)), steps=int(os.getenv("GEN_WAN_STEPS", 40)), **kwargs):
         if not self.health_check():
             raise RuntimeError("Modello Wan 2.2 14B non installato.")
             
@@ -136,6 +137,17 @@ class WanProvider(BaseAIProvider):
                     self.pipeline.vae.enable_slicing()
                     logger.info("VAE slicing enabled directly on VAE.")
 
+            # Enable memory-efficient attention for ROCm
+            if hasattr(torch.backends.cuda, "enable_mem_efficient_sdp"):
+                torch.backends.cuda.enable_mem_efficient_sdp(True)
+                logger.info("Memory-efficient SDP enabled.")
+            if hasattr(torch.backends.cuda, "enable_flash_sdp"):
+                try:
+                    torch.backends.cuda.enable_flash_sdp(True)
+                    logger.info("Flash SDP enabled.")
+                except Exception as e:
+                    logger.warning(f"Flash SDP not available: {e}")
+
             logger.info(f"Pipeline caricata. Transformer dtype: {self.pipeline.transformer.dtype}")
 
         temp_clips = []
@@ -211,7 +223,7 @@ class WanProvider(BaseAIProvider):
                         num_frames=frames_per_clip,
                         height=height,
                         width=width,
-                        guidance_scale=4.0,
+                        guidance_scale=3.5,
                         generator=generator,
                         output_type="pil",
                         callback_on_step_end=progress_callback,
@@ -246,6 +258,17 @@ class WanProvider(BaseAIProvider):
                         if hasattr(self.pipeline.vae, "enable_slicing"):
                             self.pipeline.vae.enable_slicing()
 
+                    # Enable memory-efficient attention for ROCm
+                    if hasattr(torch.backends.cuda, "enable_mem_efficient_sdp"):
+                        torch.backends.cuda.enable_mem_efficient_sdp(True)
+                        logger.info("Memory-efficient SDP enabled (retry).")
+                    if hasattr(torch.backends.cuda, "enable_flash_sdp"):
+                        try:
+                            torch.backends.cuda.enable_flash_sdp(True)
+                            logger.info("Flash SDP enabled (retry).")
+                        except Exception as e:
+                            logger.warning(f"Flash SDP not available: {e}")
+
                     gc.collect()
                     torch.cuda.empty_cache()
                     with torch.inference_mode():
@@ -257,7 +280,7 @@ class WanProvider(BaseAIProvider):
                             num_frames=frames_per_clip,
                             height=height,
                             width=width,
-                            guidance_scale=4.0,
+                            guidance_scale=3.5,
                             generator=generator,
                             output_type="pil",
                             callback_on_step_end=progress_callback,
