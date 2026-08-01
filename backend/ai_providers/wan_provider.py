@@ -15,7 +15,7 @@ torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = True
 import numpy as np
 import cv2
 from PIL import Image
-from diffusers import DiffusionPipeline, AutoencoderKLWan
+from diffusers import WanImageToVideoPipeline, AutoencoderKLWan
 from diffusers import WanTransformer3DModel
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
@@ -90,7 +90,7 @@ class WanProvider(BaseAIProvider):
                 torch.cuda.empty_cache()
 
             logger.info(f"Caricamento pipeline da {base_model_path}...")
-            self.pipeline = DiffusionPipeline.from_pretrained(
+            self.pipeline = WanImageToVideoPipeline.from_pretrained(
                 base_model_path,
                 transformer=transformer,
                 vae=vae,
