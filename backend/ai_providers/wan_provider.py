@@ -101,7 +101,7 @@ class WanProvider(BaseAIProvider):
 
             # Crucial for 16GB VRAM cards like the RX 7800 XT
             self.pipeline.enable_model_cpu_offload()
-            self.pipeline.enable_vae_tiling()
+            self.pipeline.vae.enable_tiling()
 
             logger.info(f"Pipeline caricata. Transformer dtype: {self.pipeline.transformer.dtype}")
 
