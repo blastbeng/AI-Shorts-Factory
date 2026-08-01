@@ -138,8 +138,10 @@ class WanProvider(BaseAIProvider):
         for i, prompt_data in enumerate(prompts):
             img_prompt, vid_prompt = prompt_data
             # Build a consistent scene description
-            scene_desc = img_prompt if i == 0 else f"Continuing from previous scene: {vid_prompt}"
-            prompt = f"{scene_desc}, high quality, realistic, smooth motion, 4k"
+            if i == 0:
+                prompt = f"{img_prompt}. {vid_prompt}, high quality, realistic, smooth motion, 4k"
+            else:
+                prompt = f"{vid_prompt}, smooth transition, high quality, realistic, smooth motion, 4k"
 
             logger.info(f"Pulizia VRAM prima della generazione clip {i+1}/{len(prompts)}...")
             gc.collect()
@@ -271,7 +273,10 @@ class WanProvider(BaseAIProvider):
                 ]
             )
             for frame in output:
-                writer.append_data(np.array(frame))
+                arr = np.array(frame)
+                if arr.dtype == np.float32 or arr.dtype == np.float64:
+                    arr = (arr * 255).clip(0, 255).astype(np.uint8)
+                writer.append_data(arr)
             writer.close()
             temp_clips.append(temp_clip_path)
             logger.info(f"Clip {i+1} salvata in {temp_clip_path}")
@@ -294,21 +299,23 @@ class WanProvider(BaseAIProvider):
             shutil.copy(temp_clips[0], output_path)
         else:
             # Build ffmpeg filter chain for crossfade
-            # Each clip is ~1.375 seconds (33 frames / 24 fps). Overlap 0.5s = 12 frames.
             fade_duration = 0.5
+            clip_duration = frames_per_clip / fps
+            # offset must leave enough time for the fade to finish before the first clip ends
+            offset = max(0.0, clip_duration - fade_duration - 0.1)
+
             filter_parts = []
             for i, clip in enumerate(temp_clips):
                 filter_parts.append(f"[{i}:v]settb=AVTB,fps=24,setpts=PTS-STARTPTS[v{i}];")
-            
-            # Crossfade between consecutive clips
+
             prev = "v0"
             for i in range(1, len(temp_clips)):
                 next_v = f"v{i}"
                 if i == len(temp_clips) - 1:
                     # Last crossfade: output to [vout]
-                    filter_parts.append(f"[{prev}][{next_v}]xfade=transition=fade:duration={fade_duration}:offset=1.0[vout]")
+                    filter_parts.append(f"[{prev}][{next_v}]xfade=transition=fade:duration={fade_duration}:offset={offset}[vout]")
                 else:
-                    filter_parts.append(f"[{prev}][{next_v}]xfade=transition=fade:duration={fade_duration}:offset=1.0[v{i}];")
+                    filter_parts.append(f"[{prev}][{next_v}]xfade=transition=fade:duration={fade_duration}:offset={offset}[v{i}];")
                     prev = f"v{i}"
             
             filter_complex = "".join(filter_parts)
