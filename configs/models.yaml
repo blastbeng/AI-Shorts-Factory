@@ -40,7 +40,7 @@ video:
     path: ./models/video/wan_2_2_14b/Wan2_2-I2V-A14B-HIGH_fp8_e4m3fn_scaled_KJ.safetensors
     base_model_path: ./models/video/wan_2_2_14b/base_model
     status: installed
-    vram_required_gb: 20
+    vram_required_gb: 12
     offload_strategy: "sequential"
 voice:
   kokoro_tts:
