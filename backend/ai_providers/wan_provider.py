@@ -40,6 +40,45 @@ class WanProvider(BaseAIProvider):
     def health_check(self):
         return self.install_status() == "installed"
 
+    def _cleanup_base_model_dir(self):
+        """Remove stray transformer variant folders and fix model_index.json."""
+        import json
+        import shutil
+
+        base_dir = self.base_model_path
+        if not os.path.isdir(base_dir):
+            return
+
+        # Remove transformer_* folders (except 'transformer')
+        for entry in os.listdir(base_dir):
+            full_path = os.path.join(base_dir, entry)
+            if os.path.isdir(full_path) and entry.startswith("transformer_"):
+                logger.warning(f"Removing stray transformer variant folder: {entry}")
+                shutil.rmtree(full_path, ignore_errors=True)
+
+        # Remove weight files inside transformer/ (keep only config.json)
+        transformer_dir = os.path.join(base_dir, "transformer")
+        if os.path.isdir(transformer_dir):
+            for entry in os.listdir(transformer_dir):
+                if entry == "config.json":
+                    continue
+                full_path = os.path.join(transformer_dir, entry)
+                if os.path.isfile(full_path):
+                    logger.warning(f"Removing stray weight file in transformer/: {entry}")
+                    os.remove(full_path)
+
+        # Fix model_index.json: ensure 'transformer' is a single string, not a list
+        model_index_path = os.path.join(base_dir, "model_index.json")
+        if os.path.exists(model_index_path):
+            with open(model_index_path, "r") as f:
+                model_index = json.load(f)
+            transformer_val = model_index.get("transformer")
+            if isinstance(transformer_val, list):
+                logger.warning(f"Fixing model_index.json: transformer was {transformer_val}, setting to 'transformer'")
+                model_index["transformer"] = "transformer"
+                with open(model_index_path, "w") as f:
+                    json.dump(model_index, f, indent=2)
+
     def generate(self, prompts: list, output_path: str, *args, frames_per_clip=int(os.getenv("GEN_FRAMES", 49)), width=int(os.getenv("GEN_WIDTH", 256)), height=int(os.getenv("GEN_HEIGHT", 448)), steps=int(os.getenv("GEN_WAN_STEPS", 40)), **kwargs):
         if not self.health_check():
             raise RuntimeError("Modello Wan 2.2 14B non installato.")
@@ -66,6 +105,7 @@ class WanProvider(BaseAIProvider):
             vram_used = torch.cuda.memory_allocated(gpu_id) / 1024**3 if torch.cuda.is_available() else 0
             logger.info(f"[MEM] Before pipeline load: RAM {ram_gb:.2f} GB, VRAM {vram_used:.2f} GB")
 
+            self._cleanup_base_model_dir()
             logger.info("Loading base Wan pipeline (VAE, T5, CLIP, tokenizer, scheduler)...")
             # Load the full pipeline from the local base model directory.
             # low_cpu_mem_usage=True avoids keeping two copies of the weights.
