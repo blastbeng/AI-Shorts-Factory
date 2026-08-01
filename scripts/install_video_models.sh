@@ -62,4 +62,23 @@ if [ -d "$WAN_2_2_14B_BASE_DIR" ]; then
     fi
 fi
 
+# Fix model_index.json: ensure 'transformer' is a single string, not a list
+MODEL_INDEX="$WAN_2_2_14B_BASE_DIR/model_index.json"
+if [ -f "$MODEL_INDEX" ]; then
+    echo "Fixing model_index.json transformer entry..."
+    $PYTHON_BIN -c "
+import json
+path = '$MODEL_INDEX'
+with open(path, 'r') as f:
+    idx = json.load(f)
+if isinstance(idx.get('transformer'), list):
+    idx['transformer'] = 'transformer'
+    with open(path, 'w') as f:
+        json.dump(idx, f, indent=2)
+    print('Fixed: transformer entry was a list, now set to single string.')
+else:
+    print('model_index.json transformer entry already correct.')
+"
+fi
+
 echo "Installazione dei modelli video completata."
