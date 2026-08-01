@@ -94,14 +94,13 @@ class FluxProvider(BaseAIProvider):
                 # We rely on VAE tiling/slicing and sequential offload for memory management.
                 logger.info("Skipping Flash Attention/xFormers for Flux to ensure compatibility with sequential CPU offload.")
 
-                if hasattr(self.pipeline, "text_encoder_2") and self.pipeline.text_encoder_2:
-                    self.pipeline.text_encoder_2.to("cpu")
-
                 # Determine if we need CPU offload based on VRAM
                 use_offload = gpu['vram_gb'] < 20
                 if use_offload:
-                    logger.info(f"VRAM {gpu['vram_gb']}GB < 20GB, uso sequential CPU offload.")
-                    self.pipeline.enable_sequential_cpu_offload(device=device)
+                    logger.info(f"VRAM {gpu['vram_gb']}GB < 20GB, uso model CPU offload.")
+                    self.pipeline.enable_model_cpu_offload(
+                        gpu_id=int(device.split(":")[-1])
+                    )
                 else:
                     self.pipeline.to(device)
             except Exception as e:
