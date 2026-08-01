@@ -89,6 +89,7 @@ class FluxProvider(BaseAIProvider):
                 self.pipeline.vae.enable_tiling()
                 self.pipeline.vae.enable_slicing()
                 self.pipeline.vae.to(torch.bfloat16)
+                self.pipeline.enable_attention_slicing()
 
                 # Flash Attention and xFormers can conflict with sequential CPU offload.
                 # We rely on VAE tiling/slicing and sequential offload for memory management.
@@ -109,6 +110,8 @@ class FluxProvider(BaseAIProvider):
             
         def progress_callback(pipe, step, timestep, callback_kwargs):
             logger.info(f"Flux generation progress: step {step + 1}/{steps}")
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
             if job_id:
                 from backend.services.progress_tracker import ProgressTracker
                 ProgressTracker().update(job_id, "image_generation", step + 1, steps, f"Flux generation progress: step {step + 1}/{steps}")
