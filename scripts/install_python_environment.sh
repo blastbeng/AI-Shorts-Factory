@@ -33,6 +33,8 @@ echo "Installazione di flash-attn 2.7.4.post1 (compatibile con PyTorch 2.6)..."
 # Ensure CUDA toolkit is found
 export CUDA_HOME=${CUDA_HOME:-/usr/local/cuda}
 export PATH=$CUDA_HOME/bin:$PATH
+export MAX_JOBS=8
+export TORCH_CUDA_ARCH_LIST="8.6"
 if command -v nvcc &> /dev/null; then
     pip install flash-attn==2.7.4.post1 --no-build-isolation || echo "[WARN] flash-attn non installato (richiede CUDA toolkit)."
 else
