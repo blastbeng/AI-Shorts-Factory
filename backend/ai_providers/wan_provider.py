@@ -81,7 +81,12 @@ class WanProvider(BaseAIProvider):
                 self.base_model_path,
                 torch_dtype=torch.float16,
                 low_cpu_mem_usage=True,
+                transformer=None,          # <-- skip loading the default FP16 transformer
             )
+            if self.pipeline.transformer is not None:
+                logger.warning("Base pipeline loaded a transformer despite transformer=None. Discarding it.")
+                del self.pipeline.transformer
+                self.pipeline.transformer = None
             ram_gb = process.memory_info().rss / 1024**3
             vram_used = torch.cuda.memory_allocated(gpu_id) / 1024**3 if torch.cuda.is_available() else 0
             logger.info(f"[MEM] After base pipeline: RAM {ram_gb:.2f} GB, VRAM {vram_used:.2f} GB")
@@ -202,21 +207,34 @@ class WanProvider(BaseAIProvider):
             vram_before = torch.cuda.memory_allocated() / 1024**3 if torch.cuda.is_available() else 0
             logger.info(f"[MEM] Before clip {i+1} generation: RAM {ram_before:.2f} GB, VRAM {vram_before:.2f} GB")
 
-            with torch.inference_mode():
-                output = self.pipeline(
-                    image=current_image,
-                    prompt=prompt,
-                    negative_prompt="blurry, distorted, glitchy, low quality, bad anatomy, watermark, text, deformed, mutated, extra limbs, bad framing",
-                    num_inference_steps=steps,
-                    num_frames=frames_per_clip,
-                    height=height,
-                    width=width,
-                    guidance_scale=3.5,
-                    generator=generator,
-                    output_type="pil",
-                    callback_on_step_end=progress_callback,
-                    callback_on_step_end_tensor_inputs=[]
-                ).frames[0]
+            # Attempt generation; if OOM, halve frames and retry once
+            current_frames = frames_per_clip
+            for attempt in range(2):
+                try:
+                    with torch.inference_mode():
+                        output = self.pipeline(
+                            image=current_image,
+                            prompt=prompt,
+                            negative_prompt="blurry, distorted, glitchy, low quality, bad anatomy, watermark, text, deformed, mutated, extra limbs, bad framing",
+                            num_inference_steps=steps,
+                            num_frames=current_frames,
+                            height=height,
+                            width=width,
+                            guidance_scale=3.5,
+                            generator=generator,
+                            output_type="pil",
+                            callback_on_step_end=progress_callback,
+                            callback_on_step_end_tensor_inputs=[]
+                        ).frames[0]
+                    break  # success, exit retry loop
+                except (torch.cuda.OutOfMemoryError, torch.OutOfMemoryError, RuntimeError) as e:
+                    if "out of memory" in str(e).lower() and attempt == 0:
+                        logger.warning(f"OOM with {current_frames} frames, retrying with {current_frames // 2} frames...")
+                        current_frames = max(8, current_frames // 2)
+                        gc.collect()
+                        torch.cuda.empty_cache()
+                    else:
+                        raise
 
             # Memory after generation
             ram_after = process.memory_info().rss / 1024**3
