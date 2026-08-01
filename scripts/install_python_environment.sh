@@ -46,7 +46,7 @@ echo "Rimozione delle vecchie librerie NCCL e cuDNN per evitare conflitti di fil
 pip uninstall -y nvidia-nccl-cu12 nvidia-cudnn-cu12
 
 echo "Installazione forzata di nvidia-nccl-cu12==2.23.4 e nvidia-cudnn-cu12==9.1.0.70 per risolvere ncclCommResume e compatibilità PyTorch 2.6..."
-pip install nvidia-nccl-cu12==2.23.4 nvidia-cudnn-cu12==9.1.0.70
+pip install nvidia-nccl-cu12==2.23.4 nvidia-cudnn-cu12==9.1.0.70 --no-deps
 
 # Re-export library path before importing torch (SpaCy may trigger torch import)
 SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
