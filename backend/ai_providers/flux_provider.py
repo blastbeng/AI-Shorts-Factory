@@ -113,14 +113,17 @@ class FluxProvider(BaseAIProvider):
                 logger.info("Skipping Flash Attention/xFormers for Flux to ensure compatibility with sequential CPU offload.")
 
                 # Determine if we need CPU offload based on VRAM
-                use_offload = gpu['vram_gb'] < 20
-                if use_offload:
-                    logger.info(
-                        f"VRAM {gpu['vram_gb']}GB < 20GB, uso model CPU offload."
-                    )
-                else:
-                    self.pipeline.transformer.to(device)
-                    self.pipeline.vae.to(device)
+                #use_offload = gpu['vram_gb'] < 20
+                #if use_offload:
+                #    logger.info(
+                #        f"VRAM {gpu['vram_gb']}GB < 20GB, uso model CPU offload."
+                #    )
+                #else:
+                #    self.pipeline.transformer.to(device)
+                #    self.pipeline.vae.to(device)
+
+                self.pipeline.transformer.to(device)
+                self.pipeline.vae.to(device)
 
                 logger.info(f"Flux device: {self.pipeline.transformer.device}")
 
