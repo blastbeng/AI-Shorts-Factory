@@ -117,7 +117,28 @@ class WanProvider(BaseAIProvider):
         )
         self.pipeline.transformer = transformer
 
+        # Compile transformer for faster inference (PyTorch 2.0+)
+        try:
+            self.pipeline.transformer = torch.compile(
+                self.pipeline.transformer, mode="reduce-overhead"
+            )
+            logger.info("Transformer compiled with torch.compile (reduce-overhead).")
+        except Exception as e:
+            logger.warning(f"torch.compile not available ({e}), using eager mode.")
+
         self.pipeline.to(device)
+
+        # Enable Flash Attention for faster inference and lower memory
+        try:
+            self.pipeline.enable_flash_attention()
+            logger.info("Flash Attention enabled for Wan pipeline.")
+        except Exception as e:
+            logger.warning(f"Flash Attention not available ({e}), falling back to xformers/slicing.")
+            try:
+                self.pipeline.enable_xformers_memory_efficient_attention()
+                logger.info("xFormers memory efficient attention enabled.")
+            except Exception:
+                logger.warning("xFormers not available, keeping attention slicing only.")
 
         if hasattr(self.pipeline, "enable_vae_slicing"):
             self.pipeline.enable_vae_slicing()
