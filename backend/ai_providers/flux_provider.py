@@ -53,6 +53,8 @@ class FluxProvider(BaseAIProvider):
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
+        logger.info(f"Flux device: {self.pipeline.transformer.device}")
+
         if self.pipeline is None:
             logger.info("Caricamento pipeline Flux GGUF...")
             try:
@@ -91,6 +93,7 @@ class FluxProvider(BaseAIProvider):
                 )
                 self.pipeline.vae.enable_tiling()
                 self.pipeline.vae.enable_slicing()
+                self.pipeline.vae.config.force_upcast = False
 
                 # Flash Attention and xFormers can conflict with sequential CPU offload.
                 # We rely on VAE tiling/slicing and sequential offload for memory management.
@@ -111,13 +114,6 @@ class FluxProvider(BaseAIProvider):
             except Exception as e:
                 logger.exception("Errore nel caricamento del modello Flux.")
                 raise e
-            
-        def progress_callback(pipe, step, timestep, callback_kwargs):
-            logger.info(f"Flux generation progress: step {step + 1}/{steps}")
-            if job_id:
-                from backend.services.progress_tracker import ProgressTracker
-                ProgressTracker().update(job_id, "image_generation", step + 1, steps, f"Flux generation progress: step {step + 1}/{steps}")
-            return callback_kwargs
 
         print(
             "transformer dtype:",
@@ -129,13 +125,6 @@ class FluxProvider(BaseAIProvider):
         )
 
         import gc
-
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-            try:
-                torch.cuda.set_per_process_memory_fraction(0.85)
-            except Exception:
-                pass
         gc.collect()
         try:
             import ctypes
@@ -145,15 +134,13 @@ class FluxProvider(BaseAIProvider):
 
         logger.info(f"Generazione immagine per prompt: {prompt}")
         try:
-            with torch.inference_mode():
+            with torch.inference_mode(), torch.autocast("cuda",dtype=torch.float16):
                 image = self.pipeline(
                     prompt, 
                     num_inference_steps=steps,
                     guidance_scale=0.0,
                     width=width,
                     height=height, 
-                    callback_on_step_end=progress_callback,
-                    callback_on_step_end_tensor_inputs=[]
                 ).images[0]
         except Exception as e:
             logger.error(f"Errore durante la generazione dell'immagine: {e}")
