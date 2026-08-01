@@ -45,7 +45,7 @@ class WanProvider(BaseAIProvider):
     def health_check(self):
         return self.install_status() == "installed"
 
-    def generate(self, prompts: list, output_path: str, *args, frames_per_clip=int(os.getenv("GEN_FRAMES", 33)), width=int(os.getenv("GEN_WIDTH", 256)), height=int(os.getenv("GEN_HEIGHT", 448)), steps=int(os.getenv("GEN_WAN_STEPS", 40)), **kwargs):
+    def generate(self, prompts: list, output_path: str, *args, frames_per_clip=int(os.getenv("GEN_FRAMES", 25)), width=int(os.getenv("GEN_WIDTH", 256)), height=int(os.getenv("GEN_HEIGHT", 448)), steps=int(os.getenv("GEN_WAN_STEPS", 40)), **kwargs):
         if not self.health_check():
             raise RuntimeError("Modello Wan 2.2 5B non installato.")
             
@@ -212,7 +212,7 @@ class WanProvider(BaseAIProvider):
                         callback_on_step_end=progress_callback,
                         callback_on_step_end_tensor_inputs=[]
                     ).frames[0]
-            except (torch.cuda.OutOfMemoryError, RuntimeError) as e:
+            except (torch.cuda.OutOfMemoryError, torch.OutOfMemoryError, RuntimeError) as e:
                 if "out of memory" in str(e).lower():
                     logger.warning("OOM with model offload, switching to sequential CPU offload and retrying...")
                     # Clean up and re-enable with sequential offload
