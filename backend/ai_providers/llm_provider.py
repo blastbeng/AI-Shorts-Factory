@@ -56,7 +56,6 @@ class LLMProvider(BaseAIProvider):
                 elif p == "-t" and i+1 < len(params_list): self.n_threads = int(params_list[i+1])
                 elif p == "-b" and i+1 < len(params_list): self.n_batch = int(params_list[i+1])
                 elif p == "-ub" and i+1 < len(params_list): self.n_ubatch = int(params_list[i+1])
-                elif p == "--tensor-split" and i+1 < len(params_list): self.tensor_split = [float(x) for x in params_list[i+1].split(",")]
                 elif p == "--flash-attn" and i+1 < len(params_list): self.flash_attn = params_list[i+1].lower() == "on"
                 elif p == "--cache-type-k" and i+1 < len(params_list):
                     val = params_list[i+1].lower()
