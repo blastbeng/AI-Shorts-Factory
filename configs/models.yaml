@@ -35,12 +35,12 @@ video:
     path: ./models/video/ltx_video/ltxv-13b-0.9.8-dev-fp8.safetensors
     status: installed
     vram_required_gb: 12
-  wan_2_2_5b:
+  wan_2_2_14b:
     backend: rocm
-    path: ./models/video/wan_2_2_5b/wan2.2_ti2v_5B_fp8.safetensors
-    base_model_path: ./models/video/wan_2_2_5b/base_model
+    path: ./models/video/wan_2_2_14b/Wan2_2-I2V-A14B-HIGH_fp8_e4m3fn_scaled_KJ.safetensors
+    base_model_path: ./models/video/wan_2_2_14b/base_model
     status: installed
-    vram_required_gb: 8
+    vram_required_gb: 20
     offload_strategy: "sequential"
 voice:
   kokoro_tts:

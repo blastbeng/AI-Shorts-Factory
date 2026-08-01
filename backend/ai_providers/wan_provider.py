@@ -27,7 +27,7 @@ class WanProvider(BaseAIProvider):
     def __init__(self):
         with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
             self.models_config = yaml.safe_load(f)
-        self.model_info = self.models_config.get("video", {}).get("wan_2_2_5b", {})
+        self.model_info = self.models_config.get("video", {}).get("wan_2_2_14b", {})
         self.offload_strategy = self.model_info.get("offload_strategy", "model")
         self.gm = GPUManager()
         self.pipeline = None
@@ -65,11 +65,18 @@ class WanProvider(BaseAIProvider):
         gpu_id = int(device.split(":")[-1]) if ":" in device else 0
         
         if self.pipeline is None:
-            logger.info("Caricamento pipeline Wan 2.2 5B (Img2Video) da FP8...")
+            logger.info("Caricamento pipeline Wan 2.2 14B (Img2Video) da FP8...")
             model_path = os.path.abspath(self.model_info.get("path"))
-            base_model_path = self.model_info.get("base_model_path", "Wan-AI/Wan2.2-TI2V-5B-Diffusers")
+            base_model_path = self.model_info.get("base_model_path", "Wan-AI/Wan2.2-TI2V-14B-Diffusers")
             
-            logger.info(f"Caricamento transformer FP16 da {base_model_path}/transformer...")
+            # Load FP8 state dict and convert to float16
+            logger.info(f"Caricamento transformer FP8 da {model_path}...")
+            state_dict = torch.load(model_path, map_location="cpu")
+            state_dict.pop("scaled_fp8", None)  # remove non-model key
+            for k in state_dict:
+                state_dict[k] = state_dict[k].to(torch.float16)
+            
+            # Load transformer config from base model, then inject FP8 weights
             transformer = WanTransformer3DModel.from_pretrained(
                 base_model_path,
                 subfolder="transformer",
@@ -77,6 +84,8 @@ class WanProvider(BaseAIProvider):
                 low_cpu_mem_usage=True,
                 use_safetensors=True
             )
+            transformer.load_state_dict(state_dict, strict=True)
+            del state_dict
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
@@ -222,7 +231,7 @@ class WanProvider(BaseAIProvider):
                     gc.collect()
                     torch.cuda.empty_cache()
                     # Rebuild pipeline with sequential offload
-                    _base_model_path = self.model_info.get("base_model_path", "Wan-AI/Wan2.2-TI2V-5B-Diffusers")
+                    _base_model_path = self.model_info.get("base_model_path", "Wan-AI/Wan2.2-TI2V-14B-Diffusers")
                     self.pipeline = WanImageToVideoPipeline.from_pretrained(
                         _base_model_path,
                         transformer=_transformer,
@@ -370,7 +379,7 @@ class WanProvider(BaseAIProvider):
         return output_path
 
     def get_capabilities(self):
-        return {"type": "video", "model": "wan_2_2_5b"}
+        return {"type": "video", "model": "wan_2_2_14b"}
 
     def get_gpu_requirements(self):
         return {
