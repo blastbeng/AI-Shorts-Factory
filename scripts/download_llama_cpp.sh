@@ -7,8 +7,8 @@ echo "=== Download del modello LLM (Qwen GGUF) ==="
 sudo mkdir -p /opt/models
 
 # Scarica il modello Qwen
-MODEL_URL="https://huggingface.co/mradermacher/Huihui-Qwen3-Omni-30B-A3B-Instruct-abliterated-i1-GGUF/resolve/main/Huihui-Qwen3-Omni-30B-A3B-Instruct-abliterated.i1-Q6_K.gguf"
-MODEL_PATH="/opt/models/Huihui-Qwen3-Omni-30B-A3B-Instruct-abliterated.i1-Q6_K.gguf"
+MODEL_URL="https://huggingface.co/mradermacher/Qwen3.5-9B-Claude-4.6-HighIQ-INSTRUCT-HERETIC-UNCENSORED-GGUF/resolve/main/Qwen3.5-9B-Claude-4.6-HighIQ-INSTRUCT-HERETIC-UNCENSORED.Q4_K_M.gguf"
+MODEL_PATH="./models/text/Qwen3.5-9B-Claude-4.6-HighIQ-INSTRUCT-HERETIC-UNCENSORED.Q4_K_M.gguf"
 
 # Verifica se il file esiste e ha una dimensione maggiore di 0
 if [ -f "$MODEL_PATH" ] && [ -s "$MODEL_PATH" ]; then

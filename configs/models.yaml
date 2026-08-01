@@ -26,8 +26,8 @@ speech:
 text:
   llm_base:
     backend: cuda
-    model_name: Huihui-Qwen3-Omni-30B-A3B-Instruct-abliterated.i1-Q6_K.gguf
-    path: /opt/models/Huihui-Qwen3-Omni-30B-A3B-Instruct-abliterated.i1-Q6_K.gguf
+    model_name: Qwen3.5-9B-Claude-4.6-HighIQ-INSTRUCT-HERETIC-UNCENSORED.Q4_K_M.gguf
+    path: ./models/text/Qwen3.5-9B-Claude-4.6-HighIQ-INSTRUCT-HERETIC-UNCENSORED.Q4_K_M.gguf
     status: installed
 video:
   ltx_video:
