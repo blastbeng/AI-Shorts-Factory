@@ -53,7 +53,6 @@ class FluxProvider(BaseAIProvider):
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
-        logger.info(f"Flux device: {self.pipeline.transformer.device}")
 
         if self.pipeline is None:
             logger.info("Caricamento pipeline Flux GGUF...")
@@ -111,6 +110,9 @@ class FluxProvider(BaseAIProvider):
                     )
                 else:
                     self.pipeline.to(device)
+
+                logger.info(f"Flux device: {self.pipeline.transformer.device}")
+                
             except Exception as e:
                 logger.exception("Errore nel caricamento del modello Flux.")
                 raise e
