@@ -3,9 +3,6 @@ set -e
 
 echo "=== Download del modello LLM (Qwen GGUF) ==="
 
-# Crea la directory per i modelli se non esiste
-sudo mkdir -p /opt/models
-
 # Scarica il modello Qwen
 MODEL_URL="https://huggingface.co/mradermacher/Qwen3.5-9B-Claude-4.6-HighIQ-INSTRUCT-HERETIC-UNCENSORED-GGUF/resolve/main/Qwen3.5-9B-Claude-4.6-HighIQ-INSTRUCT-HERETIC-UNCENSORED.Q4_K_M.gguf"
 MODEL_PATH="./models/text/Qwen3.5-9B-Claude-4.6-HighIQ-INSTRUCT-HERETIC-UNCENSORED.Q4_K_M.gguf"
