@@ -23,6 +23,9 @@ pip install -r requirements.txt
 echo "Reinstallazione di PyTorch con supporto CUDA per GPU NVIDIA (dopo requirements.txt)..."
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124 --force-reinstall
 
+echo "Aggiornamento forzato di nvidia-nccl-cu12 per risolvere il problema ncclCommResume..."
+pip install --upgrade --force-reinstall nvidia-nccl-cu12
+
 # Ensure PyTorch's bundled libraries are found first
 SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
 export LD_LIBRARY_PATH="$SITE_PACKAGES/torch/lib:$SITE_PACKAGES/nvidia/nccl/lib:$LD_LIBRARY_PATH"
