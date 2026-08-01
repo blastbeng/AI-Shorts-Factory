@@ -175,11 +175,16 @@ class WanProvider(BaseAIProvider):
             # Replace the pipeline's transformer with the FP8 one.
             self.pipeline.transformer = transformer
 
-            # Verify transformer dtype
+            # FP8 conv3d is not supported on ROCm; convert to float16 for inference.
+            # This will increase VRAM usage but is required for compatibility.
+            logger.warning("FP8 conv3d not supported on this backend. Converting transformer to float16 (VRAM usage will increase).")
+            self.pipeline.transformer = self.pipeline.transformer.to(dtype=torch.float16)
+
+            # Verify transformer dtype (now expected to be float16 after conversion)
             param_dtype = next(self.pipeline.transformer.parameters()).dtype
             logger.info(f"Transformer parameter dtype: {param_dtype}")
-            if param_dtype not in (torch.float8_e4m3fn, torch.float8_e4m3fnuz, torch.float8_e5m2, torch.float8_e5m2fnuz):
-                logger.warning("Transformer is NOT in FP8! Memory usage may be higher than expected.")
+            if param_dtype != torch.float16:
+                logger.warning(f"Transformer dtype is {param_dtype}, expected float16. This may cause issues.")
 
             ram_gb = process.memory_info().rss / 1024**3
             vram_used = torch.cuda.memory_allocated(gpu_id) / 1024**3 if torch.cuda.is_available() else 0
