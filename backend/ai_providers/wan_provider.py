@@ -43,7 +43,7 @@ class WanProvider(BaseAIProvider):
     def health_check(self):
         return self.install_status() == "installed"
 
-    def generate(self, prompts: list, output_path: str, *args, frames_per_clip=int(os.getenv("GEN_FRAMES", 49)), width=int(os.getenv("GEN_WIDTH", 256)), height=int(os.getenv("GEN_HEIGHT", 448)), steps=int(os.getenv("GEN_WAN_STEPS", 30)), **kwargs):
+    def generate(self, prompts: list, output_path: str, *args, frames_per_clip=int(os.getenv("GEN_FRAMES", 49)), width=int(os.getenv("GEN_WIDTH", 256)), height=int(os.getenv("GEN_HEIGHT", 448)), steps=int(os.getenv("GEN_WAN_STEPS", 40)), **kwargs):
         if not self.health_check():
             raise RuntimeError("Modello Wan 2.2 5B non installato.")
             
@@ -187,11 +187,12 @@ class WanProvider(BaseAIProvider):
                 output = self.pipeline(
                     image=current_image,
                     prompt=prompt,
+                    negative_prompt="blurry, distorted, glitchy, low quality, bad anatomy, watermark, text, deformed, mutated, extra limbs, bad framing",
                     num_inference_steps=steps,
                     num_frames=frames_per_clip,
                     height=height,
                     width=width,
-                    guidance_scale=4.0,
+                    guidance_scale=5.0,
                     generator=generator,
                     callback_on_step_end=progress_callback,
                     callback_on_step_end_tensor_inputs=[]
