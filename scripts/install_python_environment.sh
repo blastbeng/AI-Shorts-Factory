@@ -23,6 +23,9 @@ pip install -r requirements.txt
 echo "Installazione di torchcodec 0.9.1 (CPU) per compatibilità CUDA..."
 pip install torchcodec==0.9.1 --index-url https://download.pytorch.org/whl/cpu --force-reinstall
 
+echo "Installazione ninja per velocizzare le build..."
+pip install ninja
+
 echo "Rimozione di flash-attn incompatible..."
 pip uninstall -y flash-attn
 
