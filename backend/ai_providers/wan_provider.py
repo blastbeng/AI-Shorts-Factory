@@ -41,7 +41,6 @@ class WanProvider(BaseAIProvider):
         return self.install_status() == "installed"
 
     def _cleanup_base_model_dir(self):
-        """Remove stray transformer variant folders and fix model_index.json."""
         import json
         import shutil
 
@@ -49,14 +48,19 @@ class WanProvider(BaseAIProvider):
         if not os.path.isdir(base_dir):
             return
 
-        # Remove transformer_* folders (except 'transformer')
+        # 1. Remove any transformer_* folders except 'transformer'
         for entry in os.listdir(base_dir):
             full_path = os.path.join(base_dir, entry)
-            if os.path.isdir(full_path) and entry.startswith("transformer_"):
+            if os.path.isdir(full_path) and entry.startswith("transformer_") and entry != "transformer":
                 logger.warning(f"Removing stray transformer variant folder: {entry}")
-                shutil.rmtree(full_path, ignore_errors=True)
+                try:
+                    shutil.rmtree(full_path)
+                    logger.info(f"Successfully removed {entry}")
+                except Exception as e:
+                    logger.error(f"Failed to remove {entry}: {e}")
+                    raise RuntimeError(f"Cannot remove stray folder {entry}. Please delete it manually: {full_path}")
 
-        # Remove weight files inside transformer/ (keep only config.json)
+        # 2. Remove any weight files inside transformer/ (keep only config.json)
         transformer_dir = os.path.join(base_dir, "transformer")
         if os.path.isdir(transformer_dir):
             for entry in os.listdir(transformer_dir):
@@ -67,17 +71,23 @@ class WanProvider(BaseAIProvider):
                     logger.warning(f"Removing stray weight file in transformer/: {entry}")
                     os.remove(full_path)
 
-        # Fix model_index.json: ensure 'transformer' is a single string, not a list
+        # 3. Fix model_index.json: ensure 'transformer' points to "transformer" (single string)
         model_index_path = os.path.join(base_dir, "model_index.json")
-        if os.path.exists(model_index_path):
-            with open(model_index_path, "r") as f:
-                model_index = json.load(f)
-            transformer_val = model_index.get("transformer")
-            if isinstance(transformer_val, list):
-                logger.warning(f"Fixing model_index.json: transformer was {transformer_val}, setting to 'transformer'")
-                model_index["transformer"] = "transformer"
-                with open(model_index_path, "w") as f:
-                    json.dump(model_index, f, indent=2)
+        if not os.path.exists(model_index_path):
+            raise FileNotFoundError(f"model_index.json missing in {base_dir}")
+
+        with open(model_index_path, "r") as f:
+            model_index = json.load(f)
+
+        transformer_val = model_index.get("transformer")
+        if transformer_val != "transformer":
+            logger.warning(f"Fixing model_index.json: transformer was {transformer_val}, setting to 'transformer'")
+            model_index["transformer"] = "transformer"
+            with open(model_index_path, "w") as f:
+                json.dump(model_index, f, indent=2)
+            logger.info("model_index.json updated successfully.")
+        else:
+            logger.info("model_index.json transformer entry already correct.")
 
     def generate(self, prompts: list, output_path: str, *args, frames_per_clip=int(os.getenv("GEN_FRAMES", 49)), width=int(os.getenv("GEN_WIDTH", 256)), height=int(os.getenv("GEN_HEIGHT", 448)), steps=int(os.getenv("GEN_WAN_STEPS", 40)), **kwargs):
         if not self.health_check():
