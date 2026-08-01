@@ -1,8 +1,5 @@
 import os
-os.environ["TORCH_BLAS_PREFER_HIPBLASLT"] = "0"
-os.environ["TORCH_BLAS_PREFER_HIPBLAS"] = "1"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
-os.environ["PYTORCH_HIP_ALLOC_CONF"] = "expandable_segments:True"
 os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
 os.environ["SAFETENSORS_FAST_GPU"] = "1"
 

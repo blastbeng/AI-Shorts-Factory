@@ -197,7 +197,7 @@ class LLMProvider(BaseAIProvider):
 
     def get_gpu_requirements(self):
         if self.provider_type == "llama_cpp":
-            return {"vram_required_gb": 0, "backend": "vulkan"}
+            return {"vram_required_gb": 0, "backend": "cuda"}
         return {"vram_required_gb": 0, "backend": "api"}
 
     def cleanup(self):

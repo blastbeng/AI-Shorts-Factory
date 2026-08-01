@@ -7,7 +7,7 @@ Piattaforma locale autonoma per la generazione di video short-form (TikTok, YouT
 - Linux (Ubuntu/Debian raccomandato)
 - Python 3.10+
 - Node.js 18+ e npm
-- GPU con driver ROCm (AMD) o CUDA (NVIDIA)
+- GPU con driver CUDA (NVIDIA)
 
 ## Installazione
 

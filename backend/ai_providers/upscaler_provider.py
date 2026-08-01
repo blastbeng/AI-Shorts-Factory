@@ -71,7 +71,7 @@ class UpscalerProvider(BaseAIProvider):
         return {"type": "video", "model": "realesrgan"}
 
     def get_gpu_requirements(self):
-        return {"vram_required_gb": 4, "backend": "rocm"}
+        return {"vram_required_gb": 4, "backend": "cuda"}
 
     def cleanup(self):
         if self.model is not None:

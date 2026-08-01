@@ -6,14 +6,12 @@
 |---|---|
 | CPU | AMD Ryzen 7 7800X3D |
 | RAM | 64GB |
-| GPU 1 | AMD RX 7800 XT 16GB |
-| GPU 2 | NVIDIA RTX 3060 12GB |
+| GPU 1 | NVIDIA RTX 3060 12GB |
 
-## Supporto Multi-GPU
+## Supporto GPU
 
-- ROCm (AMD)
-- Vulkan (cross-vendor)
 - CUDA (NVIDIA)
+- Vulkan (cross-vendor, per llama.cpp)
 
 ## Modelli AI Richiesti
 

@@ -14,15 +14,6 @@ else
     ERRORS=$((ERRORS + 1))
 fi
 
-# Verifica ROCm (AMD)
-if command -v rocm-smi &> /dev/null; then
-    echo "[OK] ROCm (rocm-smi) rilevato."
-else
-    echo "[AVVISO] rocm-smi non trovato. ROCm non sembra installato."
-    echo "         Installa i driver AMD e ROCm manualmente se intendi usare GPU AMD."
-    ERRORS=$((ERRORS + 1))
-fi
-
 # Verifica Vulkan
 if command -v vulkaninfo &> /dev/null; then
     echo "[OK] Vulkan (vulkaninfo) rilevato."
