@@ -68,11 +68,13 @@ class WanProvider(BaseAIProvider):
             model_path = os.path.abspath(self.model_info.get("path"))
             base_model_path = self.model_info.get("base_model_path", "Wan-AI/Wan2.2-TI2V-5B-Diffusers")
             
-            logger.info(f"Caricamento transformer FP8 (cast a FP16) da {model_path}...")
-            transformer = WanTransformer3DModel.from_single_file(
-                model_path,
-                config=os.path.join(base_model_path, "transformer"),
-                torch_dtype=torch.float16
+            logger.info(f"Caricamento transformer FP16 da {base_model_path}/transformer...")
+            transformer = WanTransformer3DModel.from_pretrained(
+                base_model_path,
+                subfolder="transformer",
+                torch_dtype=torch.float16,
+                low_cpu_mem_usage=True,
+                use_safetensors=True
             )
             gc.collect()
             if torch.cuda.is_available():
@@ -136,32 +138,9 @@ class WanProvider(BaseAIProvider):
         for i, prompt_data in enumerate(prompts):
             img_prompt, vid_prompt = prompt_data
             if i == 0:
-                prompt = (
-                    f"{img_prompt}. "
-                    f"{vid_prompt}. "
-                    "consistent character identity, "
-                    "natural body movement, "
-                    "realistic motion, "
-                    "stable camera, "
-                    "realistic physics"
-                )
+                prompt = f"{img_prompt}. {vid_prompt}, high quality, realistic, smooth motion, 4k"
             else:
-                prompt = (
-                    f"{img_prompt}. "
-                    f"{vid_prompt}. "
-                    "Continue the exact same shot from the previous frame. "
-                    "Do not change character identity. "
-                    "Do not redesign the scene. "
-                    "Maintain identical face, clothes, lighting and environment. "
-                    "same character appearance, "
-                    "same clothing, "
-                    "same environment, "
-                    "consistent character identity, "
-                    "natural body movement, "
-                    "realistic motion, "
-                    "stable camera, "
-                    "realistic physics"
-                )
+                prompt = f"{vid_prompt}, high quality, realistic, smooth motion, 4k"
 
             logger.info(f"Pulizia VRAM prima della generazione clip {i+1}/{len(prompts)}...")
             gc.collect()
