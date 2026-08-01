@@ -23,9 +23,6 @@ pip install -r requirements.txt
 echo "Installazione di torchcodec 0.9.1 (CPU) per compatibilità CUDA..."
 pip install torchcodec==0.9.1 --index-url https://download.pytorch.org/whl/cpu --force-reinstall
 
-echo "Installazione dipendenze (numpy<2.1 pillow<12.0)..."
-pip install "numpy<2.1,>=1.21" "pillow<12.0"
-
 echo "Rimozione di flash-attn incompatible..."
 pip uninstall -y flash-attn
 
@@ -89,6 +86,9 @@ if ! python -c "import llama_cpp" 2>/dev/null; then
 else
     echo "[OK] llama-cpp-python già installato."
 fi
+
+echo "Installazione dipendenze (numpy<2.1 pillow<12.0)..."
+pip install "numpy<2.1,>=1.21" "pillow<12.0"
 
 echo "Ambiente Python configurato con successo."
 deactivate
