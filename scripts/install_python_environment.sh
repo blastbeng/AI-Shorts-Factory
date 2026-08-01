@@ -20,19 +20,6 @@ pip install git+https://github.com/hkchengrex/MMAudio.git
 echo "Installazione delle librerie Python di base..."
 pip install -r requirements.txt
 
-echo "Reinstallazione di PyTorch con supporto CUDA per GPU NVIDIA (dopo requirements.txt)..."
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124 --force-reinstall
-
-echo "Rimozione delle vecchie librerie NCCL e cuDNN per evitare conflitti di file..."
-pip uninstall -y nvidia-nccl-cu12 nvidia-cudnn-cu12
-
-echo "Installazione forzata di nvidia-nccl-cu12==2.23.4 e nvidia-cudnn-cu12==9.1.0.70 per risolvere ncclCommResume e compatibilità PyTorch 2.6..."
-pip install nvidia-nccl-cu12==2.23.4 nvidia-cudnn-cu12==9.1.0.70
-
-# Ensure PyTorch's bundled libraries are found first
-SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
-export LD_LIBRARY_PATH="$SITE_PACKAGES/torch/lib:$SITE_PACKAGES/nvidia/nccl/lib:$LD_LIBRARY_PATH"
-
 echo "Installazione di torchcodec 0.9.1 (CPU) per compatibilità CUDA..."
 pip install torchcodec==0.9.1 --index-url https://download.pytorch.org/whl/cpu --force-reinstall
 
@@ -49,8 +36,17 @@ else
     echo "[WARN] nvcc non trovato. flash-attn non può essere compilato. Verrà usato xformers come fallback."
 fi
 
-echo "Installazione di xformers come fallback..."
-pip install xformers --no-build-isolation || echo "[WARN] xformers non installato."
+echo "Installazione di xformers come fallback (senza aggiornare PyTorch)..."
+pip install xformers --no-build-isolation --no-deps || echo "[WARN] xformers non installato."
+
+echo "Reinstallazione finale di PyTorch 2.6.0 con supporto CUDA per GPU NVIDIA..."
+pip install torch==2.6.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124 --force-reinstall
+
+echo "Rimozione delle vecchie librerie NCCL e cuDNN per evitare conflitti di file..."
+pip uninstall -y nvidia-nccl-cu12 nvidia-cudnn-cu12
+
+echo "Installazione forzata di nvidia-nccl-cu12==2.23.4 e nvidia-cudnn-cu12==9.1.0.70 per risolvere ncclCommResume e compatibilità PyTorch 2.6..."
+pip install nvidia-nccl-cu12==2.23.4 nvidia-cudnn-cu12==9.1.0.70
 
 # Re-export library path before importing torch (SpaCy may trigger torch import)
 SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
