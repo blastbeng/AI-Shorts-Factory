@@ -107,10 +107,8 @@ class FluxProvider(BaseAIProvider):
                 # Determine if we need CPU offload based on VRAM
                 use_offload = gpu['vram_gb'] < 20
                 if use_offload:
-                    logger.info(f"VRAM {gpu['vram_gb']}GB < 20GB, uso model CPU offload.")
-                    self.pipeline.enable_model_cpu_offload(
-                        gpu_id=int(device.split(":")[-1])
-                    )
+                    logger.info(f"VRAM {gpu['vram_gb']}GB < 20GB, uso sequential CPU offload.")
+                    self.pipeline.enable_sequential_cpu_offload(device=device)
                 else:
                     self.pipeline.to(device)
             except Exception as e:
@@ -132,6 +130,9 @@ class FluxProvider(BaseAIProvider):
             "text encoder dtype:",
             next(self.pipeline.text_encoder_2.parameters()).dtype
         )
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
         logger.info(f"Generazione immagine per prompt: {prompt}")
         image = self.pipeline(
