@@ -33,10 +33,10 @@ else
 fi
 
 WAN_BASE_DIR="./models/video/wan_2_2_5b/base_model"
-if [ ! -f "$WAN_BASE_DIR/model_index.json" ]; then
+if [ ! -f "$WAN_BASE_DIR/model_index.json" ] || [ ! -f "$WAN_BASE_DIR/transformer/config.json" ]; then
     mkdir -p "$WAN_BASE_DIR"
     echo "Downloading Wan2.2-TI2V-5B-Diffusers base model..."
-    $PYTHON_BIN -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='Wan-AI/Wan2.2-TI2V-5B-Diffusers', local_dir='$WAN_BASE_DIR', ignore_patterns=['transformer/*'])"
+    $PYTHON_BIN -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='Wan-AI/Wan2.2-TI2V-5B-Diffusers', local_dir='$WAN_BASE_DIR', ignore_patterns=['transformer/*.safetensors', 'transformer/*.bin', 'transformer/*.gguf'])"
 else
     echo "[OK] Modello base wan_2_2_5b già installato."
 fi
