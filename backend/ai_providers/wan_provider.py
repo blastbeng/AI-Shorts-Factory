@@ -2,10 +2,6 @@ import os
 os.environ["HSA_OVERRIDE_GFX_VERSION"] = "11.0.0"
 os.environ["TORCH_BLAS_PREFER_HIPBLASLT"] = "0"
 os.environ["TORCH_BLAS_PREFER_HIPBLAS"] = "1"
-os.environ["PYTORCH_HIP_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.9,max_split_size_mb:512"
-os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.9,max_split_size_mb:512"
-os.environ["SAFETENSORS_FAST_GPU"] = "1"
-
 import gc
 import glob
 import yaml
@@ -16,14 +12,11 @@ torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = True
 import numpy as np
 import cv2
 from PIL import Image
-from diffusers import WanImageToVideoPipeline, AutoencoderKLWan
+from diffusers import WanImageToVideoPipeline
 from diffusers import WanTransformer3DModel
-from diffusers import DPMSolverMultistepScheduler
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger
-from safetensors.torch import load_file as safetensors_load
-from safetensors import safe_open
 import imageio
 
 torch.set_num_threads(1)  # reduce CPU memory overhead from parallel operations
@@ -99,10 +92,22 @@ class WanProvider(BaseAIProvider):
                 transformer_dtype = "auto"  # safetensors will keep original FP8
                 logger.warning("torch.float8_e4m3fn not available, loading transformer with dtype='auto' (FP8 preserved).")
 
+            # Get transformer config from the pipeline or from the base model directory
+            if hasattr(self.pipeline, "transformer_config") and self.pipeline.transformer_config is not None:
+                transformer_config = self.pipeline.transformer_config
+                logger.info("Using transformer_config from pipeline.")
+            else:
+                # Load config from the base model's transformer subfolder
+                config_path = os.path.join(self.base_model_path, "transformer", "config.json")
+                if not os.path.exists(config_path):
+                    raise FileNotFoundError(f"Transformer config not found at {config_path}")
+                transformer_config = WanTransformer3DModel.load_config(config_path)
+                logger.info("Loaded transformer config from base model directory.")
+
             logger.info(f"Loading FP8 transformer from {self.model_path} ...")
             transformer = WanTransformer3DModel.from_single_file(
                 self.model_path,
-                config=self.pipeline.transformer.config,
+                config=transformer_config,
                 torch_dtype=transformer_dtype,
             )
             # Replace the pipeline's transformer with the FP8 one.
@@ -141,6 +146,7 @@ class WanProvider(BaseAIProvider):
 
         temp_clips = []
         last_frame = None
+        first_clip_frames = None
         for i, prompt_data in enumerate(prompts):
             img_prompt, vid_prompt = prompt_data
             # Build a consistent scene description
@@ -236,6 +242,11 @@ class WanProvider(BaseAIProvider):
                     else:
                         raise
 
+            actual_frames = len(output)
+            logger.info(f"Clip {i+1} generated with {actual_frames} frames (requested {current_frames})")
+            if first_clip_frames is None:
+                first_clip_frames = actual_frames
+
             # Memory after generation
             ram_after = process.memory_info().rss / 1024**3
             vram_after = torch.cuda.memory_allocated() / 1024**3 if torch.cuda.is_available() else 0
@@ -290,7 +301,7 @@ class WanProvider(BaseAIProvider):
         else:
             # Build ffmpeg filter chain for crossfade
             fade_duration = 0.5
-            clip_duration = frames_per_clip / fps
+            clip_duration = first_clip_frames / fps
             # offset must leave enough time for the fade to finish before the first clip ends
             offset = max(0.0, clip_duration - fade_duration - 0.1)
 
