@@ -23,8 +23,11 @@ pip install -r requirements.txt
 echo "Reinstallazione di PyTorch con supporto CUDA per GPU NVIDIA (dopo requirements.txt)..."
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124 --force-reinstall
 
+echo "Rimozione delle vecchie librerie NCCL e cuDNN per evitare conflitti di file..."
+pip uninstall -y nvidia-nccl-cu12 nvidia-cudnn-cu12
+
 echo "Installazione forzata di nvidia-nccl-cu12==2.23.4 e nvidia-cudnn-cu12==9.1.0.70 per risolvere ncclCommResume e compatibilità PyTorch 2.6..."
-pip install --upgrade --force-reinstall nvidia-nccl-cu12==2.23.4 nvidia-cudnn-cu12==9.1.0.70
+pip install nvidia-nccl-cu12==2.23.4 nvidia-cudnn-cu12==9.1.0.70
 
 # Ensure PyTorch's bundled libraries are found first
 SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
