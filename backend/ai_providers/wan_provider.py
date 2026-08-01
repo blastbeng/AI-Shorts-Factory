@@ -32,7 +32,7 @@ torch.set_num_threads(1)  # reduce CPU memory overhead from parallel operations
 def _load_model_from_safetensors_streaming(model_class, subfolder, base_path, torch_dtype=torch.float16):
     """
     Load a model from a directory containing safetensors files.
-    Streams weights directly into a float16 model to avoid temporary float32 copies.
+    Streams weights directly into a float16 model and drops page cache after each file.
     """
     config = model_class.load_config(base_path, subfolder=subfolder)
     model = model_class.from_config(config, torch_dtype=torch_dtype)
@@ -41,14 +41,24 @@ def _load_model_from_safetensors_streaming(model_class, subfolder, base_path, to
         raise FileNotFoundError(f"No safetensors files found in {os.path.join(base_path, subfolder)}")
     param_dict = dict(model.named_parameters())
     for sf in safetensors_files:
-        with safe_open(sf, framework="pt", device="cpu") as f:
-            for key in f.keys():
-                tensor = f.get_tensor(key)
-                tensor = tensor.to(torch_dtype)
-                if key in param_dict:
-                    param_dict[key].data.copy_(tensor)
-                else:
-                    logger.warning(f"Key {key} not found in {model_class.__name__}, skipping.")
+        file_obj = open(sf, "rb")
+        fd = file_obj.fileno()
+        try:
+            with safe_open(file_obj, framework="pt", device="cpu") as f:
+                for key in f.keys():
+                    tensor = f.get_tensor(key)
+                    tensor = tensor.to(torch_dtype)
+                    if key in param_dict:
+                        param_dict[key].data.copy_(tensor)
+                    else:
+                        logger.warning(f"Key {key} not found in {model_class.__name__}, skipping.")
+        finally:
+            # Drop page cache for this file
+            try:
+                os.posix_fadvise(fd, 0, os.fstat(fd).st_size, os.POSIX_FADV_DONTNEED)
+            except Exception:
+                pass
+            file_obj.close()
     del param_dict
     gc.collect()
     if torch.cuda.is_available():
@@ -113,18 +123,28 @@ class WanProvider(BaseAIProvider):
             # Stream tensors from safetensors file directly into transformer parameters
             logger.info(f"Iniezione pesi FP8 nel transformer (streaming)...")
             from safetensors import safe_open
-            with safe_open(model_path, framework="pt", device="cpu") as f:
-                param_dict = dict(transformer.named_parameters())
-                for key in f.keys():
-                    if key == "scaled_fp8":
-                        continue
-                    tensor = f.get_tensor(key)
-                    tensor = tensor.to(torch.float16)
-                    if key in param_dict:
-                        param_dict[key].data.copy_(tensor)
-                    else:
-                        logger.warning(f"Key {key} not found in transformer, skipping.")
-            del param_dict
+            model_file_obj = open(model_path, "rb")
+            model_fd = model_file_obj.fileno()
+            try:
+                with safe_open(model_file_obj, framework="pt", device="cpu") as f:
+                    param_dict = dict(transformer.named_parameters())
+                    for key in f.keys():
+                        if key == "scaled_fp8":
+                            continue
+                        tensor = f.get_tensor(key)
+                        tensor = tensor.to(torch.float16)
+                        if key in param_dict:
+                            param_dict[key].data.copy_(tensor)
+                        else:
+                            logger.warning(f"Key {key} not found in transformer, skipping.")
+                del param_dict
+            finally:
+                # Drop page cache for the FP8 file
+                try:
+                    os.posix_fadvise(model_fd, 0, os.fstat(model_fd).st_size, os.POSIX_FADV_DONTNEED)
+                except Exception:
+                    pass
+                model_file_obj.close()
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
