@@ -1,9 +1,9 @@
 import os
 os.environ["TORCH_BLAS_PREFER_HIPBLASLT"] = "0"
 os.environ["TORCH_BLAS_PREFER_HIPBLAS"] = "1"
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8,max_split_size_mb:256,roundup_power2_divisions:16"
-os.environ["PYTORCH_HIP_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8,max_split_size_mb:256,roundup_power2_divisions:16"
-os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8,max_split_size_mb:256,roundup_power2_divisions:16"
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8"
+os.environ["PYTORCH_HIP_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8"
+os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.8"
 os.environ["SAFETENSORS_FAST_GPU"] = "1"
 
 import gc
@@ -27,6 +27,7 @@ class WanProvider(BaseAIProvider):
         with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
             self.models_config = yaml.safe_load(f)
         self.model_info = self.models_config.get("video", {}).get("wan_2_2_5b", {})
+        self.offload_strategy = self.model_info.get("offload_strategy", "model")
         self.gm = GPUManager()
         self.pipeline = None
         self.base_seed = 42
@@ -99,20 +100,30 @@ class WanProvider(BaseAIProvider):
                 use_safetensors=True
             )
 
-            # Crucial for 16GB VRAM cards like the RX 7800 XT
-            self.pipeline.enable_model_cpu_offload()
+            # Try model offload first; if OOM occurs, fall back to sequential offload
+            if self.offload_strategy == "sequential":
+                self.pipeline.enable_sequential_cpu_offload()
+                logger.info("Enabled sequential CPU offload (from config).")
+            else:
+                self.pipeline.enable_model_cpu_offload()
+                logger.info("Enabled model CPU offload.")
 
-            # Enable additional memory-saving features for higher resolutions
+            # Enable additional memory-saving features
+            slicing_enabled = False
             if hasattr(self.pipeline, "enable_vae_slicing"):
                 self.pipeline.enable_vae_slicing()
+                slicing_enabled = True
+                logger.info("VAE slicing enabled via pipeline.")
             if hasattr(self.pipeline, "enable_attention_slicing"):
                 self.pipeline.enable_attention_slicing()
-            # Fallback: try VAE-level tiling/slicing if pipeline methods are missing
+                logger.info("Attention slicing enabled.")
             if hasattr(self.pipeline, "vae"):
+                if hasattr(self.pipeline.vae, "enable_slicing") and not slicing_enabled:
+                    self.pipeline.vae.enable_slicing()
+                    logger.info("VAE slicing enabled directly on VAE.")
                 if hasattr(self.pipeline.vae, "enable_tiling"):
                     self.pipeline.vae.enable_tiling()
-                if hasattr(self.pipeline.vae, "enable_slicing"):
-                    self.pipeline.vae.enable_slicing()
+                    logger.info("VAE tiling enabled.")
 
             logger.info(f"Pipeline caricata. Transformer dtype: {self.pipeline.transformer.dtype}")
 
@@ -195,20 +206,70 @@ class WanProvider(BaseAIProvider):
             gc.collect()
             torch.cuda.empty_cache()
 
-            with torch.inference_mode():
-                output = self.pipeline(
-                    image=current_image,
-                    prompt=prompt,
-                    negative_prompt="blurry, distorted, glitchy, low quality, bad anatomy, watermark, text, deformed, mutated, extra limbs, bad framing",
-                    num_inference_steps=steps,
-                    num_frames=frames_per_clip,
-                    height=height,
-                    width=width,
-                    guidance_scale=5.0,
-                    generator=generator,
-                    callback_on_step_end=progress_callback,
-                    callback_on_step_end_tensor_inputs=[]
-                ).frames[0]   # list of PIL Images
+            # Attempt generation; if OOM, switch to sequential offload and retry once
+            try:
+                with torch.inference_mode():
+                    output = self.pipeline(
+                        image=current_image,
+                        prompt=prompt,
+                        negative_prompt="blurry, distorted, glitchy, low quality, bad anatomy, watermark, text, deformed, mutated, extra limbs, bad framing",
+                        num_inference_steps=steps,
+                        num_frames=frames_per_clip,
+                        height=height,
+                        width=width,
+                        guidance_scale=5.0,
+                        generator=generator,
+                        callback_on_step_end=progress_callback,
+                        callback_on_step_end_tensor_inputs=[]
+                    ).frames[0]
+            except (torch.cuda.OutOfMemoryError, RuntimeError) as e:
+                if "out of memory" in str(e).lower():
+                    logger.warning("OOM with model offload, switching to sequential CPU offload and retrying...")
+                    # Clean up and re-enable with sequential offload
+                    _transformer = self.pipeline.transformer
+                    _vae = self.pipeline.vae
+                    del self.pipeline
+                    gc.collect()
+                    torch.cuda.empty_cache()
+                    # Rebuild pipeline with sequential offload
+                    _base_model_path = self.model_info.get("base_model_path", "Wan-AI/Wan2.2-TI2V-5B-Diffusers")
+                    self.pipeline = WanImageToVideoPipeline.from_pretrained(
+                        _base_model_path,
+                        transformer=_transformer,
+                        vae=_vae,
+                        torch_dtype=torch.float16,
+                        low_cpu_mem_usage=True,
+                        use_safetensors=True
+                    )
+                    self.pipeline.enable_sequential_cpu_offload()
+                    # Re-apply slicing if possible
+                    if hasattr(self.pipeline, "enable_vae_slicing"):
+                        self.pipeline.enable_vae_slicing()
+                    if hasattr(self.pipeline, "enable_attention_slicing"):
+                        self.pipeline.enable_attention_slicing()
+                    if hasattr(self.pipeline, "vae"):
+                        if hasattr(self.pipeline.vae, "enable_slicing"):
+                            self.pipeline.vae.enable_slicing()
+                        if hasattr(self.pipeline.vae, "enable_tiling"):
+                            self.pipeline.vae.enable_tiling()
+                    gc.collect()
+                    torch.cuda.empty_cache()
+                    with torch.inference_mode():
+                        output = self.pipeline(
+                            image=current_image,
+                            prompt=prompt,
+                            negative_prompt="blurry, distorted, glitchy, low quality, bad anatomy, watermark, text, deformed, mutated, extra limbs, bad framing",
+                            num_inference_steps=steps,
+                            num_frames=frames_per_clip,
+                            height=height,
+                            width=width,
+                            guidance_scale=5.0,
+                            generator=generator,
+                            callback_on_step_end=progress_callback,
+                            callback_on_step_end_tensor_inputs=[]
+                        ).frames[0]
+                else:
+                    raise
 
             # Extract last frame for next clip conditioning
             last_frame = np.array(output[-1]).copy()
