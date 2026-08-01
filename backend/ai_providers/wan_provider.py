@@ -29,56 +29,19 @@ import imageio
 
 torch.set_num_threads(1)  # reduce CPU memory overhead from parallel operations
 
-def _load_model_from_safetensors_streaming(model_class, subfolder, base_path, torch_dtype=torch.float16):
-    """
-    Load a model from a directory containing safetensors files.
-    Streams weights directly into a float16 model and drops page cache after each file.
-    """
-    config = model_class.load_config(base_path, subfolder=subfolder)
-    model = model_class.from_config(config, torch_dtype=torch_dtype)
-    safetensors_files = sorted(glob.glob(os.path.join(base_path, subfolder, "*.safetensors")))
-    if not safetensors_files:
-        raise FileNotFoundError(f"No safetensors files found in {os.path.join(base_path, subfolder)}")
-    param_dict = dict(model.named_parameters())
-    for sf in safetensors_files:
-        file_obj = open(sf, "rb")
-        fd = file_obj.fileno()
-        try:
-            with safe_open(file_obj, framework="pt", device="cpu") as f:
-                for key in f.keys():
-                    tensor = f.get_tensor(key)
-                    tensor = tensor.to(torch_dtype)
-                    if key in param_dict:
-                        param_dict[key].data.copy_(tensor)
-                    else:
-                        logger.warning(f"Key {key} not found in {model_class.__name__}, skipping.")
-        finally:
-            # Drop page cache for this file
-            try:
-                os.posix_fadvise(fd, 0, os.fstat(fd).st_size, os.POSIX_FADV_DONTNEED)
-            except Exception:
-                pass
-            file_obj.close()
-    del param_dict
-    gc.collect()
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-    try:
-        import ctypes
-        ctypes.CDLL("libc.so.6").malloc_trim(0)
-    except Exception:
-        pass
-    return model
 
 class WanProvider(BaseAIProvider):
     def __init__(self):
         with open(os.getenv("MODELS_CONFIG_PATH", "configs/models.yaml"), "r") as f:
             self.models_config = yaml.safe_load(f)
         self.model_info = self.models_config.get("video", {}).get("wan_2_2_14b", {})
-        self.offload_strategy = self.model_info.get("offload_strategy", "model")
+        self.offload_strategy = self.model_info.get("offload_strategy", "sequential")
         self.gm = GPUManager()
         self.pipeline = None
         self.base_seed = 42
+        # Paths
+        self.model_path = os.path.abspath(self.model_info.get("path"))
+        self.base_model_path = os.path.abspath(self.model_info.get("base_model_path"))
 
     def ram(self):
         p = psutil.Process(os.getpid())
