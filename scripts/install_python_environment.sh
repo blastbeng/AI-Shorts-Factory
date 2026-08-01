@@ -76,9 +76,9 @@ if ! python -c "import llama_cpp" 2>/dev/null; then
     if command -v nvcc &> /dev/null; then
         echo "Installazione di llama-cpp-python con backend CUDA..."
         CMAKE_ARGS="-DGGML_CUDA=on" CMAKE_BUILD_PARALLEL_LEVEL=$(nproc) pip install llama-cpp-python --upgrade --force-reinstall --no-cache-dir -v
-    elif command -v vulkaninfo &> /dev/null; then
-        echo "[WARN] nvcc non trovato. Installazione di llama-cpp-python con backend Vulkan..."
-        CMAKE_ARGS="-DGGML_VULKAN=on" CMAKE_BUILD_PARALLEL_LEVEL=$(nproc) pip install llama-cpp-python --upgrade --force-reinstall --no-cache-dir -v
+    #elif command -v vulkaninfo &> /dev/null; then
+    #    echo "[WARN] nvcc non trovato. Installazione di llama-cpp-python con backend Vulkan..."
+    #    CMAKE_ARGS="-DGGML_VULKAN=on" CMAKE_BUILD_PARALLEL_LEVEL=$(nproc) pip install llama-cpp-python --upgrade --force-reinstall --no-cache-dir -v
     else
         echo "[ERRORE] Nessun backend GPU (CUDA o Vulkan) trovato. Impossibile installare llama-cpp-python con accelerazione GPU."
         exit 1
