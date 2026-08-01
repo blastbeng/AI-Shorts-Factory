@@ -34,12 +34,14 @@ class LLMProvider(BaseAIProvider):
             
             # Parse params
             params_list = self.params.split()
-            self.n_gpu_layers = 0
+            self.n_gpu_layers = int(self.model_info.get("n_gpu_layers", -1))
             self.n_ctx = 4096
             self.n_threads = 8
             self.n_batch = 544
             self.n_ubatch = 544
-            self.tensor_split = None
+            self.tensor_split = self.model_info.get("tensor_split", None)
+            if self.tensor_split:
+                self.tensor_split = [float(x) for x in self.tensor_split]
             self.flash_attn = False
             self.type_k = 0  # Default (F16)
             self.type_v = 0  # Default (F16)
