@@ -102,6 +102,18 @@ class WanProvider(BaseAIProvider):
             # Crucial for 16GB VRAM cards like the RX 7800 XT
             self.pipeline.enable_model_cpu_offload()
 
+            # Enable additional memory-saving features for higher resolutions
+            if hasattr(self.pipeline, "enable_vae_slicing"):
+                self.pipeline.enable_vae_slicing()
+            if hasattr(self.pipeline, "enable_attention_slicing"):
+                self.pipeline.enable_attention_slicing()
+            # Fallback: try VAE-level tiling/slicing if pipeline methods are missing
+            if hasattr(self.pipeline, "vae"):
+                if hasattr(self.pipeline.vae, "enable_tiling"):
+                    self.pipeline.vae.enable_tiling()
+                if hasattr(self.pipeline.vae, "enable_slicing"):
+                    self.pipeline.vae.enable_slicing()
+
             logger.info(f"Pipeline caricata. Transformer dtype: {self.pipeline.transformer.dtype}")
 
         temp_clips = []
