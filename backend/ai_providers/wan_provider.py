@@ -153,22 +153,23 @@ class WanProvider(BaseAIProvider):
                 transformer_dtype = "auto"  # safetensors will keep original FP8
                 logger.warning("torch.float8_e4m3fn not available, loading transformer with dtype='auto' (FP8 preserved).")
 
-            # Get transformer config from the pipeline or from the base model directory
+            # Get transformer config path (must be a string pointing to a directory with config.json)
             if hasattr(self.pipeline, "transformer_config") and self.pipeline.transformer_config is not None:
-                transformer_config = self.pipeline.transformer_config
-                logger.info("Using transformer_config from pipeline.")
+                # If the pipeline already has a config object, we can't use it directly.
+                # Instead, use the base model's transformer directory.
+                transformer_config_path = os.path.join(self.base_model_path, "transformer")
+                logger.info("Using transformer config from base model directory (pipeline config ignored).")
             else:
-                # Load config from the base model's transformer subfolder
-                config_path = os.path.join(self.base_model_path, "transformer", "config.json")
-                if not os.path.exists(config_path):
-                    raise FileNotFoundError(f"Transformer config not found at {config_path}")
-                transformer_config = WanTransformer3DModel.load_config(config_path)
-                logger.info("Loaded transformer config from base model directory.")
+                transformer_config_path = os.path.join(self.base_model_path, "transformer")
+                logger.info("Using transformer config from base model directory.")
+
+            if not os.path.exists(os.path.join(transformer_config_path, "config.json")):
+                raise FileNotFoundError(f"Transformer config not found at {transformer_config_path}/config.json")
 
             logger.info(f"Loading FP8 transformer from {self.model_path} ...")
             transformer = WanTransformer3DModel.from_single_file(
                 self.model_path,
-                config=transformer_config,
+                config=transformer_config_path,
                 torch_dtype=transformer_dtype,
             )
             # Replace the pipeline's transformer with the FP8 one.
