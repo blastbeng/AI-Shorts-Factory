@@ -27,6 +27,10 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 # Forza PyTorch (CUDA) a vedere solo la GPU NVIDIA RTX 3060 (indice 0)
 export CUDA_VISIBLE_DEVICES=0
 
+# Ensure PyTorch's bundled NCCL and CUDA libraries are found
+SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
+export LD_LIBRARY_PATH="$SITE_PACKAGES/torch/lib:$SITE_PACKAGES/nvidia/nccl/lib:$LD_LIBRARY_PATH"
+
 # Imposta valori predefiniti se non presenti nel .env
 BACKEND_HOST=${BACKEND_HOST:-"0.0.0.0"}
 BACKEND_PORT=${BACKEND_PORT:-"8000"}
@@ -47,6 +51,12 @@ cleanup() {
 
 # Intercetta il segnale di interruzione (Ctrl+C)
 trap cleanup SIGINT SIGTERM
+
+# Verify NVIDIA driver is loaded
+if ! nvidia-smi &> /dev/null; then
+    echo "[ERRORE] Driver NVIDIA non rilevato. Verifica che il driver sia installato e che la GPU RTX 3060 sia collegata."
+    exit 1
+fi
 
 # Avvia il backend
 echo "Avvio del backend (FastAPI) su ${BACKEND_HOST}:${BACKEND_PORT}..."
