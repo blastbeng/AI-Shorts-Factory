@@ -71,13 +71,24 @@ import json
 path = '$MODEL_INDEX'
 with open(path, 'r') as f:
     idx = json.load(f)
+changed = False
+# Remove any extra transformer_* keys
+for k in list(idx.keys()):
+    if k.startswith('transformer_') and k != 'transformer':
+        del idx[k]
+        changed = True
+        print(f'Removed extra key: {k}')
+# Ensure transformer is a single string
 if isinstance(idx.get('transformer'), list):
     idx['transformer'] = 'transformer'
+    changed = True
+    print('Fixed: transformer entry was a list, now set to single string.')
+if changed:
     with open(path, 'w') as f:
         json.dump(idx, f, indent=2)
-    print('Fixed: transformer entry was a list, now set to single string.')
+    print('model_index.json updated.')
 else:
-    print('model_index.json transformer entry already correct.')
+    print('model_index.json already correct.')
 "
 fi
 

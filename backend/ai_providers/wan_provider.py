@@ -71,7 +71,8 @@ class WanProvider(BaseAIProvider):
                     logger.warning(f"Removing stray weight file in transformer/: {entry}")
                     os.remove(full_path)
 
-        # 3. Fix model_index.json: ensure 'transformer' points to "transformer" (single string)
+        # 3. Fix model_index.json: ensure only a single 'transformer' key exists,
+        #    and remove any other transformer_* keys.
         model_index_path = os.path.join(base_dir, "model_index.json")
         if not os.path.exists(model_index_path):
             raise FileNotFoundError(f"model_index.json missing in {base_dir}")
@@ -79,15 +80,26 @@ class WanProvider(BaseAIProvider):
         with open(model_index_path, "r") as f:
             model_index = json.load(f)
 
+        # Collect keys to remove (any key starting with 'transformer_' except 'transformer')
+        keys_to_remove = [k for k in model_index if k.startswith("transformer_") and k != "transformer"]
+        if keys_to_remove:
+            logger.warning(f"Removing extra transformer variant keys from model_index.json: {keys_to_remove}")
+            for k in keys_to_remove:
+                del model_index[k]
+
+        # Ensure the 'transformer' key is a single string "transformer"
         transformer_val = model_index.get("transformer")
         if transformer_val != "transformer":
             logger.warning(f"Fixing model_index.json: transformer was {transformer_val}, setting to 'transformer'")
             model_index["transformer"] = "transformer"
+
+        # Write back if any changes were made
+        if keys_to_remove or transformer_val != "transformer":
             with open(model_index_path, "w") as f:
                 json.dump(model_index, f, indent=2)
             logger.info("model_index.json updated successfully.")
         else:
-            logger.info("model_index.json transformer entry already correct.")
+            logger.info("model_index.json already correct.")
 
     def generate(self, prompts: list, output_path: str, *args, frames_per_clip=int(os.getenv("GEN_FRAMES", 49)), width=int(os.getenv("GEN_WIDTH", 256)), height=int(os.getenv("GEN_HEIGHT", 448)), steps=int(os.getenv("GEN_WAN_STEPS", 40)), **kwargs):
         if not self.health_check():
