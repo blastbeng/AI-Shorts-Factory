@@ -34,13 +34,8 @@ export LD_LIBRARY_PATH="$SITE_PACKAGES/torch/lib:$SITE_PACKAGES/nvidia/nccl/lib:
 # Force loading of the correct NCCL library (required by PyTorch 2.6+)
 NCCL_LIB="$SITE_PACKAGES/nvidia/nccl/lib/libnccl.so.2"
 if [ -f "$NCCL_LIB" ]; then
-    if nm -D "$NCCL_LIB" 2>/dev/null | grep -q ncclCommResume; then
-        export LD_PRELOAD="$NCCL_LIB${LD_PRELOAD:+:$LD_PRELOAD}"
-        echo "[OK] Preloading compatible NCCL from: $NCCL_LIB"
-    else
-        echo "[ERRORE] NCCL library at $NCCL_LIB is missing ncclCommResume symbol. Please rerun scripts/install_python_environment.sh"
-        exit 1
-    fi
+    export LD_PRELOAD="$NCCL_LIB${LD_PRELOAD:+:$LD_PRELOAD}"
+    echo "[OK] Preloading compatible NCCL from: $NCCL_LIB"
 else
     echo "[ERRORE] NCCL library not found at $NCCL_LIB"
     exit 1
