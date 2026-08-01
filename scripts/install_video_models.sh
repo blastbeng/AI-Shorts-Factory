@@ -33,12 +33,33 @@ else
 fi
 
 WAN_2_2_14B_BASE_DIR="./models/video/wan_2_2_14b/base_model"
+
+# Clean up any incomplete transformer variant folders (e.g. transformer_2)
+# that would cause the pipeline to try loading missing shards.
+if [ -d "$WAN_2_2_14B_BASE_DIR" ]; then
+    echo "Cleaning up transformer variant folders in $WAN_2_2_14B_BASE_DIR ..."
+    find "$WAN_2_2_14B_BASE_DIR" -maxdepth 1 -type d -name 'transformer_*' ! -name 'transformer' -exec rm -rf {} +
+    # Also remove any weight files inside the main transformer folder (keep only config.json)
+    if [ -d "$WAN_2_2_14B_BASE_DIR/transformer" ]; then
+        find "$WAN_2_2_14B_BASE_DIR/transformer" -type f ! -name 'config.json' -delete
+    fi
+fi
+
 if [ ! -f "$WAN_2_2_14B_BASE_DIR/model_index.json" ] || [ ! -f "$WAN_2_2_14B_BASE_DIR/transformer/config.json" ]; then
     mkdir -p "$WAN_2_2_14B_BASE_DIR"
     echo "Downloading Wan2.2-I2V-A14B-Diffusers base model (full)..."
     $PYTHON_BIN -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='Wan-AI/Wan2.2-I2V-A14B-Diffusers', local_dir='$WAN_2_2_14B_BASE_DIR', allow_patterns=['*.json', '*.txt', 'vae/**', 'scheduler/**', 'tokenizer/**', 'image_encoder/**', 'text_encoder/**', 'transformer/config.json'])"
 else
     echo "[OK] Modello base wan_2_2_14b già installato."
+fi
+
+# Post-download cleanup to ensure no stray transformer variants or weight files remain
+if [ -d "$WAN_2_2_14B_BASE_DIR" ]; then
+    echo "Post-download cleanup of transformer variant folders in $WAN_2_2_14B_BASE_DIR ..."
+    find "$WAN_2_2_14B_BASE_DIR" -maxdepth 1 -type d -name 'transformer_*' ! -name 'transformer' -exec rm -rf {} +
+    if [ -d "$WAN_2_2_14B_BASE_DIR/transformer" ]; then
+        find "$WAN_2_2_14B_BASE_DIR/transformer" -type f ! -name 'config.json' -delete
+    fi
 fi
 
 echo "Installazione dei modelli video completata."
