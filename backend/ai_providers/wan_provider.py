@@ -161,6 +161,10 @@ class WanProvider(BaseAIProvider):
                         (target_width, target_height),
                         interpolation=cv2.INTER_CUBIC
                     )
+                    if frame.dtype != np.uint8:
+                        if frame.max() <= 1.0:
+                            frame = (frame * 255).clip(0, 255)
+                        frame = frame.astype(np.uint8)
                     current_image = Image.fromarray(frame)
                 else:
                     logger.error(f"Last frame has unexpected shape: {frame.shape}")
@@ -195,6 +199,10 @@ class WanProvider(BaseAIProvider):
 
             # Extract last frame for next clip conditioning
             last_frame = np.array(output[-1]).copy()
+            if last_frame.dtype != np.uint8:
+                if last_frame.max() <= 1.0:
+                    last_frame = (last_frame * 255).clip(0, 255)
+                last_frame = last_frame.astype(np.uint8)
 
             temp_clip_path = output_path.replace(".mp4", f"_clip_{i}.mp4")
             writer = imageio.get_writer(
