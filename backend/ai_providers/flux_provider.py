@@ -2,6 +2,9 @@ import os
 import yaml
 os.environ["OMP_NUM_THREADS"]="12"
 os.environ["MKL_NUM_THREADS"]="12"
+os.environ["OPENBLAS_NUM_THREADS"]="12"
+os.environ["VECLIB_MAXIMUM_THREADS"]="12"
+os.environ["NUMEXPR_NUM_THREADS"]="12"
 import torch
 torch.set_num_threads(12)
 torch.set_num_interop_threads(2)
@@ -100,6 +103,7 @@ class FluxProvider(BaseAIProvider):
                 self.text_encoder = self.pipeline.text_encoder
                 self.tokenizer = self.pipeline.tokenizer
                 self.pipeline.text_encoder_2 = self.text_encoder_2
+                self.pipeline.text_encoder_2.to("cpu")
                 self.pipeline.vae.enable_tiling()
                 self.pipeline.vae.enable_slicing()
                 self.pipeline.vae.config.force_upcast = False
@@ -119,6 +123,18 @@ class FluxProvider(BaseAIProvider):
                     self.pipeline.vae.to(device)
 
                 logger.info(f"Flux device: {self.pipeline.transformer.device}")
+
+                logger.info(
+                    f"Transformer: {next(self.pipeline.transformer.parameters()).device}"
+                )
+
+                logger.info(
+                    f"VAE: {next(self.pipeline.vae.parameters()).device}"
+                )
+
+                logger.info(
+                    f"T5: {next(self.text_encoder_2.parameters()).device}"
+                )
                 
             except Exception as e:
                 logger.exception("Errore nel caricamento del modello Flux.")
@@ -141,8 +157,6 @@ class FluxProvider(BaseAIProvider):
         try:
             with torch.inference_mode():
 
-                self.pipeline.text_encoder_2.to("cpu")
-
                 prompt_embeds, pooled_prompt_embeds, text_ids = self.pipeline.encode_prompt(
                     prompt=prompt,
                     prompt_2=prompt,
@@ -150,8 +164,18 @@ class FluxProvider(BaseAIProvider):
                     max_sequence_length=512
                 )
 
-                prompt_embeds = prompt_embeds.to(device)
-                pooled_prompt_embeds = pooled_prompt_embeds.to(device)
+
+            flux_device = next(self.pipeline.transformer.parameters()).device
+
+            prompt_embeds = prompt_embeds.to(
+                flux_device,
+                dtype=torch.float16
+            )
+
+            pooled_prompt_embeds = pooled_prompt_embeds.to(
+                flux_device,
+                dtype=torch.float16
+            )
 
             image = self.pipeline(
                 prompt_embeds=prompt_embeds,
