@@ -144,7 +144,6 @@ class FluxProvider(BaseAIProvider):
             image = self.pipeline(
                     prompt_embeds=prompt_embeds,
                     pooled_prompt_embeds=pooled_prompt_embeds,
-                    text_ids=text_ids,
                     num_inference_steps=steps,
                     guidance_scale=0.0,
                     width=width,
