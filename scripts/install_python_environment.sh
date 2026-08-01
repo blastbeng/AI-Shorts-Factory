@@ -37,7 +37,7 @@ else
 fi
 
 echo "Installazione di xformers compatibile con PyTorch 2.6 (dal index cu124)..."
-pip install xformers --index-url https://download.pytorch.org/whl/cu124 --no-deps || echo "[WARN] xformers non installato."
+pip install "xformers<0.0.30" --index-url https://download.pytorch.org/whl/cu124 --no-deps || echo "[WARN] xformers non installato."
 
 echo "Reinstallazione finale di PyTorch 2.6.0 con supporto CUDA per GPU NVIDIA..."
 pip install torch==2.6.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124 --force-reinstall
