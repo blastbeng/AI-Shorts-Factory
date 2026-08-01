@@ -1,25 +1,9 @@
 gpus:
   - id: 0
-    name: "AMD Radeon RX 7800 XT"
-    vram_gb: 16
-    device_index: 0
-    backends:
-      - "vulkan"
-      - "rocm"
-    assigned_tasks:
-      - "video_generation"
-      - "image_generation"
-      - "voice_generation"
-      - "speech_recognition"
-      - "audio_generation"
-      - "video_upscaling"
-      - "video_upscaling"
-  - id: 1
     name: "NVIDIA RTX 3060"
     vram_gb: 12
     device_index: 0
     backends:
-      - "vulkan"
       - "cuda"
     assigned_tasks:
       - "video_generation"
@@ -27,3 +11,4 @@ gpus:
       - "voice_generation"
       - "speech_recognition"
       - "audio_generation"
+      - "video_upscaling"

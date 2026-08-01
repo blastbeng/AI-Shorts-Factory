@@ -20,10 +20,10 @@ pip install git+https://github.com/hkchengrex/MMAudio.git
 echo "Installazione delle librerie Python di base..."
 pip install -r requirements.txt
 
-echo "Reinstallazione di PyTorch con supporto ROCm per GPU AMD (dopo requirements.txt)..."
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.4 --force-reinstall
+echo "Reinstallazione di PyTorch con supporto CUDA per GPU NVIDIA (dopo requirements.txt)..."
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124 --force-reinstall
 
-echo "Installazione di torchcodec 0.9.1 (CPU) per compatibilità ROCm..."
+echo "Installazione di torchcodec 0.9.1 (CPU) per compatibilità CUDA..."
 pip install torchcodec==0.9.1 --index-url https://download.pytorch.org/whl/cpu --force-reinstall
 
 echo "Installazione dipendenze (numpy<2.1 pillow<12.0)..."
@@ -39,10 +39,10 @@ for model in en_core_web_sm it_core_news_sm es_core_news_sm fr_core_news_sm de_c
     fi
 done
 
-echo "Verifica di llama-cpp-python con backend Vulkan..."
+echo "Verifica di llama-cpp-python con backend CUDA..."
 if ! python -c "import llama_cpp" 2>/dev/null; then
-    echo "Installazione di llama-cpp-python con backend Vulkan..."
-    CMAKE_ARGS="-DGGML_VULKAN=on" CMAKE_BUILD_PARALLEL_LEVEL=$(nproc) pip install llama-cpp-python --upgrade --force-reinstall --no-cache-dir -v
+    echo "Installazione di llama-cpp-python con backend CUDA..."
+    CMAKE_ARGS="-DGGML_CUDA=on" CMAKE_BUILD_PARALLEL_LEVEL=$(nproc) pip install llama-cpp-python --upgrade --force-reinstall --no-cache-dir -v
 else
     echo "[OK] llama-cpp-python già installato."
 fi

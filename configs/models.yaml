@@ -1,37 +1,37 @@
 audio:
   mmaudio:
-    backend: rocm
+    backend: cuda
     path: ./models/audio/mmaudio
     status: installed
     vram_required_gb: 8
 image:
   flux:
-    backend: rocm
+    backend: cuda
     model_path: models/image/flux1-schnell-Q8_0.gguf
     status: installed
     t5_encoder_path: models/image/t5-v1_1-xxl-encoder-Q8_0.gguf
     use_cpu_offload: true
     vram_required_gb: 20
   qwen_image:
-    backend: rocm
+    backend: cuda
     path: ./models/image/qwen_image
     status: installed
     vram_required_gb: 10
 speech:
   whisper:
-    backend: rocm
+    backend: cuda
     path: ./models/speech/whisper
     status: installed
     vram_required_gb: 4
 text:
   llm_base:
-    backend: vulkan
+    backend: cuda
     model_name: Huihui-Qwen3-Omni-30B-A3B-Instruct-abliterated.i1-Q6_K.gguf
     path: /opt/models/Huihui-Qwen3-Omni-30B-A3B-Instruct-abliterated.i1-Q6_K.gguf
     status: installed
 video:
   ltx_video:
-    backend: rocm
+    backend: cuda
     path: ./models/video/ltx_video/ltxv-13b-0.9.8-dev-fp8.safetensors
     status: installed
     vram_required_gb: 12
@@ -44,7 +44,7 @@ video:
     offload_strategy: "sequential"
 voice:
   kokoro_tts:
-    backend: rocm
+    backend: cuda
     path: ./models/voice/kokoro_tts
     status: installed
     vram_required_gb: 4

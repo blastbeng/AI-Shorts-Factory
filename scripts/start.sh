@@ -24,11 +24,8 @@ fi
 
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
-# Forza PyTorch (ROCm) a vedere solo la GPU AMD Radeon RX 7800 XT (indice 0 in ROCm)
-# Nasconde la GPU integrata (gfx1036) e mappa la 7800 XT come cuda:0
-export HIP_VISIBLE_DEVICES=0
-export ROCR_VISIBLE_DEVICES=0
-export HSA_OVERRIDE_GFX_VERSION=11.0.0
+# Forza PyTorch (CUDA) a vedere solo la GPU NVIDIA RTX 3060 (indice 0)
+export CUDA_VISIBLE_DEVICES=0
 
 # Imposta valori predefiniti se non presenti nel .env
 BACKEND_HOST=${BACKEND_HOST:-"0.0.0.0"}
