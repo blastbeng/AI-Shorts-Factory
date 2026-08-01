@@ -122,10 +122,16 @@ class FluxProvider(BaseAIProvider):
                 #    self.pipeline.transformer.to(device)
                 #    self.pipeline.vae.to(device)
 
-                self.pipeline.transformer.to(device)
-                self.pipeline.vae.to(device)
+                logger.info(f"DEVICE SELECTED = {device}")
+                logger.info(f"CUDA AVAILABLE = {torch.cuda.is_available()}")
+                logger.info(f"GPU = {gpu}")
 
-                logger.info(f"Flux device: {self.pipeline.transformer.device}")
+                self.pipeline.transformer.to("cuda:0")
+                self.pipeline.vae.to("cuda:0")
+                
+                logger.info(
+                    f"Transformer param device: {next(self.pipeline.transformer.parameters()).device}"
+                )
 
                 logger.info(
                     f"Transformer: {next(self.pipeline.transformer.parameters()).device}"
