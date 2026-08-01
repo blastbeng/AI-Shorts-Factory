@@ -57,8 +57,21 @@ export LD_LIBRARY_PATH="$SITE_PACKAGES/torch/lib:$SITE_PACKAGES/nvidia/nccl/lib:
 SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
 NCCL_LIB=$(find "$SITE_PACKAGES/nvidia/nccl/lib" -name "libnccl.so*" 2>/dev/null | head -1)
 if [ -n "$NCCL_LIB" ]; then
-    export LD_PRELOAD="$NCCL_LIB${LD_PRELOAD:+:$LD_PRELOAD}"
-    echo "[OK] Preloading NCCL from: $NCCL_LIB"
+    # Verify the library contains the required symbol
+    if nm -D "$NCCL_LIB" 2>/dev/null | grep -q ncclCommResume; then
+        export LD_PRELOAD="$NCCL_LIB${LD_PRELOAD:+:$LD_PRELOAD}"
+        echo "[OK] Preloading NCCL from: $NCCL_LIB"
+    else
+        echo "[WARN] NCCL library found but missing ncclCommResume symbol. Trying system NCCL..."
+        # Fallback: try system NCCL if it's newer
+        SYSTEM_NCCL=$(find /usr/lib -name "libnccl.so*" 2>/dev/null | head -1)
+        if [ -n "$SYSTEM_NCCL" ] && nm -D "$SYSTEM_NCCL" 2>/dev/null | grep -q ncclCommResume; then
+            export LD_PRELOAD="$SYSTEM_NCCL${LD_PRELOAD:+:$LD_PRELOAD}"
+            echo "[OK] Preloading system NCCL from: $SYSTEM_NCCL"
+        else
+            echo "[ERRORE] Nessuna libreria NCCL compatibile trovata. PyTorch potrebbe non funzionare."
+        fi
+    fi
 else
     echo "[WARN] NCCL library not found in nvidia-nccl-cu12 package. Attempting to continue..."
 fi
