@@ -8,7 +8,7 @@ if [ ! -f "$PYTHON_BIN" ]; then
     PYTHON_BIN="python3"
 fi
 
-FLUX_GGUF="./models/image/flux1-schnell-Q8_0.gguf"
+FLUX_GGUF="./models/image/flux1-schnell-Q4_K_S.gguf"
 if [ ! -f "$FLUX_GGUF" ]; then
     echo "[INFO] Downloading Flux GGUF model..."
     mkdir -p "./models/image"
