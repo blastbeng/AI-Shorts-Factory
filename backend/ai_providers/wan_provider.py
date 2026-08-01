@@ -62,13 +62,21 @@ class WanProvider(BaseAIProvider):
         cuda_python = os.path.join(os.path.dirname(__file__), '..', '..', 'venv_cuda', 'bin', 'python')
         subprocess_script = os.path.join(os.path.dirname(__file__), 'wan_subprocess.py')
 
+        # Build a clean environment for the CUDA subprocess to avoid ROCm conflicts
+        env = os.environ.copy()
+        for key in list(env.keys()):
+            if key.startswith("HSA_") or key.startswith("ROCM_") or key.startswith("PYTORCH_HIP") or key == "MIOpen":
+                del env[key]
+        env["CUDA_VISIBLE_DEVICES"] = "0"
+
         logger.info("Launching Wan subprocess with CUDA on RTX 3060...")
         proc = subprocess.Popen(
             [cuda_python, subprocess_script, config_path],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            bufsize=1
+            bufsize=1,
+            env=env
         )
 
         # Monitor progress
