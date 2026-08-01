@@ -1,8 +1,4 @@
 import os
-os.environ["HSA_OVERRIDE_GFX_VERSION"] = "11.0.0"
-os.environ["TORCH_BLAS_PREFER_HIPBLASLT"] = "0"
-os.environ["TORCH_BLAS_PREFER_HIPBLAS"] = "1"
-os.environ["OMP_NUM_THREADS"] = "1"
 import gc
 import glob
 import yaml
@@ -185,9 +181,9 @@ class WanProvider(BaseAIProvider):
             vram_used = torch.cuda.memory_allocated(gpu_id) / 1024**3 if torch.cuda.is_available() else 0
             logger.info(f"[MEM] After FP8 transformer: RAM {ram_gb:.2f} GB, VRAM {vram_used:.2f} GB")
 
-            # Enable sequential CPU offload – best for low VRAM.
-            self.pipeline.enable_sequential_cpu_offload()
-            logger.info("Sequential CPU offload enabled.")
+            # Move the entire pipeline to the CUDA device (no CPU offload needed; fits in 12 GB VRAM)
+            self.pipeline.to(device)
+            logger.info(f"Pipeline moved to {device}.")
 
             # Memory‑saving features
             if hasattr(self.pipeline, "enable_vae_slicing"):
@@ -281,7 +277,7 @@ class WanProvider(BaseAIProvider):
             # Memory before generation
             process = psutil.Process(os.getpid())
             ram_before = process.memory_info().rss / 1024**3
-            vram_before = torch.cuda.memory_allocated() / 1024**3 if torch.cuda.is_available() else 0
+            vram_before = torch.cuda.memory_allocated(gpu_id) / 1024**3 if torch.cuda.is_available() else 0
             logger.info(f"[MEM] Before clip {i+1} generation: RAM {ram_before:.2f} GB, VRAM {vram_before:.2f} GB")
 
             # Attempt generation; if OOM, halve frames and retry once
@@ -320,7 +316,7 @@ class WanProvider(BaseAIProvider):
 
             # Memory after generation
             ram_after = process.memory_info().rss / 1024**3
-            vram_after = torch.cuda.memory_allocated() / 1024**3 if torch.cuda.is_available() else 0
+            vram_after = torch.cuda.memory_allocated(gpu_id) / 1024**3 if torch.cuda.is_available() else 0
             logger.info(f"[MEM] After clip {i+1} generation: RAM {ram_after:.2f} GB, VRAM {vram_after:.2f} GB")
 
             first_frame_arr = np.array(output[0])
@@ -360,12 +356,6 @@ class WanProvider(BaseAIProvider):
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
-
-            # Ensure text encoder is on CPU (sequential offload should do this, but be explicit)
-            if hasattr(self.pipeline, "text_encoder") and self.pipeline.text_encoder is not None:
-                self.pipeline.text_encoder.to("cpu")
-            if hasattr(self.pipeline, "image_encoder") and self.pipeline.image_encoder is not None:
-                self.pipeline.image_encoder.to("cpu")
 
         logger.info(f"Concatenazione di {len(temp_clips)} clip con crossfade in {output_path}...")
         
