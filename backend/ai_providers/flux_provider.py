@@ -141,14 +141,17 @@ class FluxProvider(BaseAIProvider):
         try:
             with torch.inference_mode():
 
-                prompt_embeds, pooled_prompt_embeds = self.pipeline.encode_prompt(
+                self.pipeline.text_encoder_2.to("cpu")
+
+                prompt_embeds, pooled_prompt_embeds, text_ids = self.pipeline.encode_prompt(
                     prompt=prompt,
                     prompt_2=prompt,
                     device="cpu",
                     max_sequence_length=512
                 )
-            prompt_embeds = prompt_embeds.to(device)
-            pooled_prompt_embeds = pooled_prompt_embeds.to(device)
+
+                prompt_embeds = prompt_embeds.to(device)
+                pooled_prompt_embeds = pooled_prompt_embeds.to(device)
 
             image = self.pipeline(
                 prompt_embeds=prompt_embeds,
