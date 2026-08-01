@@ -23,8 +23,8 @@ pip install -r requirements.txt
 echo "Reinstallazione di PyTorch con supporto CUDA per GPU NVIDIA (dopo requirements.txt)..."
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124 --force-reinstall
 
-echo "Aggiornamento forzato di nvidia-nccl-cu12 per risolvere il problema ncclCommResume..."
-pip install --upgrade --force-reinstall nvidia-nccl-cu12
+echo "Installazione forzata di nvidia-nccl-cu12==2.23.4 e nvidia-cudnn-cu12==9.1.0.70 per risolvere ncclCommResume e compatibilità PyTorch 2.6..."
+pip install --upgrade --force-reinstall nvidia-nccl-cu12==2.23.4 nvidia-cudnn-cu12==9.1.0.70
 
 # Ensure PyTorch's bundled libraries are found first
 SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
@@ -54,7 +54,7 @@ SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
 export LD_LIBRARY_PATH="$SITE_PACKAGES/torch/lib:$SITE_PACKAGES/nvidia/nccl/lib:$LD_LIBRARY_PATH"
 
 # Force loading of the correct NCCL library (required by PyTorch 2.6+)
-NCCL_LIB=$(find "$SITE_PACKAGES/nvidia/nccl/lib" -name "libnccl.so*" 2>/dev/null | head -1)
+NCCL_LIB=$(find "$SITE_PACKAGES/nvidia/nccl/lib" -name "libnccl.so.2" 2>/dev/null | head -1)
 if [ -n "$NCCL_LIB" ]; then
     # Verify the library contains the required symbol
     if nm -D "$NCCL_LIB" 2>/dev/null | grep -q ncclCommResume; then
