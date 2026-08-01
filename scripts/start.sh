@@ -28,7 +28,7 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export CUDA_VISIBLE_DEVICES=0
 
 # Ensure PyTorch's bundled NCCL and CUDA libraries are found
-SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
+SITE_PACKAGES=$(venv/bin/python -c "import site; print(site.getsitepackages()[0])")
 export LD_LIBRARY_PATH="$SITE_PACKAGES/torch/lib:$SITE_PACKAGES/nvidia/nccl/lib:$LD_LIBRARY_PATH"
 
 # Force loading of the correct NCCL library (required by PyTorch 2.6+)
