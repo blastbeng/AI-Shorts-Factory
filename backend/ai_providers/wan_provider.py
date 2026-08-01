@@ -2,7 +2,6 @@ import os
 os.environ["HSA_OVERRIDE_GFX_VERSION"] = "11.0.0"
 os.environ["TORCH_BLAS_PREFER_HIPBLASLT"] = "0"
 os.environ["TORCH_BLAS_PREFER_HIPBLAS"] = "1"
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.9,max_split_size_mb:512"
 os.environ["PYTORCH_HIP_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.9,max_split_size_mb:512"
 os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True,garbage_collection_threshold:0.9,max_split_size_mb:512"
 os.environ["SAFETENSORS_FAST_GPU"] = "1"
@@ -42,12 +41,6 @@ class WanProvider(BaseAIProvider):
         # Paths
         self.model_path = os.path.abspath(self.model_info.get("path"))
         self.base_model_path = os.path.abspath(self.model_info.get("base_model_path"))
-
-    def ram(self):
-        p = psutil.Process(os.getpid())
-        logger.info(
-            f"RAM usage: {p.memory_info().rss / 1024**3:.2f} GB"
-        )
 
     def install_status(self):
         return self.model_info.get("status", "not_installed")
@@ -93,14 +86,19 @@ class WanProvider(BaseAIProvider):
             vram_used = torch.cuda.memory_allocated(gpu_id) / 1024**3 if torch.cuda.is_available() else 0
             logger.info(f"[MEM] After base pipeline: RAM {ram_gb:.2f} GB, VRAM {vram_used:.2f} GB")
 
-            # Load the FP8 transformer directly, keeping weights in FP8.
+            # Determine the best dtype for the FP8 transformer
+            if hasattr(torch, "float8_e4m3fn"):
+                transformer_dtype = torch.float8_e4m3fn
+                logger.info("Using torch.float8_e4m3fn for transformer.")
+            else:
+                transformer_dtype = "auto"  # safetensors will keep original FP8
+                logger.warning("torch.float8_e4m3fn not available, loading transformer with dtype='auto' (FP8 preserved).")
+
             logger.info(f"Loading FP8 transformer from {self.model_path} ...")
-            # Use from_single_file to load the single safetensors checkpoint.
-            # torch_dtype=torch.float8_e4m3fn ensures the weights stay in FP8.
             transformer = WanTransformer3DModel.from_single_file(
                 self.model_path,
                 config=self.pipeline.transformer.config,
-                torch_dtype=torch.float8_e4m3fn,
+                torch_dtype=transformer_dtype,
             )
             # Replace the pipeline's transformer with the FP8 one.
             self.pipeline.transformer = transformer
@@ -198,82 +196,32 @@ class WanProvider(BaseAIProvider):
             gc.collect()
             torch.cuda.empty_cache()
 
-            # Attempt generation; if OOM, switch to sequential offload and retry once
-            try:
-                with torch.inference_mode():
-                    output = self.pipeline(
-                        image=current_image,
-                        prompt=prompt,
-                        negative_prompt="blurry, distorted, glitchy, low quality, bad anatomy, watermark, text, deformed, mutated, extra limbs, bad framing",
-                        num_inference_steps=steps,
-                        num_frames=frames_per_clip,
-                        height=height,
-                        width=width,
-                        guidance_scale=3.5,
-                        generator=generator,
-                        output_type="pil",
-                        callback_on_step_end=progress_callback,
-                        callback_on_step_end_tensor_inputs=[]
-                    ).frames[0]
-            except (torch.cuda.OutOfMemoryError, torch.OutOfMemoryError, RuntimeError) as e:
-                if "out of memory" in str(e).lower():
-                    logger.warning("OOM with model offload, switching to sequential CPU offload and retrying...")
-                    # Clean up and re-enable with sequential offload
-                    _transformer = self.pipeline.transformer
-                    _vae = self.pipeline.vae
-                    del self.pipeline
-                    gc.collect()
-                    torch.cuda.empty_cache()
-                    # Rebuild pipeline with sequential offload
-                    _base_model_path = self.model_info.get("base_model_path", "Wan-AI/Wan2.2-TI2V-14B-Diffusers")
-                    self.pipeline = WanImageToVideoPipeline.from_pretrained(
-                        _base_model_path,
-                        transformer=_transformer,
-                        vae=_vae,
-                        torch_dtype=torch.float16,
-                        low_cpu_mem_usage=True,
-                        use_safetensors=True
-                    )
-                    self.pipeline.enable_sequential_cpu_offload()
-                    # Re-apply slicing if possible
-                    if hasattr(self.pipeline, "enable_vae_slicing"):
-                        self.pipeline.enable_vae_slicing()
-                    if hasattr(self.pipeline, "enable_attention_slicing"):
-                        self.pipeline.enable_attention_slicing()
-                    if hasattr(self.pipeline, "vae"):
-                        if hasattr(self.pipeline.vae, "enable_slicing"):
-                            self.pipeline.vae.enable_slicing()
+            # Memory before generation
+            process = psutil.Process(os.getpid())
+            ram_before = process.memory_info().rss / 1024**3
+            vram_before = torch.cuda.memory_allocated() / 1024**3 if torch.cuda.is_available() else 0
+            logger.info(f"[MEM] Before clip {i+1} generation: RAM {ram_before:.2f} GB, VRAM {vram_before:.2f} GB")
 
-                    # Enable memory-efficient attention for ROCm
-                    if hasattr(torch.backends.cuda, "enable_mem_efficient_sdp"):
-                        torch.backends.cuda.enable_mem_efficient_sdp(True)
-                        logger.info("Memory-efficient SDP enabled (retry).")
-                    if hasattr(torch.backends.cuda, "enable_flash_sdp"):
-                        try:
-                            torch.backends.cuda.enable_flash_sdp(True)
-                            logger.info("Flash SDP enabled (retry).")
-                        except Exception as e:
-                            logger.warning(f"Flash SDP not available: {e}")
+            with torch.inference_mode():
+                output = self.pipeline(
+                    image=current_image,
+                    prompt=prompt,
+                    negative_prompt="blurry, distorted, glitchy, low quality, bad anatomy, watermark, text, deformed, mutated, extra limbs, bad framing",
+                    num_inference_steps=steps,
+                    num_frames=frames_per_clip,
+                    height=height,
+                    width=width,
+                    guidance_scale=3.5,
+                    generator=generator,
+                    output_type="pil",
+                    callback_on_step_end=progress_callback,
+                    callback_on_step_end_tensor_inputs=[]
+                ).frames[0]
 
-                    gc.collect()
-                    torch.cuda.empty_cache()
-                    with torch.inference_mode():
-                        output = self.pipeline(
-                            image=current_image,
-                            prompt=prompt,
-                            negative_prompt="blurry, distorted, glitchy, low quality, bad anatomy, watermark, text, deformed, mutated, extra limbs, bad framing",
-                            num_inference_steps=steps,
-                            num_frames=frames_per_clip,
-                            height=height,
-                            width=width,
-                            guidance_scale=3.5,
-                            generator=generator,
-                            output_type="pil",
-                            callback_on_step_end=progress_callback,
-                            callback_on_step_end_tensor_inputs=[]
-                        ).frames[0]
-                else:
-                    raise
+            # Memory after generation
+            ram_after = process.memory_info().rss / 1024**3
+            vram_after = torch.cuda.memory_allocated() / 1024**3 if torch.cuda.is_available() else 0
+            logger.info(f"[MEM] After clip {i+1} generation: RAM {ram_after:.2f} GB, VRAM {vram_after:.2f} GB")
 
             first_frame_arr = np.array(output[0])
             logger.info(f"First frame of clip {i+1}: shape={first_frame_arr.shape}, dtype={first_frame_arr.dtype}, min={first_frame_arr.min()}, max={first_frame_arr.max()}")
