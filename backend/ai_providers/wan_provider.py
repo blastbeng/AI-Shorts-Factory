@@ -17,6 +17,7 @@ import cv2
 from PIL import Image
 from diffusers import WanImageToVideoPipeline, AutoencoderKLWan
 from diffusers import WanTransformer3DModel
+from diffusers import DPMSolverMultistepScheduler
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger
@@ -44,7 +45,7 @@ class WanProvider(BaseAIProvider):
     def health_check(self):
         return self.install_status() == "installed"
 
-    def generate(self, prompts: list, output_path: str, *args, frames_per_clip=int(os.getenv("GEN_FRAMES", 49)), width=int(os.getenv("GEN_WIDTH", 256)), height=int(os.getenv("GEN_HEIGHT", 448)), steps=int(os.getenv("GEN_WAN_STEPS", 30)), **kwargs):
+    def generate(self, prompts: list, output_path: str, *args, frames_per_clip=int(os.getenv("GEN_FRAMES", 33)), width=int(os.getenv("GEN_WIDTH", 256)), height=int(os.getenv("GEN_HEIGHT", 448)), steps=int(os.getenv("GEN_WAN_STEPS", 40)), **kwargs):
         if not self.health_check():
             raise RuntimeError("Modello Wan 2.2 5B non installato.")
             
@@ -102,6 +103,12 @@ class WanProvider(BaseAIProvider):
                 use_safetensors=True
             )
 
+            self.pipeline.scheduler = DPMSolverMultistepScheduler.from_config(
+                self.pipeline.scheduler.config,
+                use_karras_sigmas=True
+            )
+            logger.info("Scheduler replaced with DPMSolverMultistepScheduler (Karras sigmas).")
+
             # Try model offload first; if OOM occurs, fall back to sequential offload
             if self.offload_strategy == "sequential":
                 self.pipeline.enable_sequential_cpu_offload()
@@ -123,13 +130,6 @@ class WanProvider(BaseAIProvider):
                 if hasattr(self.pipeline.vae, "enable_slicing") and not slicing_enabled:
                     self.pipeline.vae.enable_slicing()
                     logger.info("VAE slicing enabled directly on VAE.")
-                if hasattr(self.pipeline.vae, "enable_tiling"):
-                    self.pipeline.vae.enable_tiling()
-                    logger.info("VAE tiling enabled.")
-
-            if hasattr(self.pipeline, "enable_vae_tiling"):
-                self.pipeline.enable_vae_tiling()
-                logger.info("VAE tiling enabled via pipeline.")
 
             logger.info(f"Pipeline caricata. Transformer dtype: {self.pipeline.transformer.dtype}")
 
@@ -137,10 +137,9 @@ class WanProvider(BaseAIProvider):
         last_frame = None
         for i, prompt_data in enumerate(prompts):
             img_prompt, vid_prompt = prompt_data
-            if i == 0:
-                prompt = f"{img_prompt}. {vid_prompt}, high quality, realistic, smooth motion, 4k"
-            else:
-                prompt = f"{vid_prompt}, high quality, realistic, smooth motion, 4k"
+            # Build a consistent scene description
+            scene_desc = img_prompt if i == 0 else f"Continuing from previous scene: {vid_prompt}"
+            prompt = f"{scene_desc}, high quality, realistic, smooth motion, 4k"
 
             logger.info(f"Pulizia VRAM prima della generazione clip {i+1}/{len(prompts)}...")
             gc.collect()
@@ -200,7 +199,7 @@ class WanProvider(BaseAIProvider):
                         num_frames=frames_per_clip,
                         height=height,
                         width=width,
-                        guidance_scale=5.0,
+                        guidance_scale=4.0,
                         generator=generator,
                         callback_on_step_end=progress_callback,
                         callback_on_step_end_tensor_inputs=[]
@@ -233,12 +232,6 @@ class WanProvider(BaseAIProvider):
                     if hasattr(self.pipeline, "vae"):
                         if hasattr(self.pipeline.vae, "enable_slicing"):
                             self.pipeline.vae.enable_slicing()
-                        if hasattr(self.pipeline.vae, "enable_tiling"):
-                            self.pipeline.vae.enable_tiling()
-
-                    if hasattr(self.pipeline, "enable_vae_tiling"):
-                        self.pipeline.enable_vae_tiling()
-                        logger.info("VAE tiling enabled via pipeline.")
 
                     gc.collect()
                     torch.cuda.empty_cache()
@@ -291,28 +284,70 @@ class WanProvider(BaseAIProvider):
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-        logger.info(f"Concatenazione di {len(temp_clips)} clip in {output_path}...")
-        
-        list_file_path = output_path.replace(".mp4", "_list.txt")
-        with open(list_file_path, "w") as f:
-            for temp_clip_path in temp_clips:
-                f.write(f"file '{os.path.abspath(temp_clip_path)}'\n")
+        logger.info(f"Concatenazione di {len(temp_clips)} clip con crossfade in {output_path}...")
         
         import subprocess
-        cmd = [
-            "ffmpeg", "-y",
-            "-f", "concat",
-            "-safe", "0",
-            "-i", list_file_path,
-            "-c", "copy",
-            output_path
-        ]
-        subprocess.run(cmd, check=True)
-        
-        os.remove(list_file_path)
+        import shutil
+
+        if len(temp_clips) == 1:
+            # Single clip, just copy
+            shutil.copy(temp_clips[0], output_path)
+        else:
+            # Build ffmpeg filter chain for crossfade
+            # Each clip is ~1.375 seconds (33 frames / 24 fps). Overlap 0.5s = 12 frames.
+            fade_duration = 0.5
+            filter_parts = []
+            for i, clip in enumerate(temp_clips):
+                filter_parts.append(f"[{i}:v]settb=AVTB,fps=24,setpts=PTS-STARTPTS[v{i}];")
+            
+            # Crossfade between consecutive clips
+            prev = "v0"
+            for i in range(1, len(temp_clips)):
+                next_v = f"v{i}"
+                if i == len(temp_clips) - 1:
+                    # Last crossfade: output to [vout]
+                    filter_parts.append(f"[{prev}][{next_v}]xfade=transition=fade:duration={fade_duration}:offset=1.0[vout]")
+                else:
+                    filter_parts.append(f"[{prev}][{next_v}]xfade=transition=fade:duration={fade_duration}:offset=1.0[v{i}];")
+                    prev = f"v{i}"
+            
+            filter_complex = "".join(filter_parts)
+            
+            cmd = [
+                "ffmpeg", "-y",
+            ]
+            for clip in temp_clips:
+                cmd.extend(["-i", clip])
+            cmd.extend([
+                "-filter_complex", filter_complex,
+                "-map", "[vout]",
+                "-c:v", "libx264",
+                "-crf", "18",
+                "-preset", "medium",
+                "-pix_fmt", "yuv420p",
+                output_path
+            ])
+            subprocess.run(cmd, check=True)
+
         for temp_clip_path in temp_clips:
             if os.path.exists(temp_clip_path):
                 os.remove(temp_clip_path)
+
+        # Frame interpolation to 48 fps for smoother motion
+        interpolated_path = output_path.replace(".mp4", "_48fps.mp4")
+        cmd_interp = [
+            "ffmpeg", "-y",
+            "-i", output_path,
+            "-filter:v", "minterpolate=fps=48:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1",
+            "-c:v", "libx264",
+            "-crf", "18",
+            "-preset", "medium",
+            "-pix_fmt", "yuv420p",
+            interpolated_path
+        ]
+        subprocess.run(cmd_interp, check=True)
+        # Replace original with interpolated
+        os.replace(interpolated_path, output_path)
                 
         logger.info(f"Video finale salvato in {output_path}")
         return output_path
