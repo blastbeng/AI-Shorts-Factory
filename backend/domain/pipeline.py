@@ -385,7 +385,7 @@ class PipelineOrchestrator:
                             scenes = [storyboard]
                             
                         # Calculate required clips based on audio duration
-                        # Each clip is 49 frames at 24fps = ~3.375 seconds (Wan 2.2 5B)
+                        # Each clip is 49 frames at 24fps = ~2.04 seconds (Wan 2.2 14B)
                         clip_duration = self.job.gen_frames / 24.0
                         required_clips = max(1, int(voice_duration // clip_duration) + (1 if voice_duration % clip_duration > 0 else 0))
                         

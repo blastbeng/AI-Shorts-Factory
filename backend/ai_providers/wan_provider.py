@@ -21,6 +21,7 @@ from diffusers import DPMSolverMultistepScheduler
 from backend.ai_providers.base_provider import BaseAIProvider
 from backend.gpu_manager.manager import GPUManager
 from backend.services.logger import logger
+from safetensors.torch import load_file as safetensors_load
 import imageio
 
 class WanProvider(BaseAIProvider):
@@ -47,7 +48,7 @@ class WanProvider(BaseAIProvider):
 
     def generate(self, prompts: list, output_path: str, *args, frames_per_clip=int(os.getenv("GEN_FRAMES", 25)), width=int(os.getenv("GEN_WIDTH", 256)), height=int(os.getenv("GEN_HEIGHT", 448)), steps=int(os.getenv("GEN_WAN_STEPS", 40)), **kwargs):
         if not self.health_check():
-            raise RuntimeError("Modello Wan 2.2 5B non installato.")
+            raise RuntimeError("Modello Wan 2.2 14B non installato.")
             
         job_id = kwargs.get("job_id")
         image_path = kwargs.get("image_path")
@@ -71,7 +72,7 @@ class WanProvider(BaseAIProvider):
             
             # Load FP8 state dict and convert to float16
             logger.info(f"Caricamento transformer FP8 da {model_path}...")
-            state_dict = torch.load(model_path, map_location="cpu")
+            state_dict = safetensors_load(model_path, device="cpu")
             state_dict.pop("scaled_fp8", None)  # remove non-model key
             for k in state_dict:
                 state_dict[k] = state_dict[k].to(torch.float16)

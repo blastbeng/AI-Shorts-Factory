@@ -11,14 +11,19 @@ for category, models in config.items():
         for model_name, model_info in models.items():
             if isinstance(model_info, dict) and "path" in model_info:
                 path = model_info["path"]
-                # Check if directory exists and is not empty
-                if os.path.exists(path) and os.path.isdir(path):
-                    if os.listdir(path):  # Directory is not empty
-                        model_info["status"] = "installed"
-                        print(f"[OK] {category}/{model_name} marked as installed (found at {path}).")
+                # Check if path exists (file or directory)
+                if os.path.exists(path):
+                    if os.path.isdir(path):
+                        if os.listdir(path):  # Directory is not empty
+                            model_info["status"] = "installed"
+                            print(f"[OK] {category}/{model_name} marked as installed (found at {path}).")
+                        else:
+                            model_info["status"] = "not_installed"
+                            print(f"[WARN] {category}/{model_name} directory is empty.")
                     else:
-                        model_info["status"] = "not_installed"
-                        print(f"[WARN] {category}/{model_name} directory is empty.")
+                        # It's a file
+                        model_info["status"] = "installed"
+                        print(f"[OK] {category}/{model_name} marked as installed (file found at {path}).")
                 else:
                     model_info["status"] = "not_installed"
                     print(f"[INFO] {category}/{model_name} not found at {path}.")
