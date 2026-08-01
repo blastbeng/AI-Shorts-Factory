@@ -103,11 +103,11 @@ class WanProvider(BaseAIProvider):
                 use_safetensors=True
             )
 
-            self.pipeline.scheduler = DPMSolverMultistepScheduler.from_config(
-                self.pipeline.scheduler.config,
-                use_karras_sigmas=True
-            )
-            logger.info("Scheduler replaced with DPMSolverMultistepScheduler (Karras sigmas).")
+            # self.pipeline.scheduler = DPMSolverMultistepScheduler.from_config(
+            #     self.pipeline.scheduler.config,
+            #     use_karras_sigmas=True
+            # )
+            # logger.info("Scheduler replaced with DPMSolverMultistepScheduler (Karras sigmas).")
 
             # Try model offload first; if OOM occurs, fall back to sequential offload
             if self.offload_strategy == "sequential":
@@ -180,6 +180,11 @@ class WanProvider(BaseAIProvider):
                 logger.warning("Nessuna immagine iniziale fornita. Uso immagine nera.")
                 current_image = Image.new("RGB", (target_width, target_height), color="black")
 
+            logger.info(f"Conditioning image for clip {i+1}: size={current_image.size}, mode={current_image.mode}")
+            # Quick sanity check: log min/max pixel values
+            img_arr = np.array(current_image)
+            logger.info(f"Image pixel range: min={img_arr.min()}, max={img_arr.max()}, mean={img_arr.mean():.1f}")
+
             def progress_callback(pipe, step, timestep, callback_kwargs):
                 logger.info(f"Wan generation progress (clip {i+1}): step {step + 1}/{steps}")
                 if job_id:
@@ -203,6 +208,7 @@ class WanProvider(BaseAIProvider):
                         width=width,
                         guidance_scale=4.0,
                         generator=generator,
+                        output_type="pil",
                         callback_on_step_end=progress_callback,
                         callback_on_step_end_tensor_inputs=[]
                     ).frames[0]
@@ -248,11 +254,15 @@ class WanProvider(BaseAIProvider):
                             width=width,
                             guidance_scale=4.0,
                             generator=generator,
+                            output_type="pil",
                             callback_on_step_end=progress_callback,
                             callback_on_step_end_tensor_inputs=[]
                         ).frames[0]
                 else:
                     raise
+
+            first_frame_arr = np.array(output[0])
+            logger.info(f"First frame of clip {i+1}: shape={first_frame_arr.shape}, dtype={first_frame_arr.dtype}, min={first_frame_arr.min()}, max={first_frame_arr.max()}")
 
             # Extract last frame for next clip conditioning
             last_frame = np.array(output[-1]).copy()

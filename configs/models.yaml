@@ -41,7 +41,7 @@ video:
     base_model_path: ./models/video/wan_2_2_5b/base_model
     status: installed
     vram_required_gb: 8
-    offload_strategy: "sequential"
+    offload_strategy: "model"
 voice:
   kokoro_tts:
     backend: rocm
