@@ -2,13 +2,12 @@ import os
 os.environ["HSA_OVERRIDE_GFX_VERSION"] = "11.0.0"
 os.environ["TORCH_BLAS_PREFER_HIPBLASLT"] = "0"
 os.environ["TORCH_BLAS_PREFER_HIPBLAS"] = "1"
+os.environ["OMP_NUM_THREADS"] = "1"
 import gc
 import glob
 import yaml
 import torch
 import psutil
-torch.backends.cuda.matmul.allow_tf32 = False
-torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = True
 import numpy as np
 import cv2
 from PIL import Image
@@ -113,6 +112,12 @@ class WanProvider(BaseAIProvider):
             # Replace the pipeline's transformer with the FP8 one.
             self.pipeline.transformer = transformer
 
+            # Verify transformer dtype
+            param_dtype = next(self.pipeline.transformer.parameters()).dtype
+            logger.info(f"Transformer parameter dtype: {param_dtype}")
+            if param_dtype not in (torch.float8_e4m3fn, torch.float8_e4m3fnuz, torch.float8_e5m2, torch.float8_e5m2fnuz):
+                logger.warning("Transformer is NOT in FP8! Memory usage may be higher than expected.")
+
             ram_gb = process.memory_info().rss / 1024**3
             vram_used = torch.cuda.memory_allocated(gpu_id) / 1024**3 if torch.cuda.is_available() else 0
             logger.info(f"[MEM] After FP8 transformer: RAM {ram_gb:.2f} GB, VRAM {vram_used:.2f} GB")
@@ -125,6 +130,9 @@ class WanProvider(BaseAIProvider):
             if hasattr(self.pipeline, "enable_vae_slicing"):
                 self.pipeline.enable_vae_slicing()
                 logger.info("VAE slicing enabled.")
+            if hasattr(self.pipeline, "enable_vae_tiling"):
+                self.pipeline.enable_vae_tiling()
+                logger.info("VAE tiling enabled.")
             if hasattr(self.pipeline, "enable_attention_slicing"):
                 self.pipeline.enable_attention_slicing()
                 logger.info("Attention slicing enabled.")
@@ -289,6 +297,12 @@ class WanProvider(BaseAIProvider):
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
+
+            # Ensure text encoder is on CPU (sequential offload should do this, but be explicit)
+            if hasattr(self.pipeline, "text_encoder") and self.pipeline.text_encoder is not None:
+                self.pipeline.text_encoder.to("cpu")
+            if hasattr(self.pipeline, "image_encoder") and self.pipeline.image_encoder is not None:
+                self.pipeline.image_encoder.to("cpu")
 
         logger.info(f"Concatenazione di {len(temp_clips)} clip con crossfade in {output_path}...")
         
